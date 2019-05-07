@@ -13,4 +13,4 @@ I've included an example command line utility that renders page ranges of PDFs t
 
 >render_pdf.exe some.pdf -o outputfile_stem -f PNG -s 2.0 -r 3-5
 
-which means render some.pdf to output files outputfile_stem-3.png, outputfile_stem-4.png, and outputfile_stem-5.png, scaled up by 200%. There is currently a bug in the renderer in which the colors come out wrong, this is because I use stb-image-write to write to files and it want RGB formatted colors whereas Pdfium is outputting BGR colors.
+which means render some.pdf to output files outputfile_stem-3.png, outputfile_stem-4.png, and outputfile_stem-5.png, scaled up by 200%. There is currently a bug in the image files in which the colors come out wrong, this is because I use stb-image-write to write to files; it wants RGB formatted colors whereas Pdfium is outputting BGR colors.
