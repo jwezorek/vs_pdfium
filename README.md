@@ -1,5 +1,6 @@
 # vs_pdfium
 Google's pdfium codebase set up, by hand, as a vanilla Visual Studio solution that compiles to a static library on Windows under Visual Studio 2017.
+
 Notes:
 * I pulled this code on 4/25/2019. it is what ever version of pdfium that implies.
 * I have turned off Xfa, javascript, and Skia. I may eventually enable Skia as separate build configuration but I have no plans to turn on Xfa or js.
