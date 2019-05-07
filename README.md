@@ -1,2 +1,15 @@
 # vs_pdfium
-Google's pdfium codebase set up as a Visual Studio solution that compiles to a static library on Windows.
+Google's pdfium codebase set up, by hand, as a vanilla Visual Studio solution that compiles to a static library on Windows under Visual Studio 2017.
+Notes:
+* I pulled this code on 4/25/2019. it is what ever version of pdfium that implies.
+* I have turned off Xfa, javascript, and Skia. I may eventually enable Skia as separate build configuration but I have no plans to turn on Xfa or js.
+* This solution is intended to be used for x64 only. I believe building x86 because that configuration would necessitate changes to how some of the 3rd party dependencies are built.
+* I build all the 3rd party dependencies from code include herein, except for libjpeg-turbo which I link to as an included .lib binary. I couldnt build libjpeg-turbo because it is compiled from assembly language files that are in the NASM dialect of assembly and out-of-the-box Visual Studio only supports MASM.
+* I build the 3rd party dependencies right into the Pdfiym library not as separate libs.
+# render_pdf
+
+I've included an example command line utility that renders page ranges of PDFs to image files. usage is like
+
+>render_pdf.exe some.pdf -o outputfile_stem -f PNG -s 2.0 -r 3-5
+
+which means render some.pdf to output files outputfile_stem-3.png, outputfile_stem-4.png, and outputfile_stem-5.png, scaled up by 200%. There is currently a bug in the renderer in which the colors come out wrong, this is because I use stb-image-write to write to files and it want RGB formatted colors whereas Pdfium is outputting BGR colors.
