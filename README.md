@@ -4,7 +4,7 @@ Google's pdfium codebase set up, by hand, as a vanilla Visual Studio solution th
 Notes:
 * I pulled this code on 4/25/2019. It is whatever version of pdfium that implies.
 * I have turned off Xfa, javascript, and Skia. I may eventually enable Skia as a separate build configuration but I have no plans to turn on Xfa or js.
-* This solution is intended to be used for x64 only. I believe building x86 will not work because that configuration would necessitate changes to how some of the 3rd party dependencies are built.
+* Both x64 and x86 configurations should now build.
 * I build all the 3rd party dependencies from code included herein, except for libjpeg-turbo which I statically link to as an included binary. I couldnt build libjpeg-turbo because it is compiled from assembly language files that are in the NASM dialect of assembly and out-of-the-box Visual Studio only supports MASM.
 * I build the 3rd party dependencies directly into the Pdfium library not as separate libs.
 # render_pdf
