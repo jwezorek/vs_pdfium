@@ -73,6 +73,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -85,13 +87,14 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <AdditionalIncludeDirectories>.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
@@ -111,7 +114,7 @@
       <AdditionalDependencies>turbojpeg-static.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>.\pdfium\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\pdfium\bin\x86</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -143,7 +146,7 @@
       <AdditionalDependencies>turbojpeg-static.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>.\pdfium\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\pdfium\bin\x64</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -178,7 +181,7 @@
       <AdditionalDependencies>turbojpeg-static.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>.\pdfium\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\pdfium\bin\86</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -214,7 +217,7 @@
       <AdditionalDependencies>turbojpeg-static.lib</AdditionalDependencies>
     </Lib>
     <Lib>
-      <AdditionalLibraryDirectories>.\pdfium\bin</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>.\pdfium\bin\x64</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
