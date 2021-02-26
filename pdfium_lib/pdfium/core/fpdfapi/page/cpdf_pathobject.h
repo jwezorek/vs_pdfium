@@ -11,6 +11,7 @@
 #include "core/fpdfapi/page/cpdf_path.h"
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxge/cfx_fillrenderoptions.h"
 
 class CPDF_PathObject final : public CPDF_PageObject {
  public:
@@ -20,7 +21,7 @@ class CPDF_PathObject final : public CPDF_PageObject {
 
   // CPDF_PageObject
   Type GetType() const override;
-  void Transform(const CFX_Matrix& maxtrix) override;
+  void Transform(const CFX_Matrix& matrix) override;
   bool IsPath() const override;
   CPDF_PathObject* AsPath() override;
   const CPDF_PathObject* AsPath() const override;
@@ -30,8 +31,30 @@ class CPDF_PathObject final : public CPDF_PageObject {
   bool stroke() const { return m_bStroke; }
   void set_stroke(bool stroke) { m_bStroke = stroke; }
 
-  int filltype() const { return m_FillType; }
-  void set_filltype(int filltype) { m_FillType = filltype; }
+  // Layering, avoid caller knowledge of CFX_FillRenderOptions::FillType values.
+  bool has_no_filltype() const {
+    return m_FillType == CFX_FillRenderOptions::FillType::kNoFill;
+  }
+  bool has_winding_filltype() const {
+    return m_FillType == CFX_FillRenderOptions::FillType::kWinding;
+  }
+  bool has_alternate_filltype() const {
+    return m_FillType == CFX_FillRenderOptions::FillType::kEvenOdd;
+  }
+  void set_no_filltype() {
+    m_FillType = CFX_FillRenderOptions::FillType::kNoFill;
+  }
+  void set_winding_filltype() {
+    m_FillType = CFX_FillRenderOptions::FillType::kWinding;
+  }
+  void set_alternate_filltype() {
+    m_FillType = CFX_FillRenderOptions::FillType::kEvenOdd;
+  }
+
+  CFX_FillRenderOptions::FillType filltype() const { return m_FillType; }
+  void set_filltype(CFX_FillRenderOptions::FillType fill_type) {
+    m_FillType = fill_type;
+  }
 
   CPDF_Path& path() { return m_Path; }
   const CPDF_Path& path() const { return m_Path; }
@@ -41,7 +64,8 @@ class CPDF_PathObject final : public CPDF_PageObject {
 
  private:
   bool m_bStroke = false;
-  int m_FillType = 0;
+  CFX_FillRenderOptions::FillType m_FillType =
+      CFX_FillRenderOptions::FillType::kNoFill;
   CPDF_Path m_Path;
   CFX_Matrix m_Matrix;
 };

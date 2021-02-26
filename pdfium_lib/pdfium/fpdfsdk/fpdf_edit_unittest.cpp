@@ -4,13 +4,12 @@
 
 #include "public/fpdf_edit.h"
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
+#include "core/fpdfapi/page/cpdf_pagemodule.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 class PDFEditTest : public testing::Test {
-  void SetUp() override { CPDF_ModuleMgr::Get()->Init(); }
-
-  void TearDown() override { CPDF_ModuleMgr::Destroy(); }
+  void SetUp() override { CPDF_PageModule::Create(); }
+  void TearDown() override { CPDF_PageModule::Destroy(); }
 };
 
 TEST_F(PDFEditTest, LineJoin) {

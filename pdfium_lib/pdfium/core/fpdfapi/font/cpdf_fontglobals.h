@@ -10,24 +10,30 @@
 #include <map>
 #include <memory>
 
-#include "core/fpdfapi/cmaps/cmap_int.h"
+#include "core/fpdfapi/cmaps/fpdf_cmaps.h"
 #include "core/fpdfapi/font/cpdf_cmapmanager.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxge/cfx_fontmapper.h"
 #include "third_party/base/span.h"
 
 class CFX_StockFontArray;
 
 class CPDF_FontGlobals {
  public:
-  CPDF_FontGlobals();
-  ~CPDF_FontGlobals();
+  // Per-process singleton which must be managed by callers.
+  static void Create();
+  static void Destroy();
+  static CPDF_FontGlobals* GetInstance();
+
+  // Caller must load the maps before using font globals.
+  void LoadEmbeddedMaps();
 
   void Clear(CPDF_Document* pDoc);
-  CPDF_Font* Find(CPDF_Document* pDoc, uint32_t index);
-
-  // Takes ownership of |pFont|, returns unowned pointer to it.
-  CPDF_Font* Set(CPDF_Document* key,
-                 uint32_t index,
-                 std::unique_ptr<CPDF_Font> pFont);
+  RetainPtr<CPDF_Font> Find(CPDF_Document* pDoc,
+                            CFX_FontMapper::StandardFont index);
+  void Set(CPDF_Document* pDoc,
+           CFX_FontMapper::StandardFont index,
+           const RetainPtr<CPDF_Font>& pFont);
 
   void SetEmbeddedCharset(size_t idx, pdfium::span<const FXCMAP_CMap> map) {
     m_EmbeddedCharsets[idx] = map;
@@ -45,6 +51,14 @@ class CPDF_FontGlobals {
   CPDF_CMapManager* GetCMapManager() { return &m_CMapManager; }
 
  private:
+  CPDF_FontGlobals();
+  ~CPDF_FontGlobals();
+
+  void LoadEmbeddedGB1CMaps();
+  void LoadEmbeddedCNS1CMaps();
+  void LoadEmbeddedJapan1CMaps();
+  void LoadEmbeddedKorea1CMaps();
+
   CPDF_CMapManager m_CMapManager;
   pdfium::span<const FXCMAP_CMap> m_EmbeddedCharsets[CIDSET_NUM_SETS];
   pdfium::span<const uint16_t> m_EmbeddedToUnicodes[CIDSET_NUM_SETS];

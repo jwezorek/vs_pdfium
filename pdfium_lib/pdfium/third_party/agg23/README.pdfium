@@ -18,3 +18,11 @@ non-enumeral type in conditional.
 0003-ubsan-render-line-error.patch: Fix UBSan overflow error in render_line.
 0004-ubsan-sweep-scanline-error.patch: Fix UBSan left shift of negative value
 error in sweep_scanline.
+0005-assignment-return-values.patch: Fix assignment operator return values in
+agg_array.h.
+0006-ubsan-sweep-scanline-error.patch: Fix UBSan integer overflow error in
+sweep_scanline.
+0007-unused-struct.patch: Remove unused struct point_type_flag, which has a
+shadow variable.
+0008-namespace.patch: Wrap all AGG code in namespace pdfium.
+0009-infinite-loop.patch: avoid hang in agg_math_stroke.h

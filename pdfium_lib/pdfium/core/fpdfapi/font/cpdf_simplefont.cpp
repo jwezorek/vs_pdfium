@@ -12,6 +12,7 @@
 #include "core/fxge/fx_font.h"
 #include "core/fxge/fx_freetype.h"
 #include "third_party/base/numerics/safe_math.h"
+#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -33,7 +34,7 @@ CPDF_SimpleFont::CPDF_SimpleFont(CPDF_Document* pDocument,
     : CPDF_Font(pDocument, pFontDict) {
   memset(m_CharWidth, 0xff, sizeof(m_CharWidth));
   memset(m_GlyphIndex, 0xff, sizeof(m_GlyphIndex));
-  for (size_t i = 0; i < FX_ArraySize(m_CharBBox); ++i)
+  for (size_t i = 0; i < pdfium::size(m_CharBBox); ++i)
     m_CharBBox[i] = FX_RECT(-1, -1, -1, -1);
 }
 
@@ -47,14 +48,14 @@ int CPDF_SimpleFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
     return -1;
 
   int index = m_GlyphIndex[charcode];
-  if (index == 0xffff || (index == 0 && IsTrueTypeFont()))
+  if (index == 0xffff)
     return -1;
 
   return index;
 }
 
 void CPDF_SimpleFont::LoadCharMetrics(int charcode) {
-  if (!m_Font.GetFace())
+  if (!m_Font.GetFaceRec())
     return;
 
   if (charcode < 0 || charcode > 0xff) {
@@ -71,10 +72,10 @@ void CPDF_SimpleFont::LoadCharMetrics(int charcode) {
     }
     return;
   }
-  FXFT_Face face = m_Font.GetFace();
-  int err = FXFT_Load_Glyph(
-      face, glyph_index,
-      FXFT_LOAD_NO_SCALE | FXFT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH);
+  FXFT_FaceRec* face = m_Font.GetFaceRec();
+  int err =
+      FT_Load_Glyph(face, glyph_index,
+                    FT_LOAD_NO_SCALE | FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH);
   if (err)
     return;
 
@@ -101,7 +102,7 @@ void CPDF_SimpleFont::LoadCharMetrics(int charcode) {
 void CPDF_SimpleFont::LoadPDFEncoding(bool bEmbedded, bool bTrueType) {
   const CPDF_Object* pEncoding = m_pFontDict->GetDirectObjectFor("Encoding");
   if (!pEncoding) {
-    if (m_BaseFont == "Symbol") {
+    if (m_BaseFontName == "Symbol") {
       m_BaseEncoding = bTrueType ? PDFFONT_ENCODING_MS_SYMBOL
                                  : PDFFONT_ENCODING_ADOBE_SYMBOL;
     } else if (!bEmbedded && m_BaseEncoding == PDFFONT_ENCODING_BUILTIN) {
@@ -114,7 +115,7 @@ void CPDF_SimpleFont::LoadPDFEncoding(bool bEmbedded, bool bTrueType) {
         m_BaseEncoding == PDFFONT_ENCODING_ZAPFDINGBATS) {
       return;
     }
-    if (FontStyleIsSymbolic(m_Flags) && m_BaseFont == "Symbol") {
+    if (FontStyleIsSymbolic(m_Flags) && m_BaseFontName == "Symbol") {
       if (!bTrueType)
         m_BaseEncoding = PDFFONT_ENCODING_ADOBE_SYMBOL;
       return;
@@ -163,7 +164,7 @@ void CPDF_SimpleFont::LoadPDFEncoding(bool bEmbedded, bool bTrueType) {
   }
 }
 
-uint32_t CPDF_SimpleFont::GetCharWidthF(uint32_t charcode) {
+int CPDF_SimpleFont::GetCharWidthF(uint32_t charcode) {
   if (charcode > 0xff)
     charcode = 0;
 
@@ -212,8 +213,8 @@ bool CPDF_SimpleFont::LoadCommon() {
     }
   }
   if (m_pFontFile) {
-    if (m_BaseFont.GetLength() > 8 && m_BaseFont[7] == '+')
-      m_BaseFont = m_BaseFont.Right(m_BaseFont.GetLength() - 8);
+    if (m_BaseFontName.GetLength() > 8 && m_BaseFontName[7] == '+')
+      m_BaseFontName = m_BaseFontName.Last(m_BaseFontName.GetLength() - 8);
   } else {
     LoadSubstFont();
   }
@@ -222,13 +223,13 @@ bool CPDF_SimpleFont::LoadCommon() {
   LoadPDFEncoding(!!m_pFontFile, m_Font.IsTTFont());
   LoadGlyphMap();
   m_CharNames.clear();
-  if (!m_Font.GetFace())
+  if (!m_Font.GetFaceRec())
     return true;
 
   if (FontStyleIsAllCaps(m_Flags)) {
     static const unsigned char kLowercases[][2] = {
         {'a', 'z'}, {0xe0, 0xf6}, {0xf8, 0xfd}};
-    for (size_t range = 0; range < FX_ArraySize(kLowercases); ++range) {
+    for (size_t range = 0; range < pdfium::size(kLowercases); ++range) {
       const auto& lower = kLowercases[range];
       for (int i = lower[0]; i <= lower[1]; ++i) {
         if (m_GlyphIndex[i] != 0xffff && m_pFontFile)
@@ -262,14 +263,8 @@ void CPDF_SimpleFont::LoadSubstFont() {
     if (i == 256 && width)
       m_Flags |= FXFONT_FIXED_PITCH;
   }
-  pdfium::base::CheckedNumeric<int> safeStemV(m_StemV);
-  if (m_StemV < 140)
-    safeStemV *= 5;
-  else
-    safeStemV = safeStemV * 4 + 140;
-  m_Font.LoadSubst(m_BaseFont, IsTrueTypeFont(), m_Flags,
-                   safeStemV.ValueOrDefault(FXFONT_FW_NORMAL), m_ItalicAngle, 0,
-                   false);
+  m_Font.LoadSubst(m_BaseFontName, IsTrueTypeFont(), m_Flags, GetFontWeight(),
+                   m_ItalicAngle, 0, false);
 }
 
 bool CPDF_SimpleFont::IsUnicodeCompatible() const {

@@ -4,14 +4,16 @@
 
 #include <limits>
 
+#include "build/build_config.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/base/stl_util.h"
 
 // Unit test covering cases where PDFium replaces well-known library
 // functionality on any given platformn.
 
-#if _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+#if !defined(OS_WIN)
 
 namespace {
 
@@ -72,6 +74,107 @@ void Check64BitBase2Itoa(int64_t input, const char* expected_output) {
 }
 
 }  // namespace
+
+TEST(fxcrt, FXSYS_roundf) {
+  EXPECT_EQ(0, FXSYS_roundf(0.0f));
+  EXPECT_EQ(0, FXSYS_roundf(-0.0f));
+  EXPECT_EQ(0, FXSYS_roundf(0.00001f));
+  EXPECT_EQ(0, FXSYS_roundf(-0.00001f));
+  EXPECT_EQ(3, FXSYS_roundf(3.14159f));
+  EXPECT_EQ(4, FXSYS_roundf(3.5f));
+
+  // Check for smallest non-zero float values.
+  EXPECT_EQ(0, FXSYS_roundf(std::numeric_limits<float>::min()));
+  EXPECT_EQ(0, FXSYS_roundf(-std::numeric_limits<float>::min()));
+
+  // Function is a wrapper around standard C library function round(), so
+  // returns the integral value that is nearest to x, with halfway cases
+  // rounded away from zero.
+  EXPECT_EQ(-3, FXSYS_roundf(-3.14159f));
+  EXPECT_EQ(-4, FXSYS_roundf(-3.5f));
+
+  // Positive rounding stops at maximum int.
+  // MAX_INT=0x7FFFFFFF=2147483647=2.147483647e+9
+  // In IEEE-754 format, 2^31 yields exponent of 0x9E with mantissa of all
+  // zeroes which is 0x4f000000=2.14748365e+9, which is beyond max integer.
+  // Going to next smallest float by minus one from exponent and mantissa of
+  // all ones yields binary float representation of 0x4EFFFFFF=2.14748352e+9,
+  // which is 2147483520.
+  EXPECT_EQ(2147483520, FXSYS_roundf(2.14748352e+9f));
+
+  // Using a slightly larger value, expect to see it be capped at MAX_INT.
+  EXPECT_EQ(2147483647, FXSYS_roundf(2.14748365e+9f));
+
+  EXPECT_EQ(2147483647, FXSYS_roundf(2.14748365e+10f));
+  EXPECT_EQ(2147483647, FXSYS_roundf(std::numeric_limits<float>::max()));
+
+  // Negative rounding stops at minimum int.
+  // MIN_INT=0x80000000=-2147483648,=-2.147483648e+9
+  // In IEEE-754 format, 2^31 yields exponent of 0x9E with mantissa of all
+  // zeroes which is 0x4f000000=2.14748365e+9, and the sign bit set, which
+  // is 0xCF000000 and exactly matches the minimum integer.  Going to next
+  // smallest negative float by minus one from exponent and mantissa of all
+  // ones yields binary float representation of 0xCEFFFFFF=-2.14748352e+9,
+  // which is -2147483520.
+  EXPECT_EQ(-2147483648, FXSYS_roundf(-2.147483648e+10f));
+  EXPECT_EQ(-2147483648, FXSYS_roundf(-2.147483648e+9f));
+  EXPECT_EQ(-2147483520, FXSYS_roundf(-2.14748352e+9f));
+  EXPECT_EQ(-2147483648, FXSYS_roundf(-std::numeric_limits<float>::max()));
+
+  // NaN should give zero.
+  EXPECT_EQ(0, FXSYS_roundf(NAN));
+}
+
+TEST(fxcrt, FXSYS_round) {
+  EXPECT_EQ(0, FXSYS_round(0.0));
+  EXPECT_EQ(0, FXSYS_round(-0.0));
+  EXPECT_EQ(0, FXSYS_round(0.00001));
+  EXPECT_EQ(0, FXSYS_round(-0.00001));
+  EXPECT_EQ(3, FXSYS_round(3.14159));
+  EXPECT_EQ(4, FXSYS_round(3.5));
+
+  // Check for smallest non-zero double values.
+  EXPECT_EQ(0, FXSYS_round(std::numeric_limits<double>::min()));
+  EXPECT_EQ(0, FXSYS_round(-std::numeric_limits<double>::min()));
+
+  // Function is a wrapper around standard C library function round(), so
+  // returns the integral value that is nearest to x, with halfway cases
+  // rounded away from zero.
+  EXPECT_EQ(-3, FXSYS_round(-3.14159));
+  EXPECT_EQ(-4, FXSYS_round(-3.5));
+
+  // Positive rounding stops at maximum int.
+  // MAX_INT=0x7FFFFFFF=2147483647=2.147483647e+9
+  // In IEEE-754 double precision format, 2^31 yields exponent of 0x41E with
+  // mantissa of all zeroes which is 0x41E0000000000000=2.14748365e+9, which
+  // is beyond max integer.
+  // Going to next smallest float by minus one from exponent and mantissa of
+  // all ones yields binary float representation of
+  // 41DFFFFFFFC00000=2.147483647e+9, which matches the max integer.
+  EXPECT_EQ(2147483647, FXSYS_round(2.147483647e+9));
+
+  // Using a slightly larger value, expect to see it be capped at MAX_INT.
+  EXPECT_EQ(2147483647, FXSYS_round(2.14748365e+9));
+
+  EXPECT_EQ(2147483647, FXSYS_round(2.14748365e+10));
+  EXPECT_EQ(2147483647, FXSYS_round(std::numeric_limits<double>::max()));
+
+  // Negative rounding stops at minimum int.
+  // MIN_INT=0x80000000=-2147483648,=-2.147483648e+9
+  // In IEEE-754 double precision format, 2^31 yields exponent of 0x41E with
+  // mantissa of all zeroes which is 0x41E0000000000000=2.14748365e+9, and the
+  // sign bit set, which is 0xC1E0000000000000 and exactly matches the minimum
+  // integer.  Going to next smallest negative double by minus one from
+  // exponent and mantissa of all ones yields binary float representation of
+  // 0xC1DFFFFFFFFFFFFF=-2.1474836479999998e+9, which is -2147483648.
+  EXPECT_EQ(-2147483648, FXSYS_round(-2.1474836479999998e+9));
+  EXPECT_EQ(-2147483648, FXSYS_round(-2.147483648e+9));
+  EXPECT_EQ(-2147483648, FXSYS_round(-2.147483648e+10));
+  EXPECT_EQ(-2147483648, FXSYS_round(-std::numeric_limits<double>::max()));
+
+  // NaN should give zero.
+  EXPECT_EQ(0, FXSYS_round(NAN));
+}
 
 TEST(fxcrt, FXSYS_itoa_InvalidRadix) {
   char buf[32];
@@ -158,7 +261,7 @@ TEST(fxcrt, FXSYS_i64toa) {
       "111111111111111111111111111111111111111111111111111111111111111");
 }
 
-#endif  // _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+#endif  // !defined(OS_WIN)
 
 TEST(fxcrt, FXSYS_wcsftime) {
   struct tm good_time = {};
@@ -170,7 +273,7 @@ TEST(fxcrt, FXSYS_wcsftime) {
   good_time.tm_sec = 59;
 
   wchar_t buf[100] = {};
-  EXPECT_EQ(19u, FXSYS_wcsftime(buf, FX_ArraySize(buf), L"%Y-%m-%dT%H:%M:%S",
+  EXPECT_EQ(19u, FXSYS_wcsftime(buf, pdfium::size(buf), L"%Y-%m-%dT%H:%M:%S",
                                 &good_time));
   EXPECT_STREQ(L"1974-08-09T11:59:59", buf);
 
@@ -185,7 +288,7 @@ TEST(fxcrt, FXSYS_wcsftime) {
   for (int year = -2500; year <= 8500; ++year) {
     year_time.tm_year = year;
     wchar_t year_buf[100] = {};
-    FXSYS_wcsftime(year_buf, FX_ArraySize(year_buf), L"%Y-%m-%dT%H:%M:%S",
+    FXSYS_wcsftime(year_buf, pdfium::size(year_buf), L"%Y-%m-%dT%H:%M:%S",
                    &year_time);
   }
 
@@ -198,7 +301,7 @@ TEST(fxcrt, FXSYS_wcsftime) {
   bad_time.tm_min = -1;
   bad_time.tm_sec = -1;
 
-  FXSYS_wcsftime(buf, FX_ArraySize(buf), L"%y-%m-%dT%H:%M:%S", &bad_time);
+  FXSYS_wcsftime(buf, pdfium::size(buf), L"%y-%m-%dT%H:%M:%S", &bad_time);
 
   // Ensure wcsftime handles bad-ish day without crashing (Feb 30).
   struct tm feb_time = {};
@@ -209,7 +312,7 @@ TEST(fxcrt, FXSYS_wcsftime) {
   feb_time.tm_min = 00;
   feb_time.tm_sec = 00;
 
-  FXSYS_wcsftime(buf, FX_ArraySize(buf), L"%y-%m-%dT%H:%M:%S", &feb_time);
+  FXSYS_wcsftime(buf, pdfium::size(buf), L"%y-%m-%dT%H:%M:%S", &feb_time);
 }
 
 TEST(fxcrt, FXSYS_atoi) {

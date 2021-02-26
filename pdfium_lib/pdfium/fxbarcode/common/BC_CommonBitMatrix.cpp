@@ -22,12 +22,10 @@
 
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
 
-#include <algorithm>
-#include <iterator>
-
+#include "third_party/base/check.h"
 #include "third_party/base/stl_util.h"
 
-CBC_CommonBitMatrix::CBC_CommonBitMatrix() {}
+CBC_CommonBitMatrix::CBC_CommonBitMatrix() = default;
 
 void CBC_CommonBitMatrix::Init(int32_t width, int32_t height) {
   m_width = width;
@@ -47,7 +45,7 @@ bool CBC_CommonBitMatrix::Get(int32_t x, int32_t y) const {
 
 void CBC_CommonBitMatrix::Set(int32_t x, int32_t y) {
   int32_t offset = y * m_rowSize + (x >> 5);
-  ASSERT(offset >= 0);
-  ASSERT(offset < m_rowSize * m_height);
+  DCHECK(offset >= 0);
+  DCHECK(offset < m_rowSize * m_height);
   m_bits[offset] |= 1 << (x & 0x1f);
 }

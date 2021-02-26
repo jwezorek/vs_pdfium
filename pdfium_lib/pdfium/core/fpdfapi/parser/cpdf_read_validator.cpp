@@ -5,13 +5,15 @@
 #include "core/fpdfapi/parser/cpdf_read_validator.h"
 
 #include <algorithm>
+#include <utility>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
-#include "third_party/base/logging.h"
+#include "core/fpdfapi/parser/cpdf_stream.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "third_party/base/notreached.h"
 
 namespace {
 
-constexpr FX_FILESIZE kAlignBlockValue = CPDF_ModuleMgr::kFileBufSize;
+constexpr FX_FILESIZE kAlignBlockValue = CPDF_Stream::kFileBufSize;
 
 FX_FILESIZE AlignDown(FX_FILESIZE offset) {
   return offset > 0 ? (offset - offset % kAlignBlockValue) : 0;
@@ -20,22 +22,20 @@ FX_FILESIZE AlignDown(FX_FILESIZE offset) {
 FX_FILESIZE AlignUp(FX_FILESIZE offset) {
   FX_SAFE_FILESIZE safe_result = AlignDown(offset);
   safe_result += kAlignBlockValue;
-  if (safe_result.IsValid())
-    return safe_result.ValueOrDie();
-  return offset;
+  return safe_result.ValueOrDefault(offset);
 }
 
 }  // namespace
 
-CPDF_ReadValidator::Session::Session(CPDF_ReadValidator* validator)
-    : validator_(validator) {
-  ASSERT(validator_);
-  saved_read_error_ = validator_->read_error_;
-  saved_has_unavailable_data_ = validator_->has_unavailable_data_;
+CPDF_ReadValidator::ScopedSession::ScopedSession(
+    RetainPtr<CPDF_ReadValidator> validator)
+    : validator_(std::move(validator)),
+      saved_read_error_(validator_->read_error_),
+      saved_has_unavailable_data_(validator_->has_unavailable_data_) {
   validator_->ResetErrors();
 }
 
-CPDF_ReadValidator::Session::~Session() {
+CPDF_ReadValidator::ScopedSession::~ScopedSession() {
   validator_->read_error_ |= saved_read_error_;
   validator_->has_unavailable_data_ |= saved_has_unavailable_data_;
 }
@@ -45,12 +45,9 @@ CPDF_ReadValidator::CPDF_ReadValidator(
     CPDF_DataAvail::FileAvail* file_avail)
     : file_read_(file_read),
       file_avail_(file_avail),
-      read_error_(false),
-      has_unavailable_data_(false),
-      whole_file_already_available_(false),
       file_size_(file_read->GetSize()) {}
 
-CPDF_ReadValidator::~CPDF_ReadValidator() {}
+CPDF_ReadValidator::~CPDF_ReadValidator() = default;
 
 void CPDF_ReadValidator::ResetErrors() {
   read_error_ = false;
@@ -131,7 +128,7 @@ bool CPDF_ReadValidator::CheckDataRangeAndRequestIfUnavailable(
   FX_SAFE_FILESIZE end_segment_offset = offset;
   end_segment_offset += size;
   // Increase checked range to allow CPDF_SyntaxParser read whole buffer.
-  end_segment_offset += CPDF_ModuleMgr::kFileBufSize;
+  end_segment_offset += CPDF_Stream::kFileBufSize;
   if (!end_segment_offset.IsValid()) {
     NOTREACHED();
     return false;

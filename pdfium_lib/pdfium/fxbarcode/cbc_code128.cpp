@@ -23,22 +23,22 @@
 
 #include <memory>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "fxbarcode/oned/BC_OnedCode128Writer.h"
-#include "third_party/base/ptr_util.h"
 
 CBC_Code128::CBC_Code128(BC_TYPE type)
-    : CBC_OneCode(pdfium::MakeUnique<CBC_OnedCode128Writer>(type)) {}
+    : CBC_OneCode(std::make_unique<CBC_OnedCode128Writer>(type)) {}
 
-CBC_Code128::~CBC_Code128() {}
+CBC_Code128::~CBC_Code128() = default;
 
 bool CBC_Code128::Encode(WideStringView contents) {
-  if (contents.IsEmpty() || contents.GetLength() > kMaxInputLengthBytes)
+  auto* pWriter = GetOnedCode128Writer();
+  if (!pWriter->CheckContentValidity(contents))
     return false;
 
   BCFORMAT format = BCFORMAT_CODE_128;
   int32_t outWidth = 0;
   int32_t outHeight = 0;
-  auto* pWriter = GetOnedCode128Writer();
   WideString content(contents);
   if (contents.GetLength() % 2 && pWriter->GetType() == BC_CODE128_C)
     content += '0';

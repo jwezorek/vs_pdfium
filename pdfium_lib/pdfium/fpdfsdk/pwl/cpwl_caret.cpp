@@ -9,13 +9,14 @@
 #include <sstream>
 #include <utility>
 
+#include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/cfx_graphstatedata.h"
 #include "core/fxge/cfx_pathdata.h"
 #include "core/fxge/cfx_renderdevice.h"
-#include "fpdfsdk/pwl/cpwl_wnd.h"
 
-CPWL_Caret::CPWL_Caret(const CreateParams& cp,
-                       std::unique_ptr<PrivateData> pAttachedData)
+CPWL_Caret::CPWL_Caret(
+    const CreateParams& cp,
+    std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData)
     : CPWL_Wnd(cp, std::move(pAttachedData)) {}
 
 CPWL_Caret::~CPWL_Caret() = default;
@@ -41,16 +42,16 @@ void CPWL_Caret::DrawThisAppearance(CFX_RenderDevice* pDevice,
     fCaretBottom = rcRect.bottom;
   }
 
-  path.AppendPoint(CFX_PointF(fCaretX, fCaretBottom), FXPT_TYPE::MoveTo, false);
-  path.AppendPoint(CFX_PointF(fCaretX, fCaretTop), FXPT_TYPE::LineTo, false);
+  path.AppendPoint(CFX_PointF(fCaretX, fCaretBottom), FXPT_TYPE::MoveTo);
+  path.AppendPoint(CFX_PointF(fCaretX, fCaretTop), FXPT_TYPE::LineTo);
 
   CFX_GraphStateData gsd;
   gsd.m_LineWidth = m_fWidth;
   pDevice->DrawPath(&path, &mtUser2Device, &gsd, 0, ArgbEncode(255, 0, 0, 0),
-                    FXFILL_ALTERNATE);
+                    CFX_FillRenderOptions::EvenOddOptions());
 }
 
-void CPWL_Caret::TimerProc() {
+void CPWL_Caret::OnTimerFired() {
   m_bFlash = !m_bFlash;
   InvalidateRect(nullptr);
   // Note, |this| may no longer be viable at this point. If more work needs
@@ -72,7 +73,7 @@ void CPWL_Caret::SetCaret(bool bVisible,
     if (!IsVisible())
       return;
 
-    EndTimer();
+    m_pTimer.reset();
     CPWL_Wnd::SetVisible(false);
     // Note, |this| may no longer be viable at this point. If more work needs
     // to be done, check the return value of SetVisible().
@@ -84,8 +85,8 @@ void CPWL_Caret::SetCaret(bool bVisible,
 
     m_ptHead = ptHead;
     m_ptFoot = ptFoot;
-    EndTimer();
-    BeginTimer(kCaretFlashIntervalMs);
+    m_pTimer = std::make_unique<CFX_Timer>(GetTimerHandler(), this,
+                                           kCaretFlashIntervalMs);
 
     if (!CPWL_Wnd::SetVisible(true))
       return;
@@ -108,10 +109,9 @@ void CPWL_Caret::SetCaret(bool bVisible,
   // needs to be done, check the return value of Move().
 }
 
-bool CPWL_Caret::InvalidateRect(CFX_FloatRect* pRect) {
-  if (!pRect) {
+bool CPWL_Caret::InvalidateRect(const CFX_FloatRect* pRect) {
+  if (!pRect)
     return CPWL_Wnd::InvalidateRect(nullptr);
-  }
 
   CFX_FloatRect rcRefresh = *pRect;
   if (!rcRefresh.IsEmpty()) {

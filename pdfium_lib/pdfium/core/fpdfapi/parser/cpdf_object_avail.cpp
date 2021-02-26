@@ -11,30 +11,33 @@
 #include "core/fpdfapi/parser/cpdf_object_walker.h"
 #include "core/fpdfapi/parser/cpdf_read_validator.h"
 #include "core/fpdfapi/parser/cpdf_reference.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
+#include "third_party/base/stl_util.h"
 
-CPDF_ObjectAvail::CPDF_ObjectAvail(CPDF_ReadValidator* validator,
-                                   CPDF_IndirectObjectHolder* holder,
-                                   const CPDF_Object* root)
+CPDF_ObjectAvail::CPDF_ObjectAvail(
+    const RetainPtr<CPDF_ReadValidator>& validator,
+    CPDF_IndirectObjectHolder* holder,
+    CPDF_Object* root)
     : validator_(validator), holder_(holder), root_(root) {
-  ASSERT(validator_);
-  ASSERT(holder);
-  ASSERT(root_);
+  DCHECK(validator_);
+  DCHECK(holder);
+  DCHECK(root_);
   if (!root_->IsInline())
     parsed_objnums_.insert(root_->GetObjNum());
 }
 
-CPDF_ObjectAvail::CPDF_ObjectAvail(CPDF_ReadValidator* validator,
-                                   CPDF_IndirectObjectHolder* holder,
-                                   uint32_t obj_num)
+CPDF_ObjectAvail::CPDF_ObjectAvail(
+    const RetainPtr<CPDF_ReadValidator>& validator,
+    CPDF_IndirectObjectHolder* holder,
+    uint32_t obj_num)
     : validator_(validator),
       holder_(holder),
-      root_(pdfium::MakeUnique<CPDF_Reference>(holder, obj_num)) {
-  ASSERT(validator_);
-  ASSERT(holder);
+      root_(pdfium::MakeRetain<CPDF_Reference>(holder, obj_num)) {
+  DCHECK(validator_);
+  DCHECK(holder);
 }
 
-CPDF_ObjectAvail::~CPDF_ObjectAvail() {}
+CPDF_ObjectAvail::~CPDF_ObjectAvail() = default;
 
 CPDF_DataAvail::DocAvailStatus CPDF_ObjectAvail::CheckAvail() {
   if (!LoadRootObject())
@@ -58,13 +61,13 @@ bool CPDF_ObjectAvail::LoadRootObject() {
       return true;
     }
 
-    const CPDF_ReadValidator::Session parse_session(validator_.Get());
-    const CPDF_Object* direct = holder_->GetOrParseIndirectObject(ref_obj_num);
+    CPDF_ReadValidator::ScopedSession parse_session(validator_);
+    CPDF_Object* direct = holder_->GetOrParseIndirectObject(ref_obj_num);
     if (validator_->has_read_problems())
       return false;
 
     parsed_objnums_.insert(ref_obj_num);
-    root_ = direct;
+    root_.Reset(direct);
   }
   std::stack<uint32_t> non_parsed_objects_in_root;
   if (AppendObjectSubRefs(root_.Get(), &non_parsed_objects_in_root)) {
@@ -88,9 +91,9 @@ bool CPDF_ObjectAvail::CheckObjects() {
     if (!checked_objects.insert(obj_num).second)
       continue;
 
-    const CPDF_ReadValidator::Session parse_session(validator_.Get());
+    CPDF_ReadValidator::ScopedSession parse_session(validator_);
     const CPDF_Object* direct = holder_->GetOrParseIndirectObject(obj_num);
-    if (direct == root_.Get())
+    if (direct == root_)
       continue;
 
     if (validator_->has_read_problems() ||
@@ -105,19 +108,19 @@ bool CPDF_ObjectAvail::CheckObjects() {
 
 bool CPDF_ObjectAvail::AppendObjectSubRefs(const CPDF_Object* object,
                                            std::stack<uint32_t>* refs) const {
-  ASSERT(refs);
+  DCHECK(refs);
   if (!object)
     return true;
 
   CPDF_ObjectWalker walker(object);
   while (const CPDF_Object* obj = walker.GetNext()) {
-    const CPDF_ReadValidator::Session parse_session(validator_.Get());
+    CPDF_ReadValidator::ScopedSession parse_session(validator_);
 
     // Skip if this object if it's an inlined root, the parent object or
     // explicitily excluded.
-    const bool skip = (walker.GetParent() && obj == root_.Get()) ||
+    const bool skip = (walker.GetParent() && obj == root_) ||
                       walker.dictionary_key() == "Parent" ||
-                      (obj != root_.Get() && ExcludeObject(obj));
+                      (obj != root_ && ExcludeObject(obj));
 
     // We need to parse the object before we can do the exclusion check.
     // This is because the exclusion check may check against a referenced
@@ -146,5 +149,5 @@ bool CPDF_ObjectAvail::ExcludeObject(const CPDF_Object* object) const {
 }
 
 bool CPDF_ObjectAvail::HasObjectParsed(uint32_t obj_num) const {
-  return parsed_objnums_.count(obj_num) > 0;
+  return pdfium::Contains(parsed_objnums_, obj_num);
 }

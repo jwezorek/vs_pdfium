@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
+#include "core/fpdfapi/page/cpdf_pagemodule.h"
 #include "core/fpdfapi/parser/cpdf_data_avail.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_linearized_header.h"
@@ -21,7 +21,7 @@
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "testing/utils/path_service.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 
 namespace {
 
@@ -29,14 +29,14 @@ RetainPtr<CPDF_ReadValidator> MakeValidatorFromFile(
     const std::string& file_name) {
   std::string file_path;
   PathService::GetTestFilePath(file_name, &file_path);
-  ASSERT(!file_path.empty());
+  DCHECK(!file_path.empty());
   return pdfium::MakeRetain<CPDF_ReadValidator>(
       IFX_SeekableReadStream::CreateFromFilename(file_path.c_str()), nullptr);
 }
 
 std::unique_ptr<CPDF_DataAvail> MakeDataAvailFromFile(
     const std::string& file_name) {
-  return pdfium::MakeUnique<CPDF_DataAvail>(
+  return std::make_unique<CPDF_DataAvail>(
       nullptr, MakeValidatorFromFile(file_name), true);
 }
 
@@ -50,10 +50,10 @@ class TestLinearizedHeader final : public CPDF_LinearizedHeader {
       const std::string& inline_data) {
     CPDF_SyntaxParser parser(pdfium::MakeRetain<CFX_ReadOnlyMemoryStream>(
         pdfium::as_bytes(pdfium::make_span(inline_data))));
-    std::unique_ptr<CPDF_Dictionary> dict =
+    RetainPtr<CPDF_Dictionary> dict =
         ToDictionary(parser.GetObjectBody(nullptr));
-    ASSERT(dict);
-    return pdfium::MakeUnique<TestLinearizedHeader>(dict.get(), 0);
+    DCHECK(dict);
+    return std::make_unique<TestLinearizedHeader>(dict.Get(), 0);
   }
 };
 
@@ -63,10 +63,10 @@ class CPDF_HintTablesTest : public testing::Test {
  public:
   CPDF_HintTablesTest() {
     // Needs for encoding Hint table stream.
-    CPDF_ModuleMgr::Get()->Init();
+    CPDF_PageModule::Create();
   }
 
-  ~CPDF_HintTablesTest() override { CPDF_ModuleMgr::Destroy(); }
+  ~CPDF_HintTablesTest() override { CPDF_PageModule::Destroy(); }
 };
 
 TEST_F(CPDF_HintTablesTest, Load) {
@@ -170,12 +170,12 @@ TEST_F(CPDF_HintTablesTest, FirstPageOffset) {
   RetainPtr<CPDF_ReadValidator> validator =
       MakeValidatorFromFile("hint_table_102p.bin");
   CPDF_SyntaxParser parser(validator, 0);
-  std::unique_ptr<CPDF_Stream> stream = ToStream(parser.GetObjectBody(nullptr));
+  RetainPtr<CPDF_Stream> stream = ToStream(parser.GetObjectBody(nullptr));
   ASSERT_TRUE(stream);
-  auto hint_tables = pdfium::MakeUnique<CPDF_HintTables>(
-      validator.Get(), linearized_header.get());
+  auto hint_tables = std::make_unique<CPDF_HintTables>(validator.Get(),
+                                                       linearized_header.get());
   // Check that hint table will load.
-  ASSERT_TRUE(hint_tables->LoadHintStream(stream.get()));
+  ASSERT_TRUE(hint_tables->LoadHintStream(stream.Get()));
   // Check that hint table have correct first page offset.
   // 127546 is predefined real value from original file.
   EXPECT_EQ(127546, hint_tables->GetFirstPageObjOffset());

@@ -19,6 +19,7 @@
 class CFX_RenderDevice;
 class CPDF_AnnotList;
 class CPDF_RenderOptions;
+class CPDFSDK_FormFillEnvironment;
 
 class CPDFSDK_PageView final : public CPDF_Page::View {
  public:
@@ -43,8 +44,8 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
 #ifdef PDF_ENABLE_XFA
   bool DeleteAnnot(CPDFSDK_Annot* pAnnot);
   CPDFSDK_Annot* AddAnnot(CXFA_FFWidget* pPDFAnnot);
-  CPDFSDK_Annot* GetAnnotByXFAWidget(CXFA_FFWidget* hWidget);
-  CPDFXFA_Page* GetPDFXFAPage() { return ToXFAPage(m_page); }
+  CPDFSDK_Annot* GetAnnotByXFAWidget(CXFA_FFWidget* pWidget);
+  IPDF_Page* GetXFAPage();
 #endif  // PDF_ENABLE_XFA
 
   CPDF_Page* GetPDFPage() const;
@@ -56,31 +57,26 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
   WideString GetFocusedFormText();
   WideString GetSelectedText();
   void ReplaceSelection(const WideString& text);
+  bool SelectAllText();
 
   bool CanUndo();
   bool CanRedo();
   bool Undo();
   bool Redo();
 
-  bool OnFocus(const CFX_PointF& point, uint32_t nFlag);
-  bool OnLButtonDown(const CFX_PointF& point, uint32_t nFlag);
-  bool OnLButtonUp(const CFX_PointF& point, uint32_t nFlag);
-  bool OnLButtonDblClk(const CFX_PointF& point, uint32_t nFlag);
-
-#ifdef PDF_ENABLE_XFA
-  bool OnRButtonDown(const CFX_PointF& point, uint32_t nFlag);
-  bool OnRButtonUp(const CFX_PointF& point, uint32_t nFlag);
-#endif  // PDF_ENABLE_XFA
-
+  bool OnFocus(uint32_t nFlag, const CFX_PointF& point);
+  bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point);
+  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point);
+  bool OnLButtonDblClk(uint32_t nFlag, const CFX_PointF& point);
+  bool OnRButtonDown(uint32_t nFlag, const CFX_PointF& point);
+  bool OnRButtonUp(uint32_t nFlag, const CFX_PointF& point);
   bool OnChar(int nChar, uint32_t nFlag);
   bool OnKeyDown(int nKeyCode, int nFlag);
   bool OnKeyUp(int nKeyCode, int nFlag);
-
-  bool OnMouseMove(const CFX_PointF& point, int nFlag);
-  bool OnMouseWheel(double deltaX,
-                    double deltaY,
+  bool OnMouseMove(int nFlag, const CFX_PointF& point);
+  bool OnMouseWheel(int nFlag,
                     const CFX_PointF& point,
-                    int nFlag);
+                    const CFX_Vector& delta);
 
   bool SetIndexSelected(int index, bool selected);
   bool IsIndexSelected(int index);
@@ -105,7 +101,7 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
   int GetPageIndexForStaticPDF() const;
 
   void EnterWidget(CPDFSDK_AnnotHandlerMgr* pAnnotHandlerMgr,
-                   CPDFSDK_Annot::ObservedPtr* pAnnot,
+                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
                    uint32_t nFlag);
   void ExitWidget(CPDFSDK_AnnotHandlerMgr* pAnnotHandlerMgr,
                   bool callExitCallback,
@@ -116,7 +112,7 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
   std::unique_ptr<CPDF_AnnotList> m_pAnnotList;
   std::vector<CPDFSDK_Annot*> m_SDKAnnotArray;
   UnownedPtr<CPDFSDK_FormFillEnvironment> const m_pFormFillEnv;
-  CPDFSDK_Annot::ObservedPtr m_pCaptureWidget;
+  ObservedPtr<CPDFSDK_Annot> m_pCaptureWidget;
   RetainPtr<CPDF_Page> m_pOwnsPage;
   bool m_bOnWidget = false;
   bool m_bValid = false;

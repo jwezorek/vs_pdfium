@@ -10,19 +10,16 @@
 #include <memory>
 #include <vector>
 
-#include "core/fpdfdoc/cpdf_formcontrol.h"
-#include "core/fxcrt/observable.h"
+#include "core/fxcrt/cfx_timer.h"
+#include "core/fxcrt/observed_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxge/cfx_color.h"
-#include "fpdfsdk/cpdfsdk_formfillenvironment.h"
-#include "fpdfsdk/cpdfsdk_widget.h"
-#include "fpdfsdk/pwl/cpwl_timer.h"
-#include "fpdfsdk/pwl/cpwl_timer_handler.h"
+#include "core/fxge/cfx_renderdevice.h"
+#include "fpdfsdk/pwl/ipwl_systemhandler.h"
 
 class CPWL_Edit;
 class CPWL_MsgControl;
 class CPWL_ScrollBar;
-class CFX_SystemHandler;
 class IPVT_FontMap;
 struct PWL_SCROLL_INFO;
 
@@ -92,20 +89,15 @@ struct CPWL_Dash {
 #define PWL_DEFAULT_BLACKCOLOR CFX_Color(CFX_Color::kGray, 0)
 #define PWL_DEFAULT_WHITECOLOR CFX_Color(CFX_Color::kGray, 1)
 
-class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
+class CPWL_Wnd : public Observable {
  public:
-  class PrivateData {
-   public:
-    virtual ~PrivateData() = default;
-    virtual std::unique_ptr<PrivateData> Clone() const = 0;
-  };
-
-  class ProviderIface : public Observable<ProviderIface> {
+  class ProviderIface : public Observable {
    public:
     virtual ~ProviderIface() = default;
 
     // get a matrix which map user space to CWnd client space
-    virtual CFX_Matrix GetWindowMatrix(const PrivateData* pAttached) = 0;
+    virtual CFX_Matrix GetWindowMatrix(
+        const IPWL_SystemHandler::PerWindowData* pAttached) = 0;
   };
 
   class FocusHandlerIface {
@@ -120,43 +112,51 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
     CreateParams(const CreateParams& other);
     ~CreateParams();
 
-    CFX_FloatRect rcRectWnd;                          // required
-    UnownedPtr<CFX_SystemHandler> pSystemHandler;     // required
-    UnownedPtr<IPVT_FontMap> pFontMap;                // required
-    ProviderIface::ObservedPtr pProvider;             // required
-    UnownedPtr<FocusHandlerIface> pFocusHandler;      // optional
-    uint32_t dwFlags = 0;                             // optional
-    CFX_Color sBackgroundColor;                       // optional
-    CPDFSDK_Widget::ObservedPtr pAttachedWidget;      // required
-    BorderStyle nBorderStyle = BorderStyle::SOLID;    // optional
-    int32_t dwBorderWidth = 1;                        // optional
-    CFX_Color sBorderColor;                           // optional
-    CFX_Color sTextColor;                             // optional
-    int32_t nTransparency = 255;                      // optional
-    float fFontSize;                                  // optional
-    CPWL_Dash sDash;                                  // optional
-    CPWL_MsgControl* pMsgControl = nullptr;           // ignore
-    int32_t eCursorType = FXCT_ARROW;                 // ignore
-    CFX_Matrix mtChild;                               // ignore
+    // Required:
+    CFX_FloatRect rcRectWnd;
+    ObservedPtr<CFX_Timer::HandlerIface> pTimerHandler;
+    UnownedPtr<IPWL_SystemHandler> pSystemHandler;
+    UnownedPtr<IPVT_FontMap> pFontMap;
+    ObservedPtr<ProviderIface> pProvider;
+    // Optional:
+    UnownedPtr<FocusHandlerIface> pFocusHandler;
+    uint32_t dwFlags = 0;
+    CFX_Color sBackgroundColor;
+    BorderStyle nBorderStyle = BorderStyle::kSolid;
+    int32_t dwBorderWidth = 1;
+    CFX_Color sBorderColor;
+    CFX_Color sTextColor;
+    int32_t nTransparency = 255;
+    float fFontSize;
+    CPWL_Dash sDash;
+    // Ignore:
+    CPWL_MsgControl* pMsgControl = nullptr;
+    int32_t eCursorType = FXCT_ARROW;
+    CFX_Matrix mtChild;
   };
 
-  CPWL_Wnd(const CreateParams& cp, std::unique_ptr<PrivateData> pAttachedData);
-  ~CPWL_Wnd() override;
+  static bool IsSHIFTKeyDown(uint32_t nFlag);
+  static bool IsCTRLKeyDown(uint32_t nFlag);
+  static bool IsALTKeyDown(uint32_t nFlag);
+
+  CPWL_Wnd(const CreateParams& cp,
+           std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
+  virtual ~CPWL_Wnd();
 
   // Returns |true| iff this instance is still allocated.
-  virtual bool InvalidateRect(CFX_FloatRect* pRect);
+  virtual bool InvalidateRect(const CFX_FloatRect* pRect);
 
   virtual bool OnKeyDown(uint16_t nChar, uint32_t nFlag);
   virtual bool OnChar(uint16_t nChar, uint32_t nFlag);
-  virtual bool OnLButtonDblClk(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnLButtonDown(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnLButtonUp(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnRButtonDown(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnRButtonUp(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnMouseMove(const CFX_PointF& point, uint32_t nFlag);
-  virtual bool OnMouseWheel(short zDelta,
+  virtual bool OnLButtonDblClk(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnRButtonDown(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnRButtonUp(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnMouseMove(uint32_t nFlag, const CFX_PointF& point);
+  virtual bool OnMouseWheel(uint32_t nFlag,
                             const CFX_PointF& point,
-                            uint32_t nFlag);
+                            const CFX_Vector& delta);
   virtual void SetScrollInfo(const PWL_SCROLL_INFO& info);
   virtual void SetScrollPosition(float pos);
   virtual void ScrollWindowVertically(float pos);
@@ -175,6 +175,7 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   virtual WideString GetText();
   virtual WideString GetSelectedText();
   virtual void ReplaceSelection(const WideString& text);
+  virtual bool SelectAllText();
 
   virtual bool CanUndo();
   virtual bool CanRedo();
@@ -205,7 +206,7 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   CFX_Color GetBorderLeftTopColor(BorderStyle nBorderStyle) const;
   CFX_Color GetBorderRightBottomColor(BorderStyle nBorderStyle) const;
 
-  void SetBorderStyle(BorderStyle eBorderStyle);
+  void SetBorderStyle(BorderStyle nBorderStyle);
   BorderStyle GetBorderStyle() const;
   const CPWL_Dash& GetBorderDash() const;
 
@@ -223,8 +224,10 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   const CFX_FloatRect& GetClipRect() const;
 
   CPWL_Wnd* GetParentWindow() const { return m_pParent.Get(); }
-  const PrivateData* GetAttachedData() const { return m_pAttachedData.get(); }
-  std::unique_ptr<PrivateData> CloneAttachedData() const;
+  const IPWL_SystemHandler::PerWindowData* GetAttachedData() const {
+    return m_pAttachedData.get();
+  }
+  std::unique_ptr<IPWL_SystemHandler::PerWindowData> CloneAttachedData() const;
 
   bool WndHitTest(const CFX_PointF& point) const;
   bool ClientHitTest(const CFX_PointF& point) const;
@@ -257,9 +260,6 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   virtual void OnKillFocus();
 
  protected:
-  // CPWL_TimerHandler:
-  CFX_SystemHandler* GetSystemHandler() const override;
-
   virtual void CreateChildWnd(const CreateParams& cp);
 
   // Returns |true| iff this instance is still allocated.
@@ -274,6 +274,12 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   bool IsNotifying() const { return m_bNotifying; }
   bool IsValid() const { return m_bCreated; }
   CreateParams* GetCreationParams() { return &m_CreationParams; }
+  CFX_Timer::HandlerIface* GetTimerHandler() const {
+    return m_CreationParams.pTimerHandler.Get();
+  }
+  IPWL_SystemHandler* GetSystemHandler() const {
+    return m_CreationParams.pSystemHandler.Get();
+  }
 
   // Returns |true| iff this instance is still allocated.
   bool InvalidateRectMove(const CFX_FloatRect& rcOld,
@@ -283,13 +289,13 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   bool IsWndCaptureKeyboard(const CPWL_Wnd* pWnd) const;
 
   static bool IsCTRLpressed(uint32_t nFlag) {
-    return CPDFSDK_FormFillEnvironment::IsCTRLKeyDown(nFlag);
+    return CPWL_Wnd::IsCTRLKeyDown(nFlag);
   }
   static bool IsSHIFTpressed(uint32_t nFlag) {
-    return CPDFSDK_FormFillEnvironment::IsSHIFTKeyDown(nFlag);
+    return CPWL_Wnd::IsSHIFTKeyDown(nFlag);
   }
   static bool IsALTpressed(uint32_t nFlag) {
-    return CPDFSDK_FormFillEnvironment::IsALTKeyDown(nFlag);
+    return CPWL_Wnd::IsALTKeyDown(nFlag);
   }
 
  private:
@@ -311,7 +317,7 @@ class CPWL_Wnd : public CPWL_TimerHandler, public Observable<CPWL_Wnd> {
   CPWL_MsgControl* GetMsgControl() const;
 
   CreateParams m_CreationParams;
-  std::unique_ptr<PrivateData> m_pAttachedData;
+  std::unique_ptr<IPWL_SystemHandler::PerWindowData> m_pAttachedData;
   UnownedPtr<CPWL_Wnd> m_pParent;
   std::vector<std::unique_ptr<CPWL_Wnd>> m_Children;
   UnownedPtr<CPWL_ScrollBar> m_pVScrollBar;

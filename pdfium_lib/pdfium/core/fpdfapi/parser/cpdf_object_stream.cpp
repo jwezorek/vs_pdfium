@@ -14,6 +14,8 @@
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
 #include "core/fpdfapi/parser/cpdf_syntax_parser.h"
 #include "core/fxcrt/cfx_readonlymemorystream.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "third_party/base/check.h"
 #include "third_party/base/ptr_util.h"
 #include "third_party/base/stl_util.h"
 
@@ -27,7 +29,7 @@ bool CPDF_ObjectStream::IsObjectsStreamObject(const CPDF_Object* object) {
   if (!stream_dict)
     return false;
 
-  if (stream_dict->GetStringFor("Type") != "ObjStm")
+  if (stream_dict->GetNameFor("Type") != "ObjStm")
     return false;
 
   const CPDF_Number* number_of_objects =
@@ -54,15 +56,15 @@ std::unique_ptr<CPDF_ObjectStream> CPDF_ObjectStream::Create(
     const CPDF_Stream* stream) {
   if (!IsObjectsStreamObject(stream))
     return nullptr;
-  // The ctor of CPDF_ObjectStream is protected. Use WrapUnique instead
-  // MakeUnique.
+
+  // Protected constructor.
   return pdfium::WrapUnique(new CPDF_ObjectStream(stream));
 }
 
 CPDF_ObjectStream::CPDF_ObjectStream(const CPDF_Stream* obj_stream)
     : obj_num_(obj_stream->GetObjNum()),
       first_object_offset_(obj_stream->GetDict()->GetIntegerFor("First")) {
-  ASSERT(IsObjectsStreamObject(obj_stream));
+  DCHECK(IsObjectsStreamObject(obj_stream));
   if (const auto* extends_ref =
           ToReference(obj_stream->GetDict()->GetObjectFor("Extends"))) {
     extends_obj_num_ = extends_ref->GetRefObjNum();
@@ -73,18 +75,17 @@ CPDF_ObjectStream::CPDF_ObjectStream(const CPDF_Stream* obj_stream)
 CPDF_ObjectStream::~CPDF_ObjectStream() = default;
 
 bool CPDF_ObjectStream::HasObject(uint32_t obj_number) const {
-  return pdfium::ContainsKey(objects_offsets_, obj_number);
+  return pdfium::Contains(objects_offsets_, obj_number);
 }
 
-std::unique_ptr<CPDF_Object> CPDF_ObjectStream::ParseObject(
+RetainPtr<CPDF_Object> CPDF_ObjectStream::ParseObject(
     CPDF_IndirectObjectHolder* pObjList,
     uint32_t obj_number) const {
   const auto it = objects_offsets_.find(obj_number);
   if (it == objects_offsets_.end())
     return nullptr;
 
-  std::unique_ptr<CPDF_Object> result =
-      ParseObjectAtOffset(pObjList, it->second);
+  RetainPtr<CPDF_Object> result = ParseObjectAtOffset(pObjList, it->second);
   if (!result)
     return nullptr;
 
@@ -116,7 +117,7 @@ void CPDF_ObjectStream::Init(const CPDF_Stream* stream) {
   }
 }
 
-std::unique_ptr<CPDF_Object> CPDF_ObjectStream::ParseObjectAtOffset(
+RetainPtr<CPDF_Object> CPDF_ObjectStream::ParseObjectAtOffset(
     CPDF_IndirectObjectHolder* pObjList,
     uint32_t object_offset) const {
   FX_SAFE_FILESIZE offset_in_stream = first_object_offset_;

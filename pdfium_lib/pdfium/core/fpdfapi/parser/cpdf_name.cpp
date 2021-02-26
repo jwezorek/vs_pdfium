@@ -9,7 +9,6 @@
 #include "core/fpdfapi/parser/fpdf_parser_decode.h"
 #include "core/fpdfapi/parser/fpdf_parser_utility.h"
 #include "core/fxcrt/fx_stream.h"
-#include "third_party/base/ptr_util.h"
 
 CPDF_Name::CPDF_Name(WeakPtr<ByteStringPool> pPool, const ByteString& str)
     : m_Name(str) {
@@ -17,14 +16,14 @@ CPDF_Name::CPDF_Name(WeakPtr<ByteStringPool> pPool, const ByteString& str)
     m_Name = pPool->Intern(m_Name);
 }
 
-CPDF_Name::~CPDF_Name() {}
+CPDF_Name::~CPDF_Name() = default;
 
 CPDF_Object::Type CPDF_Name::GetType() const {
   return kName;
 }
 
-std::unique_ptr<CPDF_Object> CPDF_Name::Clone() const {
-  return pdfium::MakeUnique<CPDF_Name>(nullptr, m_Name);
+RetainPtr<CPDF_Object> CPDF_Name::Clone() const {
+  return pdfium::MakeRetain<CPDF_Name>(nullptr, m_Name);
 }
 
 ByteString CPDF_Name::GetString() const {
@@ -48,7 +47,7 @@ const CPDF_Name* CPDF_Name::AsName() const {
 }
 
 WideString CPDF_Name::GetUnicodeText() const {
-  return PDF_DecodeText(m_Name.AsRawSpan());
+  return PDF_DecodeText(m_Name.raw_span());
 }
 
 bool CPDF_Name::WriteTo(IFX_ArchiveStream* archive,

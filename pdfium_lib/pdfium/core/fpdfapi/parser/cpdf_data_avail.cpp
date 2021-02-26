@@ -10,7 +10,6 @@
 #include <memory>
 #include <utility>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_cross_ref_avail.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
@@ -27,24 +26,25 @@
 #include "core/fpdfapi/parser/fpdf_parser_utility.h"
 #include "core/fxcrt/fx_extension.h"
 #include "core/fxcrt/fx_safe_types.h"
+#include "third_party/base/check.h"
 #include "third_party/base/compiler_specific.h"
+#include "third_party/base/notreached.h"
 #include "third_party/base/numerics/safe_conversions.h"
-#include "third_party/base/ptr_util.h"
 #include "third_party/base/stl_util.h"
 
 namespace {
 
 // static
-const CPDF_Object* GetResourceObject(const CPDF_Dictionary* pDict) {
+CPDF_Object* GetResourceObject(CPDF_Dictionary* pDict) {
   constexpr size_t kMaxHierarchyDepth = 64;
   size_t depth = 0;
 
-  const CPDF_Dictionary* dictionary_to_check = pDict;
+  CPDF_Dictionary* dictionary_to_check = pDict;
   while (dictionary_to_check) {
-    const CPDF_Object* result = dictionary_to_check->GetObjectFor("Resources");
+    CPDF_Object* result = dictionary_to_check->GetObjectFor("Resources");
     if (result)
       return result;
-    const CPDF_Object* parent = dictionary_to_check->GetObjectFor("Parent");
+    CPDF_Object* parent = dictionary_to_check->GetObjectFor("Parent");
     dictionary_to_check = parent ? parent->GetDict() : nullptr;
 
     if (++depth > kMaxHierarchyDepth) {
@@ -60,7 +60,7 @@ class HintsScope {
   HintsScope(RetainPtr<CPDF_ReadValidator> validator,
              CPDF_DataAvail::DownloadHints* hints)
       : validator_(std::move(validator)) {
-    ASSERT(validator_);
+    DCHECK(validator_);
     validator_->SetDownloadHints(hints);
   }
 
@@ -72,9 +72,9 @@ class HintsScope {
 
 }  // namespace
 
-CPDF_DataAvail::FileAvail::~FileAvail() {}
+CPDF_DataAvail::FileAvail::~FileAvail() = default;
 
-CPDF_DataAvail::DownloadHints::~DownloadHints() {}
+CPDF_DataAvail::DownloadHints::~DownloadHints() = default;
 
 CPDF_DataAvail::CPDF_DataAvail(
     FileAvail* pFileAvail,
@@ -174,7 +174,7 @@ bool CPDF_DataAvail::LoadAllFile() {
 
 bool CPDF_DataAvail::CheckAndLoadAllXref() {
   if (!m_pCrossRefAvail) {
-    const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+    CPDF_ReadValidator::ScopedSession read_session(GetValidator());
     const FX_FILESIZE last_xref_offset = m_parser.ParseStartXRef();
     if (GetValidator()->has_read_problems())
       return false;
@@ -184,8 +184,8 @@ bool CPDF_DataAvail::CheckAndLoadAllXref() {
       return false;
     }
 
-    m_pCrossRefAvail = pdfium::MakeUnique<CPDF_CrossRefAvail>(GetSyntaxParser(),
-                                                              last_xref_offset);
+    m_pCrossRefAvail = std::make_unique<CPDF_CrossRefAvail>(GetSyntaxParser(),
+                                                            last_xref_offset);
   }
 
   switch (m_pCrossRefAvail->CheckAvail()) {
@@ -211,8 +211,8 @@ bool CPDF_DataAvail::CheckAndLoadAllXref() {
   return true;
 }
 
-std::unique_ptr<CPDF_Object> CPDF_DataAvail::GetObject(uint32_t objnum,
-                                                       bool* pExistInFile) {
+RetainPtr<CPDF_Object> CPDF_DataAvail::GetObject(uint32_t objnum,
+                                                 bool* pExistInFile) {
   CPDF_Parser* pParser = nullptr;
 
   if (pExistInFile)
@@ -220,9 +220,9 @@ std::unique_ptr<CPDF_Object> CPDF_DataAvail::GetObject(uint32_t objnum,
 
   pParser = m_pDocument ? m_pDocument->GetParser() : &m_parser;
 
-  std::unique_ptr<CPDF_Object> pRet;
+  RetainPtr<CPDF_Object> pRet;
   if (pParser) {
-    const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+    CPDF_ReadValidator::ScopedSession read_session(GetValidator());
     pRet = pParser->ParseIndirectObject(objnum);
     if (GetValidator()->has_read_problems())
       return nullptr;
@@ -241,7 +241,7 @@ bool CPDF_DataAvail::CheckInfo() {
     return true;
   }
 
-  const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
   m_parser.ParseIndirectObject(dwInfoObjNum);
   if (GetValidator()->has_read_problems())
     return false;
@@ -257,7 +257,7 @@ bool CPDF_DataAvail::CheckRoot() {
     return true;
   }
 
-  const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
   m_pRoot = ToDictionary(m_parser.ParseIndirectObject(dwRootObjNum));
   if (GetValidator()->has_read_problems())
     return false;
@@ -300,24 +300,24 @@ bool CPDF_DataAvail::CheckPage() {
   std::vector<uint32_t> UnavailObjList;
   for (uint32_t dwPageObjNum : m_PageObjList) {
     bool bExists = false;
-    std::unique_ptr<CPDF_Object> pObj = GetObject(dwPageObjNum, &bExists);
+    RetainPtr<CPDF_Object> pObj = GetObject(dwPageObjNum, &bExists);
     if (!pObj) {
       if (bExists)
         UnavailObjList.push_back(dwPageObjNum);
       continue;
     }
-    CPDF_Array* pArray = ToArray(pObj.get());
+    CPDF_Array* pArray = ToArray(pObj.Get());
     if (pArray) {
       CPDF_ArrayLocker locker(pArray);
       for (const auto& pArrayObj : locker) {
-        if (CPDF_Reference* pRef = ToReference(pArrayObj.get()))
+        if (CPDF_Reference* pRef = ToReference(pArrayObj.Get()))
           UnavailObjList.push_back(pRef->GetRefObjNum());
       }
     }
     if (!pObj->IsDictionary())
       continue;
 
-    ByteString type = pObj->GetDict()->GetStringFor("Type");
+    ByteString type = pObj->GetDict()->GetNameFor("Type");
     if (type == "Pages") {
       m_PagesArray.push_back(std::move(pObj));
       continue;
@@ -330,8 +330,8 @@ bool CPDF_DataAvail::CheckPage() {
   }
   size_t iPages = m_PagesArray.size();
   for (size_t i = 0; i < iPages; ++i) {
-    std::unique_ptr<CPDF_Object> pPages = std::move(m_PagesArray[i]);
-    if (pPages && !GetPageKids(pPages.get())) {
+    RetainPtr<CPDF_Object> pPages = std::move(m_PagesArray[i]);
+    if (pPages && !GetPageKids(pPages.Get())) {
       m_PagesArray.clear();
       m_docStatus = PDF_DATAAVAIL_ERROR;
       return false;
@@ -371,7 +371,7 @@ bool CPDF_DataAvail::GetPageKids(CPDF_Object* pPages) {
 
 bool CPDF_DataAvail::CheckPages() {
   bool bExists = false;
-  std::unique_ptr<CPDF_Object> pPages = GetObject(m_PagesObjNum, &bExists);
+  RetainPtr<CPDF_Object> pPages = GetObject(m_PagesObjNum, &bExists);
   if (!bExists) {
     m_docStatus = PDF_DATAAVAIL_LOADALLFILE;
     return true;
@@ -385,7 +385,7 @@ bool CPDF_DataAvail::CheckPages() {
     return false;
   }
 
-  if (!GetPageKids(pPages.get())) {
+  if (!GetPageKids(pPages.Get())) {
     m_docStatus = PDF_DATAAVAIL_ERROR;
     return false;
   }
@@ -436,7 +436,7 @@ bool CPDF_DataAvail::CheckFirstPage() {
 }
 
 bool CPDF_DataAvail::CheckHintTables() {
-  const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
   m_pHintTables =
       CPDF_HintTables::Parse(GetSyntaxParser(), m_pLinearized.get());
 
@@ -451,13 +451,13 @@ bool CPDF_DataAvail::CheckHintTables() {
   return true;
 }
 
-std::unique_ptr<CPDF_Object> CPDF_DataAvail::ParseIndirectObjectAt(
+RetainPtr<CPDF_Object> CPDF_DataAvail::ParseIndirectObjectAt(
     FX_FILESIZE pos,
     uint32_t objnum,
     CPDF_IndirectObjectHolder* pObjList) const {
   const FX_FILESIZE SavedPos = GetSyntaxParser()->GetPos();
   GetSyntaxParser()->SetPos(pos);
-  std::unique_ptr<CPDF_Object> result = GetSyntaxParser()->GetIndirectObject(
+  RetainPtr<CPDF_Object> result = GetSyntaxParser()->GetIndirectObject(
       pObjList, CPDF_SyntaxParser::ParseType::kLoose);
   GetSyntaxParser()->SetPos(SavedPos);
   return (result && (!objnum || result->GetObjNum() == objnum))
@@ -484,7 +484,7 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::CheckHeaderAndLinearized() {
   if (m_bHeaderAvail)
     return DocAvailStatus::DataAvailable;
 
-  const CPDF_ReadValidator::Session read_session(GetValidator().Get());
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
   const Optional<FX_FILESIZE> header_offset = GetHeaderOffset(GetValidator());
   if (GetValidator()->has_read_problems())
     return DocAvailStatus::DataNotAvailable;
@@ -493,7 +493,7 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::CheckHeaderAndLinearized() {
     return DocAvailStatus::DataError;
 
   m_parser.m_pSyntax =
-      pdfium::MakeUnique<CPDF_SyntaxParser>(GetValidator(), *header_offset);
+      std::make_unique<CPDF_SyntaxParser>(GetValidator(), *header_offset);
   m_pLinearized = m_parser.ParseLinearizedHeader();
   if (GetValidator()->has_read_problems())
     return DocAvailStatus::DataNotAvailable;
@@ -528,7 +528,7 @@ bool CPDF_DataAvail::CheckPage(uint32_t dwPage) {
 bool CPDF_DataAvail::CheckArrayPageNode(uint32_t dwPageNo,
                                         PageNode* pPageNode) {
   bool bExists = false;
-  std::unique_ptr<CPDF_Object> pPages = GetObject(dwPageNo, &bExists);
+  RetainPtr<CPDF_Object> pPages = GetObject(dwPageNo, &bExists);
   if (!bExists) {
     m_docStatus = PDF_DATAAVAIL_ERROR;
     return false;
@@ -549,7 +549,7 @@ bool CPDF_DataAvail::CheckArrayPageNode(uint32_t dwPageNo,
     if (!pKid)
       continue;
 
-    auto pNode = pdfium::MakeUnique<PageNode>();
+    auto pNode = std::make_unique<PageNode>();
     pNode->m_dwPageNo = pKid->GetRefObjNum();
     pPageNode->m_ChildNodes.push_back(std::move(pNode));
   }
@@ -559,7 +559,7 @@ bool CPDF_DataAvail::CheckArrayPageNode(uint32_t dwPageNo,
 bool CPDF_DataAvail::CheckUnknownPageNode(uint32_t dwPageNo,
                                           PageNode* pPageNode) {
   bool bExists = false;
-  std::unique_ptr<CPDF_Object> pPage = GetObject(dwPageNo, &bExists);
+  RetainPtr<CPDF_Object> pPage = GetObject(dwPageNo, &bExists);
   if (!bExists) {
     m_docStatus = PDF_DATAAVAIL_ERROR;
     return false;
@@ -581,7 +581,7 @@ bool CPDF_DataAvail::CheckUnknownPageNode(uint32_t dwPageNo,
 
   pPageNode->m_dwPageNo = dwPageNo;
   CPDF_Dictionary* pDict = pPage->GetDict();
-  const ByteString type = pDict->GetStringFor("Type");
+  const ByteString type = pDict->GetNameFor("Type");
   if (type == "Page") {
     pPageNode->m_type = PDF_PAGENODE_PAGE;
     return true;
@@ -602,7 +602,7 @@ bool CPDF_DataAvail::CheckUnknownPageNode(uint32_t dwPageNo,
   switch (pKids->GetType()) {
     case CPDF_Object::kReference: {
       CPDF_Reference* pKid = pKids->AsReference();
-      auto pNode = pdfium::MakeUnique<PageNode>();
+      auto pNode = std::make_unique<PageNode>();
       pNode->m_dwPageNo = pKid->GetRefObjNum();
       pPageNode->m_ChildNodes.push_back(std::move(pNode));
       break;
@@ -614,7 +614,7 @@ bool CPDF_DataAvail::CheckUnknownPageNode(uint32_t dwPageNo,
         if (!pKid)
           continue;
 
-        auto pNode = pdfium::MakeUnique<PageNode>();
+        auto pNode = std::make_unique<PageNode>();
         pNode->m_dwPageNo = pKid->GetRefObjNum();
         pPageNode->m_ChildNodes.push_back(std::move(pNode));
       }
@@ -677,8 +677,7 @@ bool CPDF_DataAvail::CheckPageNode(const CPDF_DataAvail::PageNode& pageNode,
 }
 
 bool CPDF_DataAvail::LoadDocPage(uint32_t dwPage) {
-  FX_SAFE_INT32 safePage = pdfium::base::checked_cast<int32_t>(dwPage);
-  int32_t iPage = safePage.ValueOrDie();
+  int iPage = pdfium::base::checked_cast<int>(dwPage);
   if (m_pDocument->GetPageCount() <= iPage ||
       m_pDocument->IsPageLoaded(iPage)) {
     m_docStatus = PDF_DATAAVAIL_DONE;
@@ -694,7 +693,7 @@ bool CPDF_DataAvail::LoadDocPage(uint32_t dwPage) {
 
 bool CPDF_DataAvail::CheckPageCount() {
   bool bExists = false;
-  std::unique_ptr<CPDF_Object> pPages = GetObject(m_PagesObjNum, &bExists);
+  RetainPtr<CPDF_Object> pPages = GetObject(m_PagesObjNum, &bExists);
   if (!bExists) {
     m_docStatus = PDF_DATAAVAIL_ERROR;
     return false;
@@ -742,28 +741,29 @@ bool CPDF_DataAvail::LoadPages() {
 CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::CheckLinearizedData() {
   if (m_bLinearedDataOK)
     return DataAvailable;
-  ASSERT(m_pLinearized);
+  DCHECK(m_pLinearized);
   if (!m_pLinearized->GetMainXRefTableFirstEntryOffset() || !m_pDocument ||
       !m_pDocument->GetParser() || !m_pDocument->GetParser()->GetTrailer()) {
     return DataError;
   }
 
   if (!m_bMainXRefLoadTried) {
-    const FX_SAFE_FILESIZE main_xref_offset =
+    const FX_SAFE_FILESIZE prev =
         m_pDocument->GetParser()->GetTrailer()->GetIntegerFor("Prev");
-    if (!main_xref_offset.IsValid())
+    const FX_FILESIZE main_xref_offset = prev.ValueOrDefault(-1);
+    if (main_xref_offset < 0)
       return DataError;
 
-    if (main_xref_offset.ValueOrDie() == 0)
+    if (main_xref_offset == 0)
       return DataAvailable;
 
     FX_SAFE_SIZE_T data_size = m_dwFileLen;
-    data_size -= main_xref_offset.ValueOrDie();
+    data_size -= main_xref_offset;
     if (!data_size.IsValid())
       return DataError;
 
     if (!GetValidator()->CheckDataRangeAndRequestIfUnavailable(
-            main_xref_offset.ValueOrDie(), data_size.ValueOrDie()))
+            main_xref_offset, data_size.ValueOrDie()))
       return DataNotAvailable;
 
     CPDF_Parser::Error eRet =
@@ -788,11 +788,8 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::IsPageAvail(
   if (!m_pDocument)
     return DataError;
 
-  const FX_SAFE_INT32 safePage = pdfium::base::checked_cast<int32_t>(dwPage);
-  if (!safePage.IsValid())
-    return DataError;
-
-  if (safePage.ValueOrDie() >= m_pDocument->GetPageCount()) {
+  const int iPage = pdfium::base::checked_cast<int>(dwPage);
+  if (iPage >= m_pDocument->GetPageCount()) {
     // This is XFA page.
     return DataAvailable;
   }
@@ -801,19 +798,19 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::IsPageAvail(
     m_bCurPageDictLoadOK = false;
   }
 
-  if (pdfium::ContainsKey(m_pagesLoadState, dwPage))
+  if (pdfium::Contains(m_pagesLoadState, dwPage))
     return DataAvailable;
 
   const HintsScope hints_scope(GetValidator(), pHints);
   if (m_pLinearized) {
     if (dwPage == m_pLinearized->GetFirstPageNo()) {
-      auto* pPageDict = m_pDocument->GetPageDictionary(safePage.ValueOrDie());
+      auto* pPageDict = m_pDocument->GetPageDictionary(iPage);
       if (!pPageDict)
         return DataError;
 
       auto page_num_obj = std::make_pair(
-          dwPage, pdfium::MakeUnique<CPDF_PageObjectAvail>(
-                      GetValidator().Get(), m_pDocument.Get(), pPageDict));
+          dwPage, std::make_unique<CPDF_PageObjectAvail>(
+                      GetValidator(), m_pDocument.Get(), pPageDict));
 
       CPDF_PageObjectAvail* page_obj_avail =
           m_PagesObjAvail.insert(std::move(page_num_obj)).first->second.get();
@@ -858,14 +855,14 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::IsPageAvail(
   if (CheckAcroForm() == DocFormStatus::FormNotAvailable)
     return DataNotAvailable;
 
-  auto* pPageDict = m_pDocument->GetPageDictionary(safePage.ValueOrDie());
+  auto* pPageDict = m_pDocument->GetPageDictionary(iPage);
   if (!pPageDict)
     return DataError;
 
   {
     auto page_num_obj = std::make_pair(
-        dwPage, pdfium::MakeUnique<CPDF_PageObjectAvail>(
-                    GetValidator().Get(), m_pDocument.Get(), pPageDict));
+        dwPage, std::make_unique<CPDF_PageObjectAvail>(
+                    GetValidator(), m_pDocument.Get(), pPageDict));
     CPDF_PageObjectAvail* page_obj_avail =
         m_PagesObjAvail.insert(std::move(page_num_obj)).first->second.get();
     const DocAvailStatus status = page_obj_avail->CheckAvail();
@@ -884,10 +881,10 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::IsPageAvail(
 }
 
 CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::CheckResources(
-    const CPDF_Dictionary* page) {
-  ASSERT(page);
-  const CPDF_ReadValidator::Session read_session(GetValidator().Get());
-  const CPDF_Object* resources = GetResourceObject(page);
+    CPDF_Dictionary* page) {
+  DCHECK(page);
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
+  CPDF_Object* resources = GetResourceObject(page);
   if (GetValidator()->has_read_problems())
     return DocAvailStatus::DataNotAvailable;
 
@@ -897,9 +894,8 @@ CPDF_DataAvail::DocAvailStatus CPDF_DataAvail::CheckResources(
   CPDF_PageObjectAvail* resource_avail =
       m_PagesResourcesAvail
           .insert(std::make_pair(
-              resources,
-              pdfium::MakeUnique<CPDF_PageObjectAvail>(
-                  GetValidator().Get(), m_pDocument.Get(), resources)))
+              resources, std::make_unique<CPDF_PageObjectAvail>(
+                             GetValidator(), m_pDocument.Get(), resources)))
           .first->second.get();
   return resource_avail->CheckAvail();
 }
@@ -969,16 +965,16 @@ CPDF_DataAvail::DocFormStatus CPDF_DataAvail::CheckAcroForm() {
   }
 
   if (!m_pFormAvail) {
-    const CPDF_Dictionary* pRoot = m_pDocument->GetRoot();
+    CPDF_Dictionary* pRoot = m_pDocument->GetRoot();
     if (!pRoot)
       return FormAvailable;
 
-    const CPDF_Object* pAcroForm = pRoot->GetObjectFor("AcroForm");
+    CPDF_Object* pAcroForm = pRoot->GetObjectFor("AcroForm");
     if (!pAcroForm)
       return FormNotExist;
 
-    m_pFormAvail = pdfium::MakeUnique<CPDF_PageObjectAvail>(
-        GetValidator().Get(), m_pDocument.Get(), pAcroForm);
+    m_pFormAvail = std::make_unique<CPDF_PageObjectAvail>(
+        GetValidator(), m_pDocument.Get(), pAcroForm);
   }
   switch (m_pFormAvail->CheckAvail()) {
     case DocAvailStatus::DataError:
@@ -994,25 +990,28 @@ CPDF_DataAvail::DocFormStatus CPDF_DataAvail::CheckAcroForm() {
 }
 
 bool CPDF_DataAvail::ValidatePage(uint32_t dwPage) const {
-  FX_SAFE_INT32 safePage = pdfium::base::checked_cast<int32_t>(dwPage);
-  auto* pPageDict = m_pDocument->GetPageDictionary(safePage.ValueOrDie());
+  int iPage = pdfium::base::checked_cast<int>(dwPage);
+  auto* pPageDict = m_pDocument->GetPageDictionary(iPage);
   if (!pPageDict)
     return false;
-  CPDF_PageObjectAvail obj_avail(GetValidator().Get(), m_pDocument.Get(),
-                                 pPageDict);
+  CPDF_PageObjectAvail obj_avail(GetValidator(), m_pDocument.Get(), pPageDict);
   return obj_avail.CheckAvail() == DocAvailStatus::DataAvailable;
 }
 
 std::pair<CPDF_Parser::Error, std::unique_ptr<CPDF_Document>>
-CPDF_DataAvail::ParseDocument(const char* password) {
+CPDF_DataAvail::ParseDocument(
+    std::unique_ptr<CPDF_Document::RenderDataIface> pRenderData,
+    std::unique_ptr<CPDF_Document::PageDataIface> pPageData,
+    const char* password) {
   if (m_pDocument) {
     // We already returned parsed document.
     return std::make_pair(CPDF_Parser::HANDLER_ERROR, nullptr);
   }
-  auto document = pdfium::MakeUnique<CPDF_Document>();
+  auto document = std::make_unique<CPDF_Document>(std::move(pRenderData),
+                                                  std::move(pPageData));
   document->AddObserver(this);
 
-  CPDF_ReadValidator::Session read_session(GetValidator().Get());
+  CPDF_ReadValidator::ScopedSession read_session(GetValidator());
   CPDF_Parser::Error error =
       document->LoadLinearizedDoc(GetValidator(), password);
 
@@ -1031,4 +1030,4 @@ CPDF_DataAvail::ParseDocument(const char* password) {
 
 CPDF_DataAvail::PageNode::PageNode() : m_type(PDF_PAGENODE_UNKNOWN) {}
 
-CPDF_DataAvail::PageNode::~PageNode() {}
+CPDF_DataAvail::PageNode::~PageNode() = default;

@@ -7,7 +7,7 @@
 
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/tree_node.h"
-#include "third_party/base/logging.h"
+#include "third_party/base/check.h"
 
 namespace fxcrt {
 
@@ -40,6 +40,13 @@ class RetainedTreeNode : public TreeNode<T> {
     TreeNode<T>::RemoveChild(child.Get());
   }
 
+  void RemoveSelfIfParented() {
+    if (T* parent = TreeNode<T>::GetParent()) {
+      parent->TreeNode<T>::RemoveChild(
+          pdfium::WrapRetain(static_cast<T*>(this)).Get());
+    }
+  }
+
  protected:
   RetainedTreeNode() = default;
   ~RetainedTreeNode() override {
@@ -59,7 +66,7 @@ class RetainedTreeNode : public TreeNode<T> {
 
   void Retain() { ++m_nRefCount; }
   void Release() {
-    ASSERT(m_nRefCount > 0);
+    DCHECK(m_nRefCount > 0);
     if (--m_nRefCount == 0 && !TreeNode<T>::GetParent())
       delete this;
   }

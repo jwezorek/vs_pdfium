@@ -10,6 +10,7 @@
 
 #include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "third_party/base/check.h"
 
 namespace fxcrt {
 
@@ -51,19 +52,19 @@ class MaybeOwned {
 
   // Downgrades to unowned, caller takes ownership.
   std::unique_ptr<T, D> Release() {
-    ASSERT(IsOwned());
+    DCHECK(IsOwned());
     return std::move(m_pOwnedObj);
   }
 
   // Downgrades to empty, caller takes ownership.
   std::unique_ptr<T, D> ReleaseAndClear() {
-    ASSERT(IsOwned());
+    DCHECK(IsOwned());
     m_pObj = nullptr;
     return std::move(m_pOwnedObj);
   }
 
   MaybeOwned& operator=(const MaybeOwned& that) = delete;
-  MaybeOwned& operator=(MaybeOwned&& that) {
+  MaybeOwned& operator=(MaybeOwned&& that) noexcept {
     m_pObj = that.m_pObj;
     m_pOwnedObj = std::move(that.m_pOwnedObj);
     that.m_pObj = nullptr;

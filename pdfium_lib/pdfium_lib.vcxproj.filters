@@ -328,9 +328,6 @@
     <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_pageobjectholder.cpp">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_pageobjectlist.cpp">
-      <Filter>pdfium\core\fpdfapi\page</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_path.cpp">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClCompile>
@@ -376,16 +373,7 @@
     <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_tilingpattern.cpp">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_charposlist.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_devicebuffer.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_dibbase.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_dibtransferfunc.cpp">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_docrenderdata.cpp">
@@ -421,16 +409,7 @@
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_textrenderer.cpp">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_transferfunc.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_transparency.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_type3cache.cpp">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_type3glyphs.cpp">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfapi\parser\cfdf_document.cpp">
@@ -541,9 +520,6 @@
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_action.cpp">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_actionfields.cpp">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_annot.cpp">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
@@ -563,9 +539,6 @@
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_dest.cpp">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_docjsactions.cpp">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_filespec.cpp">
@@ -596,9 +569,6 @@
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_numbertree.cpp">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_occontext.cpp">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_pagelabel.cpp">
@@ -642,33 +612,6 @@
     </ClCompile>
     <ClCompile Include="pdfium\core\fpdftext\unicodenormalizationdata.cpp">
       <Filter>pdfium\core\fpdftext</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_faxmodule.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_flatemodule.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_iccmodule.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_jbig2module.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_jpegmodule.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_jpxmodule.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\ccodec_scanlinedecoder.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\cfx_codec_memory.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcodec\codec\fx_codec.cpp">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxcodec\jbig2\JBig2_ArithDecoder.cpp">
       <Filter>pdfium\core\fxcodec\jbig2</Filter>
@@ -736,9 +679,6 @@
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_cssenumvalue.cpp">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fxcrt\css\cfx_cssexttextbuf.cpp">
-      <Filter>pdfium\core\fxcrt\css</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_cssnumbervalue.cpp">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClCompile>
@@ -764,9 +704,6 @@
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_csssyntaxparser.cpp">
-      <Filter>pdfium\core\fxcrt\css</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxcrt\css\cfx_csstextbuf.cpp">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_cssvalue.cpp">
@@ -883,9 +820,6 @@
     <ClCompile Include="pdfium\core\fxge\dib\cfx_dibitmap.cpp">
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\dib\cfx_filtereddib.cpp">
-      <Filter>pdfium\core\fxge\dib</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fxge\dib\cfx_imagerenderer.cpp">
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClCompile>
@@ -899,9 +833,6 @@
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxge\dib\cstretchengine.cpp">
-      <Filter>pdfium\core\fxge\dib</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\dib\fx_dib_main.cpp">
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxge\fontdata\chromefontdata\FoxitDingbats.cpp">
@@ -961,24 +892,6 @@
     <ClCompile Include="pdfium\core\fxge\win32\cpsoutput.cpp">
       <Filter>pdfium\core\fxge\win32</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\win32\fx_win32_device.cpp">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\win32\fx_win32_dib.cpp">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\win32\fx_win32_gdipext.cpp">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\win32\fx_win32_print.cpp">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\skia\fx_skia_device.cpp">
-      <Filter>pdfium\core\fxge\skia</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\formfiller\cba_fontmap.cpp">
-      <Filter>pdfium\fpdfsdk\formfiller</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_button.cpp">
       <Filter>pdfium\fpdfsdk\formfiller</Filter>
     </ClCompile>
@@ -1009,9 +922,6 @@
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_textobject.cpp">
       <Filter>pdfium\fpdfsdk\formfiller</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_appstream.cpp">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_button.cpp">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClCompile>
@@ -1036,29 +946,14 @@
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_list_box.cpp">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_list_impl.cpp">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_scroll_bar.cpp">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_special_button.cpp">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_timer.cpp">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_timer_handler.cpp">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_wnd.cpp">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\cfx_systemhandler.cpp">
-      <Filter>pdfium\fpdfsdk</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\cpdf_annotcontext.cpp">
-      <Filter>pdfium\fpdfsdk</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_actionhandler.cpp">
       <Filter>pdfium\fpdfsdk</Filter>
@@ -1174,9 +1069,6 @@
     <ClCompile Include="pdfium\fpdfsdk\fpdf_view_c_api_test.c">
       <Filter>pdfium\fpdfsdk</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\fpdfsdk\ipdfsdk_pauseadapter.cpp">
-      <Filter>pdfium\fpdfsdk</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\skia\ext\google_logging.cc">
       <Filter>pdfium\skia\ext</Filter>
     </ClCompile>
@@ -1189,19 +1081,10 @@
     <ClCompile Include="pdfium\fxjs\ijs_runtime.cpp">
       <Filter>pdfium\fxjs</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\cpdf_modulemgr.cpp">
-      <Filter>pdfium\core\fpdfapi</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fpdfapi\cpdf_pagerendercontext.cpp">
-      <Filter>pdfium\core\fpdfapi</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fxge\cfx_cliprgn.cpp">
       <Filter>pdfium\core\fxge</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxge\cfx_color.cpp">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\cfx_facecache.cpp">
       <Filter>pdfium\core\fxge</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxge\cfx_folderfontinfo.cpp">
@@ -1243,13 +1126,7 @@
     <ClCompile Include="pdfium\core\fxge\cfx_unicodeencoding.cpp">
       <Filter>pdfium\core\fxge</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\cttfontdesc.cpp">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\core\fxge\fx_font.cpp">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClCompile>
-    <ClCompile Include="pdfium\core\fxge\fx_ge_fontmap.cpp">
       <Filter>pdfium\core\fxge</Filter>
     </ClCompile>
     <ClCompile Include="pdfium\core\fxge\renderdevicedriver_iface.cpp">
@@ -2815,6 +2692,183 @@
     <ClCompile Include="pdfium\third_party\zlib\x86.c">
       <Filter>pdfium\third_party\zlib</Filter>
     </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\dib\cfx_cmyk_to_srgb.cpp">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\dib\fx_dib.cpp">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_appstream.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_pauseadapter.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_renderpage.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\fpdf_javascript.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\fpdf_signature.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\fpdf_thumbnail.cpp">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\charposlist.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_pagerendercontext.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_rendershading.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_rendertiling.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_type3glyphmap.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_windowsrenderdevice.cpp">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_annotcontext.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_dib.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_occontext.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_transferfunc.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_transferfuncdib.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_transparency.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\cfx_memorystream.cpp">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\cfx_timer.cpp">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\observed_ptr.cpp">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\string_data_template.cpp">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\basic\basicmodule.cpp">
+      <Filter>pdfium\core\fxcodec\basic</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\fax\faxmodule.cpp">
+      <Filter>pdfium\core\fxcodec\fax</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\flate\flatemodule.cpp">
+      <Filter>pdfium\core\fxcodec\flate</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\icc\iccmodule.cpp">
+      <Filter>pdfium\core\fxcodec\icc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jbig2\jbig2_decoder.cpp">
+      <Filter>pdfium\core\fxcodec\jbig2</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jbig2\JBig2_DocumentContext.cpp">
+      <Filter>pdfium\core\fxcodec\jbig2</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_windowsrenderdevice.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cgdi_device_driver.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cgdi_display_driver.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cgdi_plus_ext.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cgdi_printer_driver.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cps_printer_driver.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\ctext_only_printer_driver.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cwin32_platform.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jpeg\jpeg_common.cpp">
+      <Filter>pdfium\core\fxcodec\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jpeg\jpegmodule.cpp">
+      <Filter>pdfium\core\fxcodec\jpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\edit\cpdf_contentstream_write_utils.cpp">
+      <Filter>pdfium\core\fpdfapi\edit</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\cfx_codec_memory.cpp">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\fx_codec.cpp">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\scanlinedecoder.cpp">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_drawutils.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_face.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_glyphcache.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_unicodeencodingex.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\text_char_pos.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_privatedata.cpp">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cba_fontmap.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_color_utils.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_icon.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jpx\cjpx_decoder.cpp">
+      <Filter>pdfium\core\fxcodec\jpx</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\jpx\jpx_decode_utils.cpp">
+      <Filter>pdfium\core\fxcodec\jpx</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_cbbutton.cpp">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_cblistbox.cpp">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_list_ctrl.cpp">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\random.cc">
+      <Filter>pdfium\third_party\base\allocator</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="pdfium">
@@ -2877,9 +2931,6 @@
     <Filter Include="pdfium\core\fpdfapi\cmaps\Korea1">
       <UniqueIdentifier>{cc705199-fbdc-44d2-8190-4acf7a00030d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="pdfium\core\fxcodec\codec">
-      <UniqueIdentifier>{9c5d4acf-a9a4-47b3-8e13-8f60a6e3ee3b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="pdfium\core\fxcodec\jbig2">
       <UniqueIdentifier>{c45468c2-66f0-4e81-84cb-df23f9054259}</UniqueIdentifier>
     </Filter>
@@ -2900,9 +2951,6 @@
     </Filter>
     <Filter Include="pdfium\core\fxge\freetype">
       <UniqueIdentifier>{7edf0514-18aa-4266-bd42-6e0979761480}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="pdfium\core\fxge\skia">
-      <UniqueIdentifier>{8f32db32-f2e6-4dc1-979c-5935f263b20d}</UniqueIdentifier>
     </Filter>
     <Filter Include="pdfium\core\fxge\win32">
       <UniqueIdentifier>{fb32faf0-859d-49ec-b301-dbbc691bf487}</UniqueIdentifier>
@@ -2976,6 +3024,24 @@
     <Filter Include="pdfium\third_party\libjpeg">
       <UniqueIdentifier>{fd6d6f72-92f0-44ad-9cee-4690a3fff045}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pdfium\core\fxcodec\basic">
+      <UniqueIdentifier>{76dc1793-f82d-4c7c-b8c9-1984aa17ca78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcodec\fax">
+      <UniqueIdentifier>{6222d578-4dcc-4979-9e92-398dcaaeb11a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcodec\flate">
+      <UniqueIdentifier>{f035878d-6829-402a-a40e-26280688c685}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcodec\icc">
+      <UniqueIdentifier>{8036f682-70e5-4755-8131-abec3e7c7921}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcodec\jpeg">
+      <UniqueIdentifier>{3fa58f1a-4c82-4f2e-b7a6-cc3173eb04fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcodec\jpx">
+      <UniqueIdentifier>{1425571d-bd0b-4e0f-b5b2-baf0ee8c7373}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pdfium\constants\annotation_common.h">
@@ -3004,9 +3070,6 @@
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\cmaps\CNS1\cmaps_cns1.h">
       <Filter>pdfium\core\fpdfapi\cmaps\CNS1</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\cmaps\cmap_int.h">
-      <Filter>pdfium\core\fpdfapi\cmaps</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\cmaps\GB1\cmaps_gb1.h">
       <Filter>pdfium\core\fpdfapi\cmaps\GB1</Filter>
@@ -3101,9 +3164,6 @@
     <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_contentparser.h">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_countedobject.h">
-      <Filter>pdfium\core\fpdfapi\page</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_devicecs.h">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClInclude>
@@ -3150,9 +3210,6 @@
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_pageobjectholder.h">
-      <Filter>pdfium\core\fpdfapi\page</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_pageobjectlist.h">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_path.h">
@@ -3203,16 +3260,7 @@
     <ClInclude Include="pdfium\core\fpdfapi\page\ipdf_page.h">
       <Filter>pdfium\core\fpdfapi\page</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_charposlist.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_devicebuffer.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_dibbase.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_dibtransferfunc.h">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_docrenderdata.h">
@@ -3248,16 +3296,7 @@
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_textrenderer.h">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_transferfunc.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_transparency.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_type3cache.h">
-      <Filter>pdfium\core\fpdfapi\render</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_type3glyphs.h">
       <Filter>pdfium\core\fpdfapi\render</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfapi\parser\cfdf_document.h">
@@ -3368,9 +3407,6 @@
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_action.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_actionfields.h">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_annot.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
@@ -3390,9 +3426,6 @@
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_dest.h">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_docjsactions.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_filespec.h">
@@ -3423,9 +3456,6 @@
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_numbertree.h">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_occontext.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_pagelabel.h">
@@ -3476,9 +3506,6 @@
     <ClInclude Include="pdfium\core\fpdfdoc\ctypeset.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfdoc\ipdf_formnotify.h">
-      <Filter>pdfium\core\fpdfdoc</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fpdfdoc\ipvt_fontmap.h">
       <Filter>pdfium\core\fpdfdoc</Filter>
     </ClInclude>
@@ -3493,42 +3520,6 @@
     </ClInclude>
     <ClInclude Include="pdfium\core\fpdftext\unicodenormalizationdata.h">
       <Filter>pdfium\core\fpdftext</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_basicmodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_faxmodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_flatemodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_iccmodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_jbig2module.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_jpegmodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_jpxmodule.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\ccodec_scanlinedecoder.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\cfx_codec_memory.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\cjpx_decoder.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\codec_int.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\codec\codec_module_iface.h">
-      <Filter>pdfium\core\fxcodec\codec</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxcodec\jbig2\JBig2_ArithDecoder.h">
       <Filter>pdfium\core\fxcodec\jbig2</Filter>
@@ -3590,9 +3581,6 @@
     <ClInclude Include="pdfium\core\fxcodec\fx_codec_def.h">
       <Filter>pdfium\core\fxcodec</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fxcodec\JBig2_DocumentContext.h">
-      <Filter>pdfium\core\fxcodec</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_css.h">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClInclude>
@@ -3612,9 +3600,6 @@
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssenumvalue.h">
-      <Filter>pdfium\core\fxcrt\css</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssexttextbuf.h">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssnumbervalue.h">
@@ -3642,9 +3627,6 @@
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_csssyntaxparser.h">
-      <Filter>pdfium\core\fxcrt\css</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxcrt\css\cfx_csstextbuf.h">
       <Filter>pdfium\core\fxcrt\css</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssvalue.h">
@@ -3806,9 +3788,6 @@
     <ClInclude Include="pdfium\core\fxge\dib\cfx_dibitmap.h">
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\dib\cfx_filtereddib.h">
-      <Filter>pdfium\core\fxge\dib</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fxge\dib\cfx_imagerenderer.h">
       <Filter>pdfium\core\fxge\dib</Filter>
     </ClInclude>
@@ -3833,20 +3812,8 @@
     <ClInclude Include="pdfium\core\fxge\win32\cfx_psrenderer.h">
       <Filter>pdfium\core\fxge\win32</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\win32\cfx_windowsdib.h">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fxge\win32\cpsoutput.h">
       <Filter>pdfium\core\fxge\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\win32\win32_int.h">
-      <Filter>pdfium\core\fxge\win32</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\skia\fx_skia_device.h">
-      <Filter>pdfium\core\fxge\skia</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\formfiller\cba_fontmap.h">
-      <Filter>pdfium\fpdfsdk\formfiller</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_button.h">
       <Filter>pdfium\fpdfsdk\formfiller</Filter>
@@ -3878,9 +3845,6 @@
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_textobject.h">
       <Filter>pdfium\fpdfsdk\formfiller</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_appstream.h">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_button.h">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClInclude>
@@ -3905,29 +3869,14 @@
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_list_box.h">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_list_impl.h">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_scroll_bar.h">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_special_button.h">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_timer.h">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_timer_handler.h">
-      <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_wnd.h">
       <Filter>pdfium\fpdfsdk\pwl</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\cfx_systemhandler.h">
-      <Filter>pdfium\fpdfsdk</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\cpdf_annotcontext.h">
-      <Filter>pdfium\fpdfsdk</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_actionhandler.h">
       <Filter>pdfium\fpdfsdk</Filter>
@@ -3981,9 +3930,6 @@
       <Filter>pdfium\fpdfsdk</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\fpdfsdk\ipdfsdk_annothandler.h">
-      <Filter>pdfium\fpdfsdk</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\fpdfsdk\ipdfsdk_pauseadapter.h">
       <Filter>pdfium\fpdfsdk</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\public\cpp\fpdf_deleters.h">
@@ -4064,12 +4010,6 @@
     <ClInclude Include="pdfium\fxjs\ijs_runtime.h">
       <Filter>pdfium\fxjs</Filter>
     </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\cpdf_modulemgr.h">
-      <Filter>pdfium\core\fpdfapi</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fpdfapi\cpdf_pagerendercontext.h">
-      <Filter>pdfium\core\fpdfapi</Filter>
-    </ClInclude>
     <ClInclude Include="pdfium\core\fxge\cfx_cliprgn.h">
       <Filter>pdfium\core\fxge</Filter>
     </ClInclude>
@@ -4077,9 +4017,6 @@
       <Filter>pdfium\core\fxge</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxge\cfx_defaultrenderdevice.h">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\cfx_facecache.h">
       <Filter>pdfium\core\fxge</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxge\cfx_folderfontinfo.h">
@@ -4122,12 +4059,6 @@
       <Filter>pdfium\core\fxge</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxge\cfx_windowsrenderdevice.h">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\cttfontdesc.h">
-      <Filter>pdfium\core\fxge</Filter>
-    </ClInclude>
-    <ClInclude Include="pdfium\core\fxge\fx_dib.h">
       <Filter>pdfium\core\fxge</Filter>
     </ClInclude>
     <ClInclude Include="pdfium\core\fxge\fx_font.h">
@@ -5983,6 +5914,228 @@
     </ClInclude>
     <ClInclude Include="pdfium\third_party\libjpeg\turbojpeg.h">
       <Filter>pdfium\third_party\libjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\dib\cfx_cmyk_to_srgb.h">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\dib\fx_dib.h">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_appstream.h">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_pauseadapter.h">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_renderpage.h">
+      <Filter>pdfium\fpdfsdk</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\charposlist.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_pagerendercontext.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_rendershading.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_rendertiling.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_type3glyphmap.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_windowsrenderdevice.h">
+      <Filter>pdfium\core\fpdfapi\render</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_annotcontext.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_dib.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_occontext.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_transferfunc.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_transferfuncdib.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_transparency.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_array.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_color_gray.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_conv_adaptor_vcgen.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_math.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_math_stroke.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_pixfmt_gray.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_renderer_base.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_renderer_scanline.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_shorten_path.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_vcgen_dash.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_vcgen_stroke.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\agg23\agg_vertex_sequence.h">
+      <Filter>pdfium\third_party\agg23</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\autonuller.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\byteorder.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\cfx_memorystream.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\cfx_timer.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\fx_memory_wrappers.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\observed_ptr.h">
+      <Filter>pdfium\core\fxcrt</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\basic\basicmodule.h">
+      <Filter>pdfium\core\fxcodec\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\fax\faxmodule.h">
+      <Filter>pdfium\core\fxcodec\fax</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\flate\flatemodule.h">
+      <Filter>pdfium\core\fxcodec\flate</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\icc\iccmodule.h">
+      <Filter>pdfium\core\fxcodec\icc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jbig2\jbig2_decoder.h">
+      <Filter>pdfium\core\fxcodec\jbig2</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jbig2\JBig2_DocumentContext.h">
+      <Filter>pdfium\core\fxcodec\jbig2</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cgdi_device_driver.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cgdi_display_driver.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cgdi_plus_ext.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cgdi_printer_driver.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cps_printer_driver.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\ctext_only_printer_driver.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cwin32_platform.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jpeg\jpeg_common.h">
+      <Filter>pdfium\core\fxcodec\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jpeg\jpegmodule.h">
+      <Filter>pdfium\core\fxcodec\jpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\edit\cpdf_contentstream_write_utils.h">
+      <Filter>pdfium\core\fpdfapi\edit</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\cfx_codec_memory.h">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\scanlinedecoder.h">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_drawutils.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_face.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_fillrenderoptions.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_glyphcache.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_textrenderoptions.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_unicodeencodingex.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\render_defines.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\text_char_pos.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_privatedata.h">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cba_fontmap.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_color_utils.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_icon.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jpx\cjpx_decoder.h">
+      <Filter>pdfium\core\fxcodec\jpx</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\jpx\jpx_decode_utils.h">
+      <Filter>pdfium\core\fxcodec\jpx</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_cbbutton.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_cblistbox.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_list_ctrl.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\ipwl_fillernotify.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\ipwl_systemhandler.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_alloc_check.h">
+      <Filter>pdfium\third_party\base\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\random.h">
+      <Filter>pdfium\third_party\base\allocator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

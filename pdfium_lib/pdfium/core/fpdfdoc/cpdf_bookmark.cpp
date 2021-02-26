@@ -9,11 +9,10 @@
 #include <memory>
 #include <vector>
 
-#include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_string.h"
-#include "core/fpdfdoc/cpdf_nametree.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxge/dib/fx_dib.h"
 
 CPDF_Bookmark::CPDF_Bookmark() = default;
 
@@ -22,10 +21,6 @@ CPDF_Bookmark::CPDF_Bookmark(const CPDF_Bookmark& that) = default;
 CPDF_Bookmark::CPDF_Bookmark(const CPDF_Dictionary* pDict) : m_pDict(pDict) {}
 
 CPDF_Bookmark::~CPDF_Bookmark() = default;
-
-uint32_t CPDF_Bookmark::GetFontStyle() const {
-  return m_pDict ? m_pDict->GetIntegerFor("F") : 0;
-}
 
 WideString CPDF_Bookmark::GetTitle() const {
   if (!m_pDict)
@@ -40,7 +35,7 @@ WideString CPDF_Bookmark::GetTitle() const {
   if (!len)
     return WideString();
 
-  std::vector<wchar_t> buf(len);
+  std::vector<wchar_t, FxAllocAllocator<wchar_t>> buf(len);
   for (int i = 0; i < len; i++) {
     wchar_t w = title[i];
     buf[i] = w > 0x20 ? w : 0x20;
@@ -50,19 +45,8 @@ WideString CPDF_Bookmark::GetTitle() const {
 
 CPDF_Dest CPDF_Bookmark::GetDest(CPDF_Document* pDocument) const {
   if (!m_pDict)
-    return CPDF_Dest();
-
-  const CPDF_Object* pDest = m_pDict->GetDirectObjectFor("Dest");
-  if (!pDest)
-    return CPDF_Dest();
-  if (pDest->IsString() || pDest->IsName()) {
-    CPDF_NameTree name_tree(pDocument, "Dests");
-    return CPDF_Dest(
-        name_tree.LookupNamedDest(pDocument, pDest->GetUnicodeText()));
-  }
-  if (const CPDF_Array* pArray = pDest->AsArray())
-    return CPDF_Dest(pArray);
-  return CPDF_Dest();
+    return CPDF_Dest(nullptr);
+  return CPDF_Dest::Create(pDocument, m_pDict->GetDirectObjectFor("Dest"));
 }
 
 CPDF_Action CPDF_Bookmark::GetAction() const {

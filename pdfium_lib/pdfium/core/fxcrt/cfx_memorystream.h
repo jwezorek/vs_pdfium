@@ -9,14 +9,13 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_memory.h"
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "core/fxcrt/fx_stream.h"
 #include "core/fxcrt/retain_ptr.h"
 
 class CFX_MemoryStream final : public IFX_SeekableStream {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   // IFX_SeekableStream
   FX_FILESIZE GetSize() override;

@@ -5,7 +5,6 @@
 #include <cstring>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "core/fxcrt/fx_system.h"
 #include "public/cpp/fpdf_scopers.h"
@@ -17,44 +16,6 @@
 #include "testing/gmock/include/gmock/gmock-matchers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "testing/utils/file_util.h"
-#include "testing/utils/path_service.h"
-
-namespace {
-
-class FileAccess final : public FPDF_FILEACCESS {
- public:
-  explicit FileAccess(const std::string& file_name) {
-    std::string file_path;
-    if (!PathService::GetTestFilePath(file_name, &file_path))
-      return;
-
-    file_contents_ = GetFileContents(file_path.c_str(), &file_length_);
-    if (!file_contents_)
-      return;
-
-    m_FileLen = static_cast<unsigned long>(file_length_);
-    m_GetBlock = SGetBlock;
-    m_Param = this;
-  }
-
- private:
-  int GetBlockImpl(unsigned long pos, unsigned char* pBuf, unsigned long size) {
-    memcpy(pBuf, file_contents_.get() + pos, size);
-    return size;
-  }
-
-  static int SGetBlock(void* param,
-                       unsigned long pos,
-                       unsigned char* pBuf,
-                       unsigned long size) {
-    return static_cast<FileAccess*>(param)->GetBlockImpl(pos, pBuf, size);
-  }
-
-  size_t file_length_;
-  std::unique_ptr<char, pdfium::FreeDeleter> file_contents_;
-};
-
-}  // namespace
 
 class CPDF_CreatorEmbedderTest : public EmbedderTest {};
 
@@ -86,7 +47,7 @@ TEST_F(CPDF_CreatorEmbedderTest, SavedDocsAreEqualAfterParse) {
 }
 
 TEST_F(CPDF_CreatorEmbedderTest, BUG_873) {
-  EXPECT_TRUE(OpenDocument("embedded_attachments.pdf"));
+  ASSERT_TRUE(OpenDocument("embedded_attachments.pdf"));
   EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
 
   // Cannot match second part of the ID since it is randomly generated.
@@ -104,7 +65,7 @@ TEST_F(CPDF_CreatorEmbedderTest, BUG_873) {
 }
 
 TEST_F(CPDF_CreatorEmbedderTest, SaveLinearizedInfo) {
-  FileAccess file_acc("linearized.pdf");
+  FileAccessForTesting file_acc("linearized.pdf");
   FakeFileAccess fake_acc(&file_acc);
 
   avail_ = FPDFAvail_Create(fake_acc.GetFileAvail(), fake_acc.GetFileAccess());

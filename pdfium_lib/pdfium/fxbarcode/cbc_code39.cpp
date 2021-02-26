@@ -23,22 +23,22 @@
 
 #include <memory>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "fxbarcode/oned/BC_OnedCode39Writer.h"
-#include "third_party/base/ptr_util.h"
 
 CBC_Code39::CBC_Code39()
-    : CBC_OneCode(pdfium::MakeUnique<CBC_OnedCode39Writer>()) {}
+    : CBC_OneCode(std::make_unique<CBC_OnedCode39Writer>()) {}
 
-CBC_Code39::~CBC_Code39() {}
+CBC_Code39::~CBC_Code39() = default;
 
 bool CBC_Code39::Encode(WideStringView contents) {
-  if (contents.IsEmpty() || contents.GetLength() > kMaxInputLengthBytes)
+  auto* pWriter = GetOnedCode39Writer();
+  if (!pWriter->CheckContentValidity(contents))
     return false;
 
   BCFORMAT format = BCFORMAT_CODE_39;
   int32_t outWidth = 0;
   int32_t outHeight = 0;
-  auto* pWriter = GetOnedCode39Writer();
   WideString filtercontents = pWriter->FilterContents(contents);
   m_renderContents = pWriter->RenderTextContents(contents);
   ByteString byteString = filtercontents.ToUTF8();

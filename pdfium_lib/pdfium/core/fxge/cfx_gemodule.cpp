@@ -9,7 +9,7 @@
 #include "core/fxge/cfx_folderfontinfo.h"
 #include "core/fxge/cfx_fontcache.h"
 #include "core/fxge/cfx_fontmgr.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 
 namespace {
 
@@ -17,37 +17,32 @@ CFX_GEModule* g_pGEModule = nullptr;
 
 }  // namespace
 
-CFX_GEModule::CFX_GEModule()
-    : m_pFontMgr(pdfium::MakeUnique<CFX_FontMgr>()),
-      m_pPlatformData(nullptr),
-      m_pUserFontPaths(nullptr) {}
+CFX_GEModule::CFX_GEModule(const char** pUserFontPaths)
+    : m_pPlatform(PlatformIface::Create()),
+      m_pFontMgr(std::make_unique<CFX_FontMgr>()),
+      m_pFontCache(std::make_unique<CFX_FontCache>()),
+      m_pUserFontPaths(pUserFontPaths) {}
 
-CFX_GEModule::~CFX_GEModule() {
-  DestroyPlatform();
-}
+CFX_GEModule::~CFX_GEModule() = default;
 
 // static
-CFX_GEModule* CFX_GEModule::Get() {
-  if (!g_pGEModule)
-    g_pGEModule = new CFX_GEModule();
-  return g_pGEModule;
+void CFX_GEModule::Create(const char** pUserFontPaths) {
+  DCHECK(!g_pGEModule);
+  g_pGEModule = new CFX_GEModule(pUserFontPaths);
+  g_pGEModule->m_pPlatform->Init();
+  g_pGEModule->GetFontMgr()->SetSystemFontInfo(
+      g_pGEModule->m_pPlatform->CreateDefaultSystemFontInfo());
 }
 
 // static
 void CFX_GEModule::Destroy() {
-  ASSERT(g_pGEModule);
+  DCHECK(g_pGEModule);
   delete g_pGEModule;
   g_pGEModule = nullptr;
 }
 
-void CFX_GEModule::Init(const char** userFontPaths) {
-  ASSERT(g_pGEModule);
-  m_pUserFontPaths = userFontPaths;
-  InitPlatform();
-}
-
-CFX_FontCache* CFX_GEModule::GetFontCache() {
-  if (!m_pFontCache)
-    m_pFontCache = pdfium::MakeUnique<CFX_FontCache>();
-  return m_pFontCache.get();
+// static
+CFX_GEModule* CFX_GEModule::Get() {
+  DCHECK(g_pGEModule);
+  return g_pGEModule;
 }

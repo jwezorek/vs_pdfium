@@ -8,20 +8,20 @@
 
 #include "core/fpdfapi/font/cpdf_font.h"
 #include "core/fpdfapi/page/cpdf_docpagedata.h"
-#include "core/fpdfapi/parser/cpdf_document.h"
 
-CPDF_TextState::CPDF_TextState() {}
-CPDF_TextState::~CPDF_TextState() {}
+CPDF_TextState::CPDF_TextState() = default;
+
+CPDF_TextState::~CPDF_TextState() = default;
 
 void CPDF_TextState::Emplace() {
   m_Ref.Emplace();
 }
 
-CPDF_Font* CPDF_TextState::GetFont() const {
+RetainPtr<CPDF_Font> CPDF_TextState::GetFont() const {
   return m_Ref.GetObject()->m_pFont;
 }
 
-void CPDF_TextState::SetFont(CPDF_Font* pFont) {
+void CPDF_TextState::SetFont(const RetainPtr<CPDF_Font>& pFont) {
   m_Ref.GetPrivateCopy()->SetFont(pFont);
 }
 
@@ -57,20 +57,8 @@ void CPDF_TextState::SetWordSpace(float sp) {
   m_Ref.GetPrivateCopy()->m_WordSpace = sp;
 }
 
-float CPDF_TextState::GetFontSizeV() const {
-  return m_Ref.GetObject()->GetFontSizeV();
-}
-
 float CPDF_TextState::GetFontSizeH() const {
   return m_Ref.GetObject()->GetFontSizeH();
-}
-
-float CPDF_TextState::GetBaselineAngle() const {
-  return m_Ref.GetObject()->GetBaselineAngle();
-}
-
-float CPDF_TextState::GetShearAngle() const {
-  return m_Ref.GetObject()->GetShearAngle();
 }
 
 TextRenderingMode CPDF_TextState::GetTextMode() const {
@@ -89,18 +77,7 @@ float* CPDF_TextState::GetMutableCTM() {
   return m_Ref.GetPrivateCopy()->m_CTM;
 }
 
-CPDF_TextState::TextData::TextData()
-    : m_pFont(nullptr),
-      m_pDocument(nullptr),
-      m_FontSize(1.0f),
-      m_CharSpace(0),
-      m_WordSpace(0),
-      m_TextMode(TextRenderingMode::MODE_FILL) {
-  m_Matrix[0] = m_Matrix[3] = 1.0f;
-  m_Matrix[1] = m_Matrix[2] = 0;
-  m_CTM[0] = m_CTM[3] = 1.0f;
-  m_CTM[1] = m_CTM[2] = 0;
-}
+CPDF_TextState::TextData::TextData() = default;
 
 CPDF_TextState::TextData::TextData(const TextData& that)
     : m_pFont(that.m_pFont),
@@ -115,43 +92,25 @@ CPDF_TextState::TextData::TextData(const TextData& that)
   for (int i = 0; i < 4; ++i)
     m_CTM[i] = that.m_CTM[i];
 
-  if (m_pDocument && m_pFont)
-    m_pFont = m_pDocument->GetPageData()->GetFont(m_pFont->GetFontDict());
+  if (m_pDocument && m_pFont) {
+    auto* pPageData = CPDF_DocPageData::FromDocument(m_pDocument.Get());
+    m_pFont = pPageData->GetFont(m_pFont->GetFontDict());
+  }
 }
 
-CPDF_TextState::TextData::~TextData() {
-  ReleaseFont();
+CPDF_TextState::TextData::~TextData() = default;
+
+RetainPtr<CPDF_TextState::TextData> CPDF_TextState::TextData::Clone() const {
+  return pdfium::MakeRetain<CPDF_TextState::TextData>(*this);
 }
 
-void CPDF_TextState::TextData::SetFont(CPDF_Font* pFont) {
-  ReleaseFont();
+void CPDF_TextState::TextData::SetFont(const RetainPtr<CPDF_Font>& pFont) {
   m_pDocument = pFont ? pFont->GetDocument() : nullptr;
   m_pFont = pFont;
 }
 
-float CPDF_TextState::TextData::GetFontSizeV() const {
-  return fabs(FXSYS_sqrt2(m_Matrix[1], m_Matrix[3]) * m_FontSize);
-}
-
 float CPDF_TextState::TextData::GetFontSizeH() const {
   return fabs(FXSYS_sqrt2(m_Matrix[0], m_Matrix[2]) * m_FontSize);
-}
-
-float CPDF_TextState::TextData::GetBaselineAngle() const {
-  return atan2(m_Matrix[2], m_Matrix[0]);
-}
-
-float CPDF_TextState::TextData::GetShearAngle() const {
-  return GetBaselineAngle() + atan2(m_Matrix[1], m_Matrix[3]);
-}
-
-void CPDF_TextState::TextData::ReleaseFont() {
-  if (!m_pDocument || !m_pFont)
-    return;
-
-  CPDF_DocPageData* pPageData = m_pDocument->GetPageData();
-  if (pPageData && !pPageData->IsForceClear())
-    pPageData->ReleaseFont(m_pFont->GetFontDict());
 }
 
 bool SetTextRenderingModeFromInt(int iMode, TextRenderingMode* mode) {

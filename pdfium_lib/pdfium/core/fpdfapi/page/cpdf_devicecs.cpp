@@ -6,8 +6,6 @@
 
 #include "core/fpdfapi/page/cpdf_devicecs.h"
 
-#include <limits.h>
-
 #include <algorithm>
 
 #include "core/fpdfapi/parser/cpdf_array.h"
@@ -16,7 +14,9 @@
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
 #include "core/fpdfapi/parser/cpdf_string.h"
 #include "core/fxcodec/fx_codec.h"
-#include "third_party/base/logging.h"
+#include "core/fxge/dib/cfx_cmyk_to_srgb.h"
+#include "third_party/base/check.h"
+#include "third_party/base/notreached.h"
 #include "third_party/base/stl_util.h"
 
 namespace {
@@ -27,40 +27,13 @@ float NormalizeChannel(float fVal) {
 
 }  // namespace
 
-uint32_t ComponentsForFamily(int family) {
-  if (family == PDFCS_DEVICERGB)
-    return 3;
-  if (family == PDFCS_DEVICEGRAY)
-    return 1;
-  ASSERT(family == PDFCS_DEVICECMYK);
-  return 4;
-}
-
-void ReverseRGB(uint8_t* pDestBuf, const uint8_t* pSrcBuf, int pixels) {
-  if (pDestBuf == pSrcBuf) {
-    for (int i = 0; i < pixels; i++) {
-      uint8_t temp = pDestBuf[2];
-      pDestBuf[2] = pDestBuf[0];
-      pDestBuf[0] = temp;
-      pDestBuf += 3;
-    }
-  } else {
-    for (int i = 0; i < pixels; i++) {
-      *pDestBuf++ = pSrcBuf[2];
-      *pDestBuf++ = pSrcBuf[1];
-      *pDestBuf++ = pSrcBuf[0];
-      pSrcBuf += 3;
-    }
-  }
-}
-
 CPDF_DeviceCS::CPDF_DeviceCS(int family) : CPDF_ColorSpace(nullptr, family) {
-  ASSERT(family == PDFCS_DEVICEGRAY || family == PDFCS_DEVICERGB ||
+  DCHECK(family == PDFCS_DEVICEGRAY || family == PDFCS_DEVICERGB ||
          family == PDFCS_DEVICECMYK);
   SetComponentsForStockCS(ComponentsForFamily(GetFamily()));
 }
 
-CPDF_DeviceCS::~CPDF_DeviceCS() {}
+CPDF_DeviceCS::~CPDF_DeviceCS() = default;
 
 uint32_t CPDF_DeviceCS::v_Load(CPDF_Document* pDoc,
                                const CPDF_Array* pArray,
@@ -71,13 +44,13 @@ uint32_t CPDF_DeviceCS::v_Load(CPDF_Document* pDoc,
   return 0;
 }
 
-bool CPDF_DeviceCS::GetRGB(const float* pBuf,
+bool CPDF_DeviceCS::GetRGB(pdfium::span<const float> pBuf,
                            float* R,
                            float* G,
                            float* B) const {
   switch (m_Family) {
     case PDFCS_DEVICEGRAY:
-      *R = NormalizeChannel(*pBuf);
+      *R = NormalizeChannel(pBuf[0]);
       *G = *R;
       *B = *R;
       return true;
@@ -119,7 +92,7 @@ void CPDF_DeviceCS::TranslateImageLine(uint8_t* pDestBuf,
       }
       break;
     case PDFCS_DEVICERGB:
-      ReverseRGB(pDestBuf, pSrcBuf, pixels);
+      fxcodec::ReverseRGB(pDestBuf, pSrcBuf, pixels);
       break;
     case PDFCS_DEVICECMYK:
       if (bTransMask) {

@@ -14,21 +14,20 @@
 class FX_Number {
  public:
   FX_Number();
-  explicit FX_Number(uint32_t value);
+  explicit FX_Number(uint32_t value) = delete;
   explicit FX_Number(int32_t value);
   explicit FX_Number(float value);
   explicit FX_Number(ByteStringView str);
 
-  bool IsInteger() const { return m_bInteger; }
-  bool IsSigned() const { return m_bSigned; }
+  bool IsInteger() const { return m_bIsInteger; }
+  bool IsSigned() const { return m_bIsSigned; }
 
-  uint32_t GetUnsigned() const;  // Underflow possible.
-  int32_t GetSigned() const;     // Underflow/Overflow possible.
+  int32_t GetSigned() const;  // Underflow/Overflow possible.
   float GetFloat() const;
 
  private:
-  bool m_bInteger;  // One of the two integers vs. float type.
-  bool m_bSigned;   // Only valid if |m_bInteger|.
+  bool m_bIsInteger;  // One of the two integers vs. float type.
+  bool m_bIsSigned;   // Only valid if |m_bInteger|.
   union {
     uint32_t m_UnsignedValue;
     int32_t m_SignedValue;

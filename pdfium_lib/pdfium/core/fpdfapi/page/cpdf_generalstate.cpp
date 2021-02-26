@@ -6,10 +6,8 @@
 
 #include "core/fpdfapi/page/cpdf_generalstate.h"
 
-#include "core/fpdfapi/parser/cpdf_document.h"
-#include "core/fpdfapi/render/cpdf_dibbase.h"
-#include "core/fpdfapi/render/cpdf_docrenderdata.h"
-#include "core/fpdfapi/render/cpdf_transferfunc.h"
+#include "core/fpdfapi/page/cpdf_transferfunc.h"
+#include "core/fpdfapi/parser/cpdf_object.h"
 
 namespace {
 
@@ -68,12 +66,12 @@ BlendMode GetBlendTypeInternal(const ByteString& mode) {
 
 }  // namespace
 
-CPDF_GeneralState::CPDF_GeneralState() {}
+CPDF_GeneralState::CPDF_GeneralState() = default;
 
 CPDF_GeneralState::CPDF_GeneralState(const CPDF_GeneralState& that)
     : m_Ref(that.m_Ref) {}
 
-CPDF_GeneralState::~CPDF_GeneralState() {}
+CPDF_GeneralState::~CPDF_GeneralState() = default;
 
 void CPDF_GeneralState::SetRenderIntent(const ByteString& ri) {
   m_Ref.GetPrivateCopy()->m_RenderIntent = RI_StringToId(ri);
@@ -150,7 +148,7 @@ CPDF_Object* CPDF_GeneralState::GetSoftMask() const {
 }
 
 void CPDF_GeneralState::SetSoftMask(CPDF_Object* pObject) {
-  m_Ref.GetPrivateCopy()->m_pSoftMask = pObject;
+  m_Ref.GetPrivateCopy()->m_pSoftMask.Reset(pObject);
 }
 
 const CPDF_Object* CPDF_GeneralState::GetTR() const {
@@ -159,7 +157,7 @@ const CPDF_Object* CPDF_GeneralState::GetTR() const {
 }
 
 void CPDF_GeneralState::SetTR(CPDF_Object* pObject) {
-  m_Ref.GetPrivateCopy()->m_pTR = pObject;
+  m_Ref.GetPrivateCopy()->m_pTR.Reset(pObject);
 }
 
 RetainPtr<CPDF_TransferFunc> CPDF_GeneralState::GetTransferFunc() const {
@@ -214,15 +212,15 @@ void CPDF_GeneralState::SetOPMode(int mode) {
 }
 
 void CPDF_GeneralState::SetBG(CPDF_Object* pObject) {
-  m_Ref.GetPrivateCopy()->m_pBG = pObject;
+  m_Ref.GetPrivateCopy()->m_pBG.Reset(pObject);
 }
 
 void CPDF_GeneralState::SetUCR(CPDF_Object* pObject) {
-  m_Ref.GetPrivateCopy()->m_pUCR = pObject;
+  m_Ref.GetPrivateCopy()->m_pUCR.Reset(pObject);
 }
 
 void CPDF_GeneralState::SetHT(CPDF_Object* pObject) {
-  m_Ref.GetPrivateCopy()->m_pHT = pObject;
+  m_Ref.GetPrivateCopy()->m_pHT.Reset(pObject);
 }
 
 void CPDF_GeneralState::SetFlatness(float flatness) {
@@ -264,10 +262,12 @@ CPDF_GeneralState::StateData::StateData(const StateData& that)
     : m_BlendMode(that.m_BlendMode),
       m_BlendType(that.m_BlendType),
       m_pSoftMask(that.m_pSoftMask),
+      m_SMaskMatrix(that.m_SMaskMatrix),
       m_StrokeAlpha(that.m_StrokeAlpha),
       m_FillAlpha(that.m_FillAlpha),
       m_pTR(that.m_pTR),
       m_pTransferFunc(that.m_pTransferFunc),
+      m_Matrix(that.m_Matrix),
       m_RenderIntent(that.m_RenderIntent),
       m_StrokeAdjust(that.m_StrokeAdjust),
       m_AlphaSource(that.m_AlphaSource),
@@ -279,25 +279,11 @@ CPDF_GeneralState::StateData::StateData(const StateData& that)
       m_pUCR(that.m_pUCR),
       m_pHT(that.m_pHT),
       m_Flatness(that.m_Flatness),
-      m_Smoothness(that.m_Smoothness) {
-  m_Matrix = that.m_Matrix;
-  m_SMaskMatrix = that.m_SMaskMatrix;
+      m_Smoothness(that.m_Smoothness) {}
 
-  if (that.m_pTransferFunc && that.m_pTransferFunc->GetDocument()) {
-    CPDF_DocRenderData* pDocCache =
-        that.m_pTransferFunc->GetDocument()->GetRenderData();
-    if (pDocCache)
-      m_pTransferFunc = pDocCache->GetTransferFunc(m_pTR.Get());
-  }
-}
+CPDF_GeneralState::StateData::~StateData() = default;
 
-CPDF_GeneralState::StateData::~StateData() {
-  if (m_pTransferFunc && m_pTransferFunc->GetDocument()) {
-    CPDF_DocRenderData* pDocCache =
-        m_pTransferFunc->GetDocument()->GetRenderData();
-    if (pDocCache) {
-      m_pTransferFunc.Reset();  // Give up our reference first.
-      pDocCache->MaybePurgeTransferFunc(m_pTR.Get());
-    }
-  }
+RetainPtr<CPDF_GeneralState::StateData> CPDF_GeneralState::StateData::Clone()
+    const {
+  return pdfium::MakeRetain<CPDF_GeneralState::StateData>(*this);
 }

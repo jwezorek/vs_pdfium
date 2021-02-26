@@ -6,18 +6,21 @@
 
 #include "core/fxge/cfx_substfont.h"
 
-#include "core/fxcrt/fx_codepage.h"
-#include "core/fxge/fx_font.h"
+CFX_SubstFont::CFX_SubstFont() = default;
 
-CFX_SubstFont::CFX_SubstFont()
-    : m_Charset(FX_CHARSET_ANSI),
-      m_Weight(0),
-      m_ItalicAngle(0),
-      m_WeightCJK(0),
-      m_bSubstCJK(false),
-      m_bItalicCJK(false),
-#ifdef PDF_ENABLE_XFA
-      m_bFlagItalic(false),
-#endif  // PDF_ENABLE_XFA
-      m_bFlagMM(false) {
+CFX_SubstFont::~CFX_SubstFont() = default;
+
+int CFX_SubstFont::GetOriginalWeight() const {
+  int weight = m_Weight;
+
+  // Perform the inverse weight adjustment of UseChromeSerif() to get the
+  // original font weight.
+  if (m_Family == "Chrome Serif")
+    weight = weight * 5 / 4;
+  return weight;
+}
+
+void CFX_SubstFont::UseChromeSerif() {
+  m_Weight = m_Weight * 4 / 5;
+  m_Family = "Chrome Serif";
 }

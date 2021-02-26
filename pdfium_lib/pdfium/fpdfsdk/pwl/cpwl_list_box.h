@@ -10,51 +10,32 @@
 #include <memory>
 
 #include "core/fxcrt/unowned_ptr.h"
+#include "fpdfsdk/pwl/cpwl_list_ctrl.h"
 #include "fpdfsdk/pwl/cpwl_wnd.h"
 
-class CPWL_ListCtrl;
-class CPWL_List_Notify;
-class CPWL_ListBox;
-class IPWL_Filler_Notify;
+class IPWL_FillerNotify;
 struct CPVT_WordPlace;
 
-class CPWL_List_Notify {
+class CPWL_ListBox : public CPWL_Wnd, public CPWL_ListCtrl::NotifyIface {
  public:
-  explicit CPWL_List_Notify(CPWL_ListBox* pList);
-  ~CPWL_List_Notify();
-
-  void IOnSetScrollInfoY(float fPlateMin,
-                         float fPlateMax,
-                         float fContentMin,
-                         float fContentMax,
-                         float fSmallStep,
-                         float fBigStep);
-  void IOnSetScrollPosY(float fy);
-  void IOnInvalidateRect(CFX_FloatRect* pRect);
-
- private:
-  UnownedPtr<CPWL_ListBox> m_pList;
-};
-
-class CPWL_ListBox : public CPWL_Wnd {
- public:
-  CPWL_ListBox(const CreateParams& cp,
-               std::unique_ptr<PrivateData> pAttachedData);
+  CPWL_ListBox(
+      const CreateParams& cp,
+      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
   ~CPWL_ListBox() override;
 
-  // CPWL_Wnd
+  // CPWL_Wnd:
   void OnCreated() override;
   void OnDestroy() override;
   void DrawThisAppearance(CFX_RenderDevice* pDevice,
                           const CFX_Matrix& mtUser2Device) override;
   bool OnKeyDown(uint16_t nChar, uint32_t nFlag) override;
   bool OnChar(uint16_t nChar, uint32_t nFlag) override;
-  bool OnLButtonDown(const CFX_PointF& point, uint32_t nFlag) override;
-  bool OnLButtonUp(const CFX_PointF& point, uint32_t nFlag) override;
-  bool OnMouseMove(const CFX_PointF& point, uint32_t nFlag) override;
-  bool OnMouseWheel(short zDelta,
+  bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point) override;
+  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point) override;
+  bool OnMouseMove(uint32_t nFlag, const CFX_PointF& point) override;
+  bool OnMouseWheel(uint32_t nFlag,
                     const CFX_PointF& point,
-                    uint32_t nFlag) override;
+                    const CFX_Vector& delta) override;
   WideString GetText() override;
   void SetScrollInfo(const PWL_SCROLL_INFO& info) override;
   void SetScrollPosition(float pos) override;
@@ -63,6 +44,16 @@ class CPWL_ListBox : public CPWL_Wnd {
   CFX_FloatRect GetFocusRect() const override;
   void SetFontSize(float fFontSize) override;
   float GetFontSize() const override;
+
+  // CPWL_ListCtrl::NotifyIface:
+  void OnSetScrollInfoY(float fPlateMin,
+                        float fPlateMax,
+                        float fContentMin,
+                        float fContentMax,
+                        float fSmallStep,
+                        float fBigStep) override;
+  void OnSetScrollPosY(float fy) override;
+  void OnInvalidateRect(const CFX_FloatRect& pRect) override;
 
   bool OnNotifySelectionChanged(bool bKeyDown, uint32_t nFlag);
 
@@ -87,7 +78,7 @@ class CPWL_ListBox : public CPWL_Wnd {
   float GetFirstHeight() const;
   CFX_FloatRect GetListRect() const;
 
-  void SetFillerNotify(IPWL_Filler_Notify* pNotify) {
+  void SetFillerNotify(IPWL_FillerNotify* pNotify) {
     m_pFillerNotify = pNotify;
   }
 
@@ -96,9 +87,8 @@ class CPWL_ListBox : public CPWL_Wnd {
  protected:
   bool m_bMouseDown = false;
   bool m_bHoverSel = false;
-  std::unique_ptr<CPWL_ListCtrl> m_pList;
-  std::unique_ptr<CPWL_List_Notify> m_pListNotify;
-  UnownedPtr<IPWL_Filler_Notify> m_pFillerNotify;
+  std::unique_ptr<CPWL_ListCtrl> m_pListCtrl;
+  UnownedPtr<IPWL_FillerNotify> m_pFillerNotify;
 
  private:
   UnownedPtr<CFFL_FormFiller> m_pFormFiller;

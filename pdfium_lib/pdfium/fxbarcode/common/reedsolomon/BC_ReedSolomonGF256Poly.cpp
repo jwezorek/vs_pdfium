@@ -27,15 +27,15 @@
 
 #include "core/fxcrt/fx_system.h"
 #include "fxbarcode/common/reedsolomon/BC_ReedSolomonGF256.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 #include "third_party/base/stl_util.h"
 
 CBC_ReedSolomonGF256Poly::CBC_ReedSolomonGF256Poly(
     CBC_ReedSolomonGF256* field,
     const std::vector<int32_t>& coefficients)
     : m_field(field) {
-  ASSERT(m_field);
-  ASSERT(!coefficients.empty());
+  DCHECK(m_field);
+  DCHECK(!coefficients.empty());
   if (coefficients.size() == 1 || coefficients.front() != 0) {
     m_coefficients = coefficients;
     return;
@@ -75,8 +75,8 @@ int32_t CBC_ReedSolomonGF256Poly::GetCoefficients(int32_t degree) const {
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Clone()
     const {
-  return pdfium::MakeUnique<CBC_ReedSolomonGF256Poly>(m_field.Get(),
-                                                      m_coefficients);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(),
+                                                    m_coefficients);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly>
@@ -100,7 +100,7 @@ CBC_ReedSolomonGF256Poly::AddOrSubtract(const CBC_ReedSolomonGF256Poly* other) {
     sumDiff[i] = CBC_ReedSolomonGF256::AddOrSubtract(
         smallerCoefficients[i - lengthDiff], largerCoefficients[i]);
   }
-  return pdfium::MakeUnique<CBC_ReedSolomonGF256Poly>(m_field.Get(), sumDiff);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), sumDiff);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Multiply(
@@ -120,22 +120,7 @@ std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Multiply(
           product[i + j], m_field->Multiply(aCoeff, bCoefficients[j]));
     }
   }
-  return pdfium::MakeUnique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
-}
-
-std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Multiply(
-    int32_t scalar) {
-  if (scalar == 0)
-    return m_field->GetZero()->Clone();
-  if (scalar == 1)
-    return Clone();
-
-  size_t size = m_coefficients.size();
-  std::vector<int32_t> product(size);
-  for (size_t i = 0; i < size; i++)
-    product[i] = m_field->Multiply(m_coefficients[i], scalar);
-
-  return pdfium::MakeUnique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly>
@@ -151,7 +136,7 @@ CBC_ReedSolomonGF256Poly::MultiplyByMonomial(int32_t degree,
   for (size_t i = 0; i < size; i++)
     product[i] = m_field->Multiply(m_coefficients[i], coefficient);
 
-  return pdfium::MakeUnique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Divide(

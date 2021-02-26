@@ -5,6 +5,7 @@
 #include "fpdfsdk/cpdfsdk_annot.h"
 #include "fpdfsdk/cpdfsdk_annotiterator.h"
 #include "fpdfsdk/cpdfsdk_formfillenvironment.h"
+#include "fpdfsdk/cpdfsdk_helpers.h"
 #include "fpdfsdk/formfiller/cffl_formfiller.h"
 #include "fpdfsdk/formfiller/cffl_interactiveformfiller.h"
 #include "fpdfsdk/pwl/cpwl_combo_box.h"
@@ -26,13 +27,13 @@ class CPWLComboBoxEditEmbedderTest : public EmbedderTest {
   }
 
   void CreateAndInitializeFormComboboxPDF() {
-    EXPECT_TRUE(OpenDocument("combobox_form.pdf"));
+    ASSERT_TRUE(OpenDocument("combobox_form.pdf"));
     m_page = LoadPage(0);
     ASSERT_TRUE(m_page);
 
     m_pFormFillEnv =
         CPDFSDKFormFillEnvironmentFromFPDFFormHandle(form_handle());
-    CPDFSDK_AnnotIterator iter(m_pFormFillEnv->GetPageView(0),
+    CPDFSDK_AnnotIterator iter(m_pFormFillEnv->GetPageViewAtIndex(0),
                                CPDF_Annot::Subtype::WIDGET);
 
     // User editable combobox.
@@ -55,7 +56,7 @@ class CPWLComboBoxEditEmbedderTest : public EmbedderTest {
     CFFL_InteractiveFormFiller* pInteractiveFormFiller =
         m_pFormFillEnv->GetInteractiveFormFiller();
     {
-      CPDFSDK_Annot::ObservedPtr pObserved(pAnnotCombobox);
+      ObservedPtr<CPDFSDK_Annot> pObserved(pAnnotCombobox);
       EXPECT_TRUE(pInteractiveFormFiller->OnSetFocus(&pObserved, 0));
     }
 
@@ -63,8 +64,8 @@ class CPWLComboBoxEditEmbedderTest : public EmbedderTest {
         pInteractiveFormFiller->GetFormFillerForTesting(pAnnotCombobox);
     ASSERT_TRUE(m_pFormFiller);
 
-    CPWL_Wnd* pWindow =
-        m_pFormFiller->GetPDFWindow(m_pFormFillEnv->GetPageView(0), false);
+    CPWL_Wnd* pWindow = m_pFormFiller->GetPWLWindow(
+        m_pFormFillEnv->GetPageViewAtIndex(0), false);
     ASSERT_TRUE(pWindow);
     m_pComboBox = static_cast<CPWL_ComboBox*>(pWindow);
   }
@@ -104,7 +105,7 @@ TEST_F(CPWLComboBoxEditEmbedderTest, GetSelectedTextEmptyAndBasicNormal) {
   EXPECT_FALSE(GetCPWLComboBox()->GetText().IsEmpty());
   EXPECT_STREQ(L"Banana", GetCPWLComboBox()->GetText().c_str());
 
-  // Check that selection is intially empty, then select entire word.
+  // Check that selection is initially empty, then select entire word.
   EXPECT_TRUE(GetCPWLComboBox()->GetSelectedText().IsEmpty());
   GetCPWLComboBox()->SetSelectText();
   EXPECT_STREQ(L"Banana", GetCPWLComboBox()->GetSelectedText().c_str());
@@ -149,7 +150,7 @@ TEST_F(CPWLComboBoxEditEmbedderTest, GetSelectedTextEmptyAndBasicEditable) {
   FormFillerAndWindowSetup(GetCPDFSDKAnnotUserEditable());
   EXPECT_TRUE(GetCPWLComboBox()->GetText().IsEmpty());
 
-  // Check selection is intially empty, then select a provided option.
+  // Check selection is initially empty, then select a provided option.
   EXPECT_TRUE(GetCPWLComboBox()->GetSelectedText().IsEmpty());
   GetCPWLComboBox()->SetSelect(0);
   GetCPWLComboBox()->SetSelectText();

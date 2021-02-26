@@ -2,13 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "core/fpdfdoc/cpdf_dest.h"
+
+#include <memory>
+
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_name.h"
 #include "core/fpdfapi/parser/cpdf_null.h"
 #include "core/fpdfapi/parser/cpdf_number.h"
-#include "core/fpdfdoc/cpdf_dest.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/ptr_util.h"
 
 TEST(cpdf_dest, GetXYZ) {
   bool hasX;
@@ -19,23 +21,23 @@ TEST(cpdf_dest, GetXYZ) {
   float zoom;
 
   // |array| must outlive |dest|.
-  auto array = pdfium::MakeUnique<CPDF_Array>();
-  array->AddNew<CPDF_Number>(0);  // Page Index.
-  array->AddNew<CPDF_Name>("XYZ");
-  array->AddNew<CPDF_Number>(4);  // X
+  auto array = pdfium::MakeRetain<CPDF_Array>();
+  array->AppendNew<CPDF_Number>(0);  // Page Index.
+  array->AppendNew<CPDF_Name>("XYZ");
+  array->AppendNew<CPDF_Number>(4);  // X
   {
-    auto dest = pdfium::MakeUnique<CPDF_Dest>();
+    auto dest = std::make_unique<CPDF_Dest>(nullptr);
     EXPECT_FALSE(dest->GetXYZ(&hasX, &hasY, &hasZoom, &x, &y, &zoom));
   }
   {
     // Not enough entries.
-    auto dest = pdfium::MakeUnique<CPDF_Dest>(array.get());
+    auto dest = std::make_unique<CPDF_Dest>(array.Get());
     EXPECT_FALSE(dest->GetXYZ(&hasX, &hasY, &hasZoom, &x, &y, &zoom));
   }
-  array->AddNew<CPDF_Number>(5);  // Y
-  array->AddNew<CPDF_Number>(6);  // Zoom.
+  array->AppendNew<CPDF_Number>(5);  // Y
+  array->AppendNew<CPDF_Number>(6);  // Zoom.
   {
-    auto dest = pdfium::MakeUnique<CPDF_Dest>(array.get());
+    auto dest = std::make_unique<CPDF_Dest>(array.Get());
     EXPECT_TRUE(dest->GetXYZ(&hasX, &hasY, &hasZoom, &x, &y, &zoom));
     EXPECT_TRUE(hasX);
     EXPECT_TRUE(hasY);
@@ -47,7 +49,7 @@ TEST(cpdf_dest, GetXYZ) {
   // Set zoom to 0.
   array->SetNewAt<CPDF_Number>(4, 0);
   {
-    auto dest = pdfium::MakeUnique<CPDF_Dest>(array.get());
+    auto dest = std::make_unique<CPDF_Dest>(array.Get());
     EXPECT_TRUE(dest->GetXYZ(&hasX, &hasY, &hasZoom, &x, &y, &zoom));
     EXPECT_FALSE(hasZoom);
   }
@@ -56,7 +58,7 @@ TEST(cpdf_dest, GetXYZ) {
   array->SetNewAt<CPDF_Null>(3);
   array->SetNewAt<CPDF_Null>(4);
   {
-    auto dest = pdfium::MakeUnique<CPDF_Dest>(array.get());
+    auto dest = std::make_unique<CPDF_Dest>(array.Get());
     EXPECT_TRUE(dest->GetXYZ(&hasX, &hasY, &hasZoom, &x, &y, &zoom));
     EXPECT_FALSE(hasX);
     EXPECT_FALSE(hasY);

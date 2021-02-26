@@ -10,39 +10,33 @@
 #include <utility>
 
 #include "constants/page_object.h"
-#include "core/fpdfapi/cpdf_pagerendercontext.h"
 #include "core/fpdfapi/page/cpdf_contentparser.h"
 #include "core/fpdfapi/page/cpdf_pageobject.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_object.h"
-#include "core/fpdfapi/render/cpdf_pagerendercache.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 #include "third_party/base/stl_util.h"
 
-CPDF_Page::CPDF_Page(CPDF_Document* pDocument,
-                     CPDF_Dictionary* pPageDict,
-                     bool bPageCache)
+CPDF_Page::CPDF_Page(CPDF_Document* pDocument, CPDF_Dictionary* pPageDict)
     : CPDF_PageObjectHolder(pDocument, pPageDict, nullptr, nullptr),
       m_PageSize(100, 100),
       m_pPDFDocument(pDocument) {
-  ASSERT(pPageDict);
-  if (bPageCache)
-    m_pPageRender = pdfium::MakeUnique<CPDF_PageRenderCache>(this);
+  DCHECK(pPageDict);
 
   // Cannot initialize |m_pResources| and |m_pPageResources| via the
   // CPDF_PageObjectHolder ctor because GetPageAttr() requires
   // CPDF_PageObjectHolder to finish initializing first.
   CPDF_Object* pPageAttr = GetPageAttr(pdfium::page_object::kResources);
-  m_pResources = pPageAttr ? pPageAttr->GetDict() : nullptr;
+  m_pResources.Reset(pPageAttr ? pPageAttr->GetDict() : nullptr);
   m_pPageResources = m_pResources;
 
   UpdateDimensions();
   m_Transparency.SetIsolated();
-  LoadTransInfo();
+  LoadTransparencyInfo();
 }
 
-CPDF_Page::~CPDF_Page() {}
+CPDF_Page::~CPDF_Page() = default;
 
 CPDF_Page* CPDF_Page::AsPDFPage() {
   return this;
@@ -73,15 +67,10 @@ void CPDF_Page::ParseContent() {
     return;
 
   if (GetParseState() == ParseState::kNotParsed)
-    StartParse(pdfium::MakeUnique<CPDF_ContentParser>(this));
+    StartParse(std::make_unique<CPDF_ContentParser>(this));
 
-  ASSERT(GetParseState() == ParseState::kParsing);
+  DCHECK(GetParseState() == ParseState::kParsing);
   ContinueParse(nullptr);
-}
-
-void CPDF_Page::SetRenderContext(
-    std::unique_ptr<CPDF_PageRenderContext> pContext) {
-  m_pRenderContext = std::move(pContext);
 }
 
 CPDF_Object* CPDF_Page::GetPageAttr(const ByteString& name) const {
@@ -93,7 +82,7 @@ CPDF_Object* CPDF_Page::GetPageAttr(const ByteString& name) const {
       return pObj;
 
     pPageDict = pPageDict->GetDictFor(pdfium::page_object::kParent);
-    if (!pPageDict || pdfium::ContainsKey(visited, pPageDict))
+    if (!pPageDict || pdfium::Contains(visited, pPageDict))
       break;
   }
   return nullptr;
@@ -219,4 +208,11 @@ void CPDF_Page::UpdateDimensions() {
       m_PageMatrix = CFX_Matrix(0, 1.0f, -1.0f, 0, m_BBox.top, -m_BBox.left);
       break;
   }
+}
+
+CPDF_Page::RenderContextClearer::RenderContextClearer(CPDF_Page* pPage)
+    : m_pPage(pPage) {}
+
+CPDF_Page::RenderContextClearer::~RenderContextClearer() {
+  m_pPage->SetRenderContext(nullptr);
 }

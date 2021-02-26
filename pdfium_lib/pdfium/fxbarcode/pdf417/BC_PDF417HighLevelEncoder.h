@@ -7,12 +7,10 @@
 #ifndef FXBARCODE_PDF417_BC_PDF417HIGHLEVELENCODER_H_
 #define FXBARCODE_PDF417_BC_PDF417HIGHLEVELENCODER_H_
 
-#include <vector>
-
 #include "core/fxcrt/fx_string.h"
 #include "fxbarcode/pdf417/BC_PDF417.h"
-
 #include "third_party/base/optional.h"
+#include "third_party/base/span.h"
 
 class CBC_PDF417HighLevelEncoder {
  public:
@@ -31,7 +29,7 @@ class CBC_PDF417HighLevelEncoder {
                             size_t count,
                             SubMode initialSubmode,
                             WideString* sb);
-  static void EncodeBinary(const std::vector<uint8_t>& bytes,
+  static void EncodeBinary(pdfium::span<const uint8_t> bytes,
                            size_t startpos,
                            size_t count,
                            EncodingMode startmode,
@@ -44,15 +42,16 @@ class CBC_PDF417HighLevelEncoder {
   static size_t DetermineConsecutiveTextCount(WideString msg, size_t startpos);
   static Optional<size_t> DetermineConsecutiveBinaryCount(
       WideString msg,
-      std::vector<uint8_t>* bytes,
+      pdfium::span<const uint8_t> bytes,
       size_t startpos);
 
-  friend class PDF417HighLevelEncoderTest_EncodeNumeric_Test;
-  friend class PDF417HighLevelEncoderTest_EncodeBinary_Test;
-  friend class PDF417HighLevelEncoderTest_EncodeText_Test;
+  friend class PDF417HighLevelEncoderTest_ConsecutiveBinaryCount_Test;
   friend class PDF417HighLevelEncoderTest_ConsecutiveDigitCount_Test;
   friend class PDF417HighLevelEncoderTest_ConsecutiveTextCount_Test;
-  friend class PDF417HighLevelEncoderTest_ConsecutiveBinaryCount_Test;
+  friend class PDF417HighLevelEncoderTest_EncodeBinary_Test;
+  friend class PDF417HighLevelEncoderTest_EncodeHighLevel_Test;
+  friend class PDF417HighLevelEncoderTest_EncodeNumeric_Test;
+  friend class PDF417HighLevelEncoderTest_EncodeText_Test;
 };
 
 #endif  // FXBARCODE_PDF417_BC_PDF417HIGHLEVELENCODER_H_

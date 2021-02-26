@@ -9,22 +9,20 @@
 
 #include <functional>
 #include <iterator>
+#include <ostream>
 #include <utility>
 
 #include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/string_data_template.h"
 #include "core/fxcrt/string_view_template.h"
-#include "third_party/base/logging.h"
+#include "third_party/base/check.h"
 #include "third_party/base/optional.h"
 #include "third_party/base/span.h"
 
 namespace fxcrt {
 
 class ByteString;
-class StringPool_WideString_Test;
-class WideString_Assign_Test;
-class WideString_ConcatInPlace_Test;
 
 // A mutable string with shared buffers using copy-on-write semantics that
 // avoids the cost of std::string's iterator stability guarantees.
@@ -34,12 +32,14 @@ class WideString {
   using const_iterator = const CharType*;
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-  static WideString Format(const wchar_t* lpszFormat, ...) WARN_UNUSED_RESULT;
+  static WideString Format(const wchar_t* pFormat, ...) WARN_UNUSED_RESULT;
   static WideString FormatV(const wchar_t* lpszFormat,
                             va_list argList) WARN_UNUSED_RESULT;
 
   WideString();
   WideString(const WideString& other);
+
+  // Move-construct a WideString. After construction, |other| is empty.
   WideString(WideString&& other) noexcept;
 
   // Deliberately implicit to avoid calling on every string literal.
@@ -52,7 +52,7 @@ class WideString {
   // NOLINTNEXTLINE(runtime/explicit)
   WideString(char) = delete;
 
-  WideString(const wchar_t* ptr, size_t len);
+  WideString(const wchar_t* pStr, size_t len);
 
   explicit WideString(WideStringView str);
   WideString(WideStringView str1, WideStringView str2);
@@ -66,6 +66,8 @@ class WideString {
   static WideString FromUTF8(ByteStringView str) WARN_UNUSED_RESULT;
   static WideString FromUTF16LE(const unsigned short* str,
                                 size_t len) WARN_UNUSED_RESULT;
+  static WideString FromUTF16BE(const unsigned short* wstr,
+                                size_t wlen) WARN_UNUSED_RESULT;
 
   static size_t WStringLength(const unsigned short* str) WARN_UNUSED_RESULT;
 
@@ -81,7 +83,7 @@ class WideString {
 
   // Explicit conversion to span.
   // Note: Any subsequent modification of |this| will invalidate the result.
-  pdfium::span<const wchar_t> AsSpan() const {
+  pdfium::span<const wchar_t> span() const {
     return pdfium::make_span(m_pData ? m_pData->m_String : nullptr,
                              GetLength());
   }
@@ -110,15 +112,17 @@ class WideString {
   bool IsValidIndex(size_t index) const { return index < GetLength(); }
   bool IsValidLength(size_t length) const { return length <= GetLength(); }
 
-  const WideString& operator=(const wchar_t* str);
-  const WideString& operator=(WideStringView stringSrc);
-  const WideString& operator=(const WideString& that);
-  const WideString& operator=(WideString&& that);
+  WideString& operator=(const wchar_t* str);
+  WideString& operator=(WideStringView str);
+  WideString& operator=(const WideString& that);
 
-  const WideString& operator+=(const wchar_t* str);
-  const WideString& operator+=(wchar_t ch);
-  const WideString& operator+=(const WideString& str);
-  const WideString& operator+=(WideStringView str);
+  // Move-assign a WideString. After assignment, |that| is empty.
+  WideString& operator=(WideString&& that) noexcept;
+
+  WideString& operator+=(const wchar_t* str);
+  WideString& operator+=(wchar_t ch);
+  WideString& operator+=(const WideString& str);
+  WideString& operator+=(WideStringView str);
 
   bool operator==(const wchar_t* ptr) const;
   bool operator==(WideStringView str) const;
@@ -137,8 +141,8 @@ class WideString {
     return m_pData->m_String[index];
   }
 
-  CharType First() const { return GetLength() ? (*this)[0] : 0; }
-  CharType Last() const { return GetLength() ? (*this)[GetLength() - 1] : 0; }
+  CharType Front() const { return GetLength() ? (*this)[0] : 0; }
+  CharType Back() const { return GetLength() ? (*this)[GetLength() - 1] : 0; }
 
   void SetAt(size_t index, wchar_t c);
 
@@ -146,9 +150,9 @@ class WideString {
   int Compare(const WideString& str) const;
   int CompareNoCase(const wchar_t* str) const;
 
-  WideString Mid(size_t first, size_t count) const;
-  WideString Left(size_t count) const;
-  WideString Right(size_t count) const;
+  WideString Substr(size_t first, size_t count) const;
+  WideString First(size_t count) const;
+  WideString Last(size_t count) const;
 
   size_t Insert(size_t index, wchar_t ch);
   size_t InsertAtFront(wchar_t ch) { return Insert(0, ch); }
@@ -174,13 +178,14 @@ class WideString {
 
   // Note: any modification of the string (including ReleaseBuffer()) may
   // invalidate the span, which must not outlive its buffer.
-  pdfium::span<wchar_t> GetBuffer(size_t len);
-  void ReleaseBuffer(size_t len);
+  pdfium::span<wchar_t> GetBuffer(size_t nMinBufLength);
+  void ReleaseBuffer(size_t nNewLength);
 
   int GetInteger() const;
 
-  Optional<size_t> Find(WideStringView pSub, size_t start = 0) const;
+  Optional<size_t> Find(WideStringView subStr, size_t start = 0) const;
   Optional<size_t> Find(wchar_t ch, size_t start = 0) const;
+  Optional<size_t> ReverseFind(wchar_t ch) const;
 
   bool Contains(WideStringView lpszSub, size_t start = 0) const {
     return Find(lpszSub, start).has_value();
@@ -211,21 +216,25 @@ class WideString {
   // so GetLength() will include them.
   ByteString ToUTF16LE() const;
 
+  // Replace the characters &<>'" with HTML entities.
+  WideString EncodeEntities() const;
+
  protected:
   using StringData = StringDataTemplate<wchar_t>;
 
-  void ReallocBeforeWrite(size_t nLen);
-  void AllocBeforeWrite(size_t nLen);
+  void ReallocBeforeWrite(size_t nNewLength);
+  void AllocBeforeWrite(size_t nNewLength);
   void AllocCopy(WideString& dest, size_t nCopyLen, size_t nCopyIndex) const;
   void AssignCopy(const wchar_t* pSrcData, size_t nSrcLen);
-  void Concat(const wchar_t* lpszSrcData, size_t nSrcLen);
+  void Concat(const wchar_t* pSrcData, size_t nSrcLen);
   intptr_t ReferenceCountForTesting() const;
 
   RetainPtr<StringData> m_pData;
 
-  friend WideString_ConcatInPlace_Test;
-  friend WideString_Assign_Test;
-  friend StringPool_WideString_Test;
+  friend class WideString_Assign_Test;
+  friend class WideString_ConcatInPlace_Test;
+  friend class WideString_Construct_Test;
+  friend class StringPool_WideString_Test;
 };
 
 inline WideString operator+(WideStringView str1, WideStringView str2) {

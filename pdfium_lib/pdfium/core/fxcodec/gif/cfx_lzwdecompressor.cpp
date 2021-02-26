@@ -11,34 +11,29 @@
 #include <memory>
 #include <utility>
 
+#include "core/fxcrt/fx_safe_types.h"
 #include "third_party/base/numerics/safe_math.h"
+#include "third_party/base/ptr_util.h"
 
 std::unique_ptr<CFX_LZWDecompressor> CFX_LZWDecompressor::Create(
     uint8_t color_exp,
     uint8_t code_exp) {
-  // color_exp generates 2^(n + 1) codes, where as the code_exp reserves 2^n.
+  // |color_exp| generates 2^(n + 1) codes, where as the code_exp reserves 2^n.
   // This is a quirk of the GIF spec.
   if (code_exp > GIF_MAX_LZW_EXP || code_exp < color_exp + 1)
     return nullptr;
-  return std::unique_ptr<CFX_LZWDecompressor>(
-      new CFX_LZWDecompressor(color_exp, code_exp));
+
+  // Private ctor.
+  return pdfium::WrapUnique(new CFX_LZWDecompressor(color_exp, code_exp));
 }
 
 CFX_LZWDecompressor::CFX_LZWDecompressor(uint8_t color_exp, uint8_t code_exp)
     : code_size_(code_exp),
-      code_size_cur_(0),
       code_color_end_(static_cast<uint16_t>(1 << (color_exp + 1))),
       code_clear_(static_cast<uint16_t>(1 << code_exp)),
-      code_end_(static_cast<uint16_t>((1 << code_exp) + 1)),
-      code_next_(0),
-      code_first_(0),
-      code_old_(0),
-      next_in_(nullptr),
-      avail_in_(0),
-      bits_left_(0),
-      code_store_(0) {}
+      code_end_(static_cast<uint16_t>((1 << code_exp) + 1)) {}
 
-CFX_LZWDecompressor::~CFX_LZWDecompressor() {}
+CFX_LZWDecompressor::~CFX_LZWDecompressor() = default;
 
 CFX_GifDecodeStatus CFX_LZWDecompressor::Decode(const uint8_t* src_buf,
                                                 uint32_t src_size,
@@ -73,7 +68,7 @@ CFX_GifDecodeStatus CFX_LZWDecompressor::Decode(const uint8_t* src_buf,
       if (bits_left_ > 31)
         return CFX_GifDecodeStatus::Error;
 
-      pdfium::base::CheckedNumeric<uint32_t> safe_code = *next_in_++;
+      FX_SAFE_UINT32 safe_code = *next_in_++;
       safe_code <<= bits_left_;
       safe_code |= code_store_;
       if (!safe_code.IsValid())

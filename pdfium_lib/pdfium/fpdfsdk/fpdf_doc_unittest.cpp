@@ -7,7 +7,8 @@
 #include <memory>
 #include <vector>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
+#include "core/fpdfapi/page/cpdf_docpagedata.h"
+#include "core/fpdfapi/page/cpdf_pagemodule.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
@@ -17,18 +18,20 @@
 #include "core/fpdfapi/parser/cpdf_parser.h"
 #include "core/fpdfapi/parser/cpdf_reference.h"
 #include "core/fpdfapi/parser/cpdf_string.h"
+#include "core/fpdfapi/render/cpdf_docrenderdata.h"
 #include "core/fpdfdoc/cpdf_dest.h"
 #include "fpdfsdk/cpdfsdk_helpers.h"
 #include "public/cpp/fpdf_scopers.h"
 #include "testing/fx_string_testhelpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/ptr_util.h"
 
 class CPDF_TestDocument final : public CPDF_Document {
  public:
-  CPDF_TestDocument() : CPDF_Document() {}
+  CPDF_TestDocument()
+      : CPDF_Document(std::make_unique<CPDF_DocRenderData>(),
+                      std::make_unique<CPDF_DocPageData>()) {}
 
-  void SetRoot(CPDF_Dictionary* root) { m_pRootDict = root; }
+  void SetRoot(CPDF_Dictionary* root) { SetRootForTesting(root); }
   CPDF_IndirectObjectHolder* GetHolder() { return this; }
 };
 
@@ -40,10 +43,10 @@ class PDFDocTest : public testing::Test {
   };
 
   void SetUp() override {
-    CPDF_ModuleMgr::Get()->Init();
-    auto pTestDoc = pdfium::MakeUnique<CPDF_TestDocument>();
+    CPDF_PageModule::Create();
+    auto pTestDoc = std::make_unique<CPDF_TestDocument>();
     m_pIndirectObjs = pTestDoc->GetHolder();
-    m_pRootObj = m_pIndirectObjs->NewIndirect<CPDF_Dictionary>();
+    m_pRootObj.Reset(m_pIndirectObjs->NewIndirect<CPDF_Dictionary>());
     pTestDoc->SetRoot(m_pRootObj.Get());
     m_pDoc.reset(FPDFDocumentFromCPDFDocument(pTestDoc.release()));
   }
@@ -52,7 +55,7 @@ class PDFDocTest : public testing::Test {
     m_pRootObj = nullptr;
     m_pIndirectObjs = nullptr;
     m_pDoc.reset();
-    CPDF_ModuleMgr::Destroy();
+    CPDF_PageModule::Destroy();
   }
 
   std::vector<DictObjInfo> CreateDictObjs(int num) {
@@ -68,7 +71,7 @@ class PDFDocTest : public testing::Test {
  protected:
   ScopedFPDFDocument m_pDoc;
   UnownedPtr<CPDF_IndirectObjectHolder> m_pIndirectObjs;
-  UnownedPtr<CPDF_Dictionary> m_pRootObj;
+  RetainPtr<CPDF_Dictionary> m_pRootObj;
 };
 
 TEST_F(PDFDocTest, FindBookmark) {
@@ -212,12 +215,12 @@ TEST_F(PDFDocTest, FindBookmark) {
 }
 
 TEST_F(PDFDocTest, GetLocationInPage) {
-  auto array = pdfium::MakeUnique<CPDF_Array>();
-  array->AddNew<CPDF_Number>(0);  // Page Index.
-  array->AddNew<CPDF_Name>("XYZ");
-  array->AddNew<CPDF_Number>(4);  // X
-  array->AddNew<CPDF_Number>(5);  // Y
-  array->AddNew<CPDF_Number>(6);  // Zoom.
+  auto array = pdfium::MakeRetain<CPDF_Array>();
+  array->AppendNew<CPDF_Number>(0);  // Page Index.
+  array->AppendNew<CPDF_Name>("XYZ");
+  array->AppendNew<CPDF_Number>(4);  // X
+  array->AppendNew<CPDF_Number>(5);  // Y
+  array->AppendNew<CPDF_Number>(6);  // Zoom.
 
   FPDF_BOOL hasX;
   FPDF_BOOL hasY;
@@ -226,7 +229,7 @@ TEST_F(PDFDocTest, GetLocationInPage) {
   FS_FLOAT y;
   FS_FLOAT zoom;
 
-  EXPECT_TRUE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.get()),
+  EXPECT_TRUE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.Get()),
                                          &hasX, &hasY, &hasZoom, &x, &y,
                                          &zoom));
   EXPECT_TRUE(hasX);
@@ -239,15 +242,15 @@ TEST_F(PDFDocTest, GetLocationInPage) {
   array->SetNewAt<CPDF_Null>(2);
   array->SetNewAt<CPDF_Null>(3);
   array->SetNewAt<CPDF_Null>(4);
-  EXPECT_TRUE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.get()),
+  EXPECT_TRUE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.Get()),
                                          &hasX, &hasY, &hasZoom, &x, &y,
                                          &zoom));
   EXPECT_FALSE(hasX);
   EXPECT_FALSE(hasY);
   EXPECT_FALSE(hasZoom);
 
-  array = pdfium::MakeUnique<CPDF_Array>();
-  EXPECT_FALSE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.get()),
+  array = pdfium::MakeRetain<CPDF_Array>();
+  EXPECT_FALSE(FPDFDest_GetLocationInPage(FPDFDestFromCPDFArray(array.Get()),
                                           &hasX, &hasY, &hasZoom, &x, &y,
                                           &zoom));
 }

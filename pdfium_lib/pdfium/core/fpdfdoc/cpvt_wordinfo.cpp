@@ -34,11 +34,11 @@ CPVT_WordInfo::CPVT_WordInfo(const CPVT_WordInfo& word)
   operator=(word);
 }
 
-CPVT_WordInfo::~CPVT_WordInfo() {}
+CPVT_WordInfo::~CPVT_WordInfo() = default;
 
-void CPVT_WordInfo::operator=(const CPVT_WordInfo& word) {
+CPVT_WordInfo& CPVT_WordInfo::operator=(const CPVT_WordInfo& word) {
   if (this == &word)
-    return;
+    return *this;
 
   Word = word.Word;
   nCharset = word.nCharset;
@@ -46,4 +46,5 @@ void CPVT_WordInfo::operator=(const CPVT_WordInfo& word) {
   fWordX = word.fWordX;
   fWordY = word.fWordY;
   fWordTail = word.fWordTail;
+  return *this;
 }

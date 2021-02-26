@@ -1,3 +1,5 @@
+// Copyright 2014 PDFium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
@@ -45,7 +47,7 @@ int32_t CBC_TextEncoder::EncodeChar(wchar_t c, WideString* sb) {
     *sb += (wchar_t)(c - 48 + 4);
     return 1;
   }
-  if (c >= 'a' && c <= 'z') {
+  if (FXSYS_IsLowerASCII(c)) {
     *sb += (wchar_t)(c - 97 + 14);
     return 1;
   }
@@ -74,7 +76,7 @@ int32_t CBC_TextEncoder::EncodeChar(wchar_t c, WideString* sb) {
     *sb += (wchar_t)(c - 96);
     return 2;
   }
-  if (c >= 'A' && c <= 'Z') {
+  if (FXSYS_IsUpperASCII(c)) {
     *sb += (wchar_t)'\2';
     *sb += (wchar_t)(c - 65 + 1);
     return 2;

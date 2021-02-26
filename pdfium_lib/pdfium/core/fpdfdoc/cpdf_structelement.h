@@ -20,26 +20,29 @@ class CPDF_StructTree;
 
 class CPDF_StructKid {
  public:
+  enum Type { kInvalid, kElement, kPageContent, kStreamContent, kObject };
+
   CPDF_StructKid();
   CPDF_StructKid(const CPDF_StructKid& that);
   ~CPDF_StructKid();
 
-  enum { Invalid, Element, PageContent, StreamContent, Object } m_Type;
-
-  RetainPtr<CPDF_StructElement> m_pElement;      // For Element.
-  UnownedPtr<const CPDF_Dictionary> m_pDict;     // For Element.
-  uint32_t m_PageObjNum;  // For PageContent, StreamContent, Object.
-  uint32_t m_RefObjNum;   // For StreamContent, Object.
-  uint32_t m_ContentId;   // For PageContent, StreamContent.
+  Type m_Type = kInvalid;
+  uint32_t m_PageObjNum = 0;  // For {PageContent, StreamContent, Object} types.
+  uint32_t m_RefObjNum = 0;   // For {StreamContent, Object} types.
+  uint32_t m_ContentId = 0;   // For {PageContent, StreamContent} types.
+  RetainPtr<CPDF_StructElement> m_pElement;  // For Element.
+  RetainPtr<const CPDF_Dictionary> m_pDict;  // For Element.
 };
 
 class CPDF_StructElement final : public Retainable {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   ByteString GetType() const { return m_Type; }
-  ByteString GetTitle() const { return m_Title; }
+  WideString GetAltText() const;
+  WideString GetTitle() const;
+
+  // Never returns nullptr.
   const CPDF_Dictionary* GetDict() const { return m_pDict.Get(); }
 
   size_t CountKids() const;
@@ -54,14 +57,13 @@ class CPDF_StructElement final : public Retainable {
 
   void LoadKids(const CPDF_Dictionary* pDict);
   void LoadKid(uint32_t PageObjNum,
-               const CPDF_Object* pObj,
+               const CPDF_Object* pKidObj,
                CPDF_StructKid* pKid);
 
   UnownedPtr<CPDF_StructTree> const m_pTree;
   UnownedPtr<CPDF_StructElement> const m_pParent;
-  UnownedPtr<const CPDF_Dictionary> const m_pDict;
-  ByteString m_Type;
-  ByteString m_Title;
+  RetainPtr<const CPDF_Dictionary> const m_pDict;
+  const ByteString m_Type;
   std::vector<CPDF_StructKid> m_Kids;
 };
 

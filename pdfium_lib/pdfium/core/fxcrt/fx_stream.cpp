@@ -9,18 +9,17 @@
 #include <algorithm>
 #include <memory>
 #include <utility>
-#include <vector>
 
+#include "build/build_config.h"
 #include "core/fxcrt/fileaccess_iface.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/ptr_util.h"
 
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
 #include <direct.h>
 
 struct FX_FolderHandle {
   HANDLE m_Handle;
-  bool m_bEnd;
+  bool m_bReachedEnd;
   WIN32_FIND_DATAA m_FindData;
 };
 #else
@@ -33,14 +32,13 @@ struct FX_FolderHandle {
   ByteString m_Path;
   DIR* m_Dir;
 };
-#endif  // _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#endif
 
 namespace {
 
 class CFX_CRTFileStream final : public IFX_SeekableStream {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   // IFX_SeekableStream:
   FX_FILESIZE GetSize() override { return m_pFile->GetSize(); }
@@ -122,15 +120,15 @@ bool IFX_SeekableStream::WriteString(ByteStringView str) {
 }
 
 FX_FolderHandle* FX_OpenFolder(const char* path) {
-  auto handle = pdfium::MakeUnique<FX_FolderHandle>();
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+  auto handle = std::make_unique<FX_FolderHandle>();
+#if defined(OS_WIN)
   handle->m_Handle =
       FindFirstFileExA((ByteString(path) + "/*.*").c_str(), FindExInfoStandard,
                        &handle->m_FindData, FindExSearchNameMatch, nullptr, 0);
   if (handle->m_Handle == INVALID_HANDLE_VALUE)
     return nullptr;
 
-  handle->m_bEnd = false;
+  handle->m_bReachedEnd = false;
 #else
   DIR* dir = opendir(path);
   if (!dir)
@@ -148,15 +146,15 @@ bool FX_GetNextFile(FX_FolderHandle* handle,
   if (!handle)
     return false;
 
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
-  if (handle->m_bEnd)
+#if defined(OS_WIN)
+  if (handle->m_bReachedEnd)
     return false;
 
   *filename = handle->m_FindData.cFileName;
   *bFolder =
       (handle->m_FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
   if (!FindNextFileA(handle->m_Handle, &handle->m_FindData))
-    handle->m_bEnd = true;
+    handle->m_bReachedEnd = true;
   return true;
 #else
   struct dirent* de = readdir(handle->m_Dir);
@@ -177,7 +175,7 @@ void FX_CloseFolder(FX_FolderHandle* handle) {
   if (!handle)
     return;
 
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
   FindClose(handle->m_Handle);
 #else
   closedir(handle->m_Dir);

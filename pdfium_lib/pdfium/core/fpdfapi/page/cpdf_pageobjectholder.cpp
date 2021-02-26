@@ -16,6 +16,7 @@
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fxcrt/fx_extension.h"
+#include "third_party/base/check.h"
 #include "third_party/base/stl_util.h"
 
 bool GraphicsData::operator<(const GraphicsData& other) const {
@@ -40,8 +41,7 @@ CPDF_PageObjectHolder::CPDF_PageObjectHolder(CPDF_Document* pDoc,
       m_pResources(pResources),
       m_pDict(pDict),
       m_pDocument(pDoc) {
-  // TODO(thestig): Check if |m_pDict| is never a nullptr and simplify
-  // callers that checks for that.
+  DCHECK(m_pDict);
 }
 
 CPDF_PageObjectHolder::~CPDF_PageObjectHolder() = default;
@@ -52,7 +52,7 @@ bool CPDF_PageObjectHolder::IsPage() const {
 
 void CPDF_PageObjectHolder::StartParse(
     std::unique_ptr<CPDF_ContentParser> pParser) {
-  ASSERT(m_ParseState == ParseState::kNotParsed);
+  DCHECK(m_ParseState == ParseState::kNotParsed);
   m_pParser = std::move(pParser);
   m_ParseState = ParseState::kParsing;
 }
@@ -61,7 +61,7 @@ void CPDF_PageObjectHolder::ContinueParse(PauseIndicatorIface* pPause) {
   if (m_ParseState == ParseState::kParsed)
     return;
 
-  ASSERT(m_ParseState == ParseState::kParsing);
+  DCHECK(m_ParseState == ParseState::kParsing);
   if (m_pParser->Continue(pPause))
     return;
 
@@ -77,33 +77,13 @@ void CPDF_PageObjectHolder::AddImageMaskBoundingBox(const CFX_FloatRect& box) {
   m_MaskBoundingBoxes.push_back(box);
 }
 
-void CPDF_PageObjectHolder::Transform(const CFX_Matrix& matrix) {
-  for (auto& pObj : m_PageObjectList)
-    pObj->Transform(matrix);
+std::set<int32_t> CPDF_PageObjectHolder::TakeDirtyStreams() {
+  auto dirty_streams = std::move(m_DirtyStreams);
+  m_DirtyStreams.clear();
+  return dirty_streams;
 }
 
-CFX_FloatRect CPDF_PageObjectHolder::CalcBoundingBox() const {
-  if (m_PageObjectList.empty())
-    return CFX_FloatRect();
-
-  float left = 1000000.0f;
-  float right = -1000000.0f;
-  float bottom = 1000000.0f;
-  float top = -1000000.0f;
-  for (const auto& pObj : m_PageObjectList) {
-    const auto& rect = pObj->GetRect();
-    left = std::min(left, rect.left);
-    right = std::max(right, rect.right);
-    bottom = std::min(bottom, rect.bottom);
-    top = std::max(top, rect.top);
-  }
-  return CFX_FloatRect(left, bottom, right, top);
-}
-
-void CPDF_PageObjectHolder::LoadTransInfo() {
-  if (!m_pDict)
-    return;
-
+void CPDF_PageObjectHolder::LoadTransparencyInfo() {
   CPDF_Dictionary* pGroup = m_pDict->GetDictFor("Group");
   if (!pGroup)
     return;
@@ -117,13 +97,11 @@ void CPDF_PageObjectHolder::LoadTransInfo() {
     m_Transparency.SetIsolated();
 }
 
-size_t CPDF_PageObjectHolder::GetPageObjectCount() const {
-  return pdfium::CollectionSize<size_t>(m_PageObjectList);
-}
-
 CPDF_PageObject* CPDF_PageObjectHolder::GetPageObjectByIndex(
     size_t index) const {
-  return m_PageObjectList.GetPageObjectByIndex(index);
+  return pdfium::IndexInBounds(m_PageObjectList, index)
+             ? m_PageObjectList[index].get()
+             : nullptr;
 }
 
 void CPDF_PageObjectHolder::AppendPageObject(

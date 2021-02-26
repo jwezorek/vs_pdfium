@@ -4,12 +4,11 @@
 
 #include "core/fpdfapi/parser/cpdf_simple_parser.h"
 
-#include <string>
-
 #include "core/fpdfapi/parser/fpdf_parser_utility.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "testing/test_support.h"
 #include "third_party/base/span.h"
+#include "third_party/base/stl_util.h"
 
 TEST(SimpleParserTest, GetWord) {
   static const pdfium::StrFuncTestData test_data[] = {
@@ -38,17 +37,19 @@ TEST(SimpleParserTest, GetWord) {
       STR_IN_OUT_CASE("\t\t<< /abc>>", "<<"),
       // Handling ending delimiters.
       STR_IN_OUT_CASE("> little bear", ">"),
-      STR_IN_OUT_CASE(") another bear", ")"), STR_IN_OUT_CASE(">> end ", ">>"),
+      STR_IN_OUT_CASE(") another bear", ")"),
+      STR_IN_OUT_CASE(">> end ", ">>"),
       // No ending delimiters.
       STR_IN_OUT_CASE("(sdfgfgbcv", "(sdfgfgbcv"),
       // Regular cases.
       STR_IN_OUT_CASE("apple pear", "apple"),
       STR_IN_OUT_CASE(" pi=3.1415 ", "pi=3.1415"),
-      STR_IN_OUT_CASE(" p t x c ", "p"), STR_IN_OUT_CASE(" pt\0xc ", "pt"),
+      STR_IN_OUT_CASE(" p t x c ", "p"),
+      STR_IN_OUT_CASE(" pt\0xc ", "pt"),
       STR_IN_OUT_CASE(" $^&&*\t\0sdff ", "$^&&*"),
       STR_IN_OUT_CASE("\n\r+3.5656 -11.0", "+3.5656"),
   };
-  for (size_t i = 0; i < FX_ArraySize(test_data); ++i) {
+  for (size_t i = 0; i < pdfium::size(test_data); ++i) {
     const pdfium::StrFuncTestData& data = test_data[i];
     CPDF_SimpleParser parser(pdfium::make_span(data.input, data.input_size));
     ByteStringView word = parser.GetWord();

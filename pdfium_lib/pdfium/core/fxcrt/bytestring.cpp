@@ -18,6 +18,7 @@
 #include "core/fxcrt/fx_extension.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/string_pool_template.h"
+#include "third_party/base/check.h"
 #include "third_party/base/numerics/safe_math.h"
 #include "third_party/base/span.h"
 #include "third_party/base/stl_util.h"
@@ -74,9 +75,9 @@ ByteString ByteString::FormatInteger(int i) {
 }
 
 // static
-ByteString ByteString::FormatFloat(float d) {
+ByteString ByteString::FormatFloat(float f) {
   char buf[32];
-  return ByteString(buf, FloatToString(d, buf));
+  return ByteString(buf, FloatToString(f, buf));
 }
 
 // static
@@ -126,7 +127,7 @@ ByteString::ByteString(const uint8_t* pStr, size_t nLen) {
         StringData::Create(reinterpret_cast<const char*>(pStr), nLen));
 }
 
-ByteString::ByteString() {}
+ByteString::ByteString() = default;
 
 ByteString::ByteString(const ByteString& other) : m_pData(other.m_pData) {}
 
@@ -142,10 +143,11 @@ ByteString::ByteString(char ch) {
 ByteString::ByteString(const char* ptr)
     : ByteString(ptr, ptr ? strlen(ptr) : 0) {}
 
-ByteString::ByteString(ByteStringView stringSrc) {
-  if (!stringSrc.IsEmpty())
-    m_pData.Reset(StringData::Create(stringSrc.unterminated_c_str(),
-                                     stringSrc.GetLength()));
+ByteString::ByteString(ByteStringView bstrc) {
+  if (!bstrc.IsEmpty()) {
+    m_pData.Reset(
+        StringData::Create(bstrc.unterminated_c_str(), bstrc.GetLength()));
+  }
 }
 
 ByteString::ByteString(ByteStringView str1, ByteStringView str2) {
@@ -187,60 +189,60 @@ ByteString::ByteString(const std::ostringstream& outStream) {
     m_pData.Reset(StringData::Create(str.c_str(), str.length()));
 }
 
-ByteString::~ByteString() {}
+ByteString::~ByteString() = default;
 
-const ByteString& ByteString::operator=(const char* pStr) {
-  if (!pStr || !pStr[0])
+ByteString& ByteString::operator=(const char* str) {
+  if (!str || !str[0])
     clear();
   else
-    AssignCopy(pStr, strlen(pStr));
+    AssignCopy(str, strlen(str));
 
   return *this;
 }
 
-const ByteString& ByteString::operator=(ByteStringView stringSrc) {
-  if (stringSrc.IsEmpty())
+ByteString& ByteString::operator=(ByteStringView str) {
+  if (str.IsEmpty())
     clear();
   else
-    AssignCopy(stringSrc.unterminated_c_str(), stringSrc.GetLength());
+    AssignCopy(str.unterminated_c_str(), str.GetLength());
 
   return *this;
 }
 
-const ByteString& ByteString::operator=(const ByteString& that) {
+ByteString& ByteString::operator=(const ByteString& that) {
   if (m_pData != that.m_pData)
     m_pData = that.m_pData;
 
   return *this;
 }
 
-const ByteString& ByteString::operator=(ByteString&& that) {
+ByteString& ByteString::operator=(ByteString&& that) noexcept {
   if (m_pData != that.m_pData)
     m_pData = std::move(that.m_pData);
 
   return *this;
 }
 
-const ByteString& ByteString::operator+=(const char* pStr) {
-  if (pStr)
-    Concat(pStr, strlen(pStr));
+ByteString& ByteString::operator+=(const char* str) {
+  if (str)
+    Concat(str, strlen(str));
 
   return *this;
 }
 
-const ByteString& ByteString::operator+=(char ch) {
+ByteString& ByteString::operator+=(char ch) {
   Concat(&ch, 1);
   return *this;
 }
 
-const ByteString& ByteString::operator+=(const ByteString& str) {
+ByteString& ByteString::operator+=(const ByteString& str) {
   if (str.m_pData)
     Concat(str.m_pData->m_String, str.m_pData->m_nDataLength);
 
   return *this;
 }
 
-const ByteString& ByteString::operator+=(ByteStringView str) {
+ByteString& ByteString::operator+=(ByteStringView str) {
   if (!str.IsEmpty())
     Concat(str.unterminated_c_str(), str.GetLength());
 
@@ -380,7 +382,7 @@ void ByteString::ReleaseBuffer(size_t nNewLength) {
     return;
   }
 
-  ASSERT(m_pData->m_nRefs == 1);
+  DCHECK(m_pData->m_nRefs == 1);
   m_pData->m_nDataLength = nNewLength;
   m_pData->m_String[nNewLength] = 0;
   if (m_pData->m_nAllocLength - nNewLength >= 32) {
@@ -468,7 +470,7 @@ intptr_t ByteString::ReferenceCountForTesting() const {
   return m_pData ? m_pData->m_nRefs : 0;
 }
 
-ByteString ByteString::Mid(size_t first, size_t count) const {
+ByteString ByteString::Substr(size_t first, size_t count) const {
   if (!m_pData)
     return ByteString();
 
@@ -489,16 +491,16 @@ ByteString ByteString::Mid(size_t first, size_t count) const {
   return dest;
 }
 
-ByteString ByteString::Left(size_t count) const {
+ByteString ByteString::First(size_t count) const {
   if (count == 0 || !IsValidLength(count))
     return ByteString();
-  return Mid(0, count);
+  return Substr(0, count);
 }
 
-ByteString ByteString::Right(size_t count) const {
+ByteString ByteString::Last(size_t count) const {
   if (count == 0 || !IsValidLength(count))
     return ByteString();
-  return Mid(GetLength() - count, count);
+  return Substr(GetLength() - count, count);
 }
 
 void ByteString::AllocCopy(ByteString& dest,
@@ -513,62 +515,62 @@ void ByteString::AllocCopy(ByteString& dest,
 }
 
 void ByteString::SetAt(size_t index, char c) {
-  ASSERT(IsValidIndex(index));
+  DCHECK(IsValidIndex(index));
   ReallocBeforeWrite(m_pData->m_nDataLength);
   m_pData->m_String[index] = c;
 }
 
-size_t ByteString::Insert(size_t location, char ch) {
+size_t ByteString::Insert(size_t index, char ch) {
   const size_t cur_length = GetLength();
-  if (!IsValidLength(location))
+  if (!IsValidLength(index))
     return cur_length;
 
   const size_t new_length = cur_length + 1;
   ReallocBeforeWrite(new_length);
-  memmove(m_pData->m_String + location + 1, m_pData->m_String + location,
-          new_length - location);
-  m_pData->m_String[location] = ch;
+  memmove(m_pData->m_String + index + 1, m_pData->m_String + index,
+          new_length - index);
+  m_pData->m_String[index] = ch;
   m_pData->m_nDataLength = new_length;
   return new_length;
 }
 
 Optional<size_t> ByteString::Find(char ch, size_t start) const {
   if (!m_pData)
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   if (!IsValidIndex(start))
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   const char* pStr = static_cast<const char*>(
       memchr(m_pData->m_String + start, ch, m_pData->m_nDataLength - start));
   return pStr ? Optional<size_t>(static_cast<size_t>(pStr - m_pData->m_String))
-              : Optional<size_t>();
+              : pdfium::nullopt;
 }
 
 Optional<size_t> ByteString::Find(ByteStringView subStr, size_t start) const {
   if (!m_pData)
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   if (!IsValidIndex(start))
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   const char* pStr =
       FX_strstr(m_pData->m_String + start, m_pData->m_nDataLength - start,
                 subStr.unterminated_c_str(), subStr.GetLength());
   return pStr ? Optional<size_t>(static_cast<size_t>(pStr - m_pData->m_String))
-              : Optional<size_t>();
+              : pdfium::nullopt;
 }
 
 Optional<size_t> ByteString::ReverseFind(char ch) const {
   if (!m_pData)
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   size_t nLength = m_pData->m_nDataLength;
   while (nLength--) {
     if (m_pData->m_String[nLength] == ch)
-      return Optional<size_t>(nLength);
+      return nLength;
   }
-  return Optional<size_t>();
+  return pdfium::nullopt;
 }
 
 void ByteString::MakeLower() {

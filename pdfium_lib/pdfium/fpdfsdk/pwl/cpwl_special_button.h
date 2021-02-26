@@ -13,8 +13,9 @@
 
 class CPWL_PushButton final : public CPWL_Button {
  public:
-  CPWL_PushButton(const CreateParams& cp,
-                  std::unique_ptr<PrivateData> pAttachedData);
+  CPWL_PushButton(
+      const CreateParams& cp,
+      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
   ~CPWL_PushButton() override;
 
   // CPWL_Button:
@@ -23,12 +24,13 @@ class CPWL_PushButton final : public CPWL_Button {
 
 class CPWL_CheckBox final : public CPWL_Button {
  public:
-  CPWL_CheckBox(const CreateParams& cp,
-                std::unique_ptr<PrivateData> pAttachedData);
+  CPWL_CheckBox(
+      const CreateParams& cp,
+      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
   ~CPWL_CheckBox() override;
 
   // CPWL_Button:
-  bool OnLButtonUp(const CFX_PointF& point, uint32_t nFlag) override;
+  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point) override;
   bool OnChar(uint16_t nChar, uint32_t nFlag) override;
 
   bool IsChecked() const { return m_bChecked; }
@@ -40,12 +42,13 @@ class CPWL_CheckBox final : public CPWL_Button {
 
 class CPWL_RadioButton final : public CPWL_Button {
  public:
-  CPWL_RadioButton(const CreateParams& cp,
-                   std::unique_ptr<PrivateData> pAttachedData);
+  CPWL_RadioButton(
+      const CreateParams& cp,
+      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
   ~CPWL_RadioButton() override;
 
   // CPWL_Button
-  bool OnLButtonUp(const CFX_PointF& point, uint32_t nFlag) override;
+  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point) override;
   bool OnChar(uint16_t nChar, uint32_t nFlag) override;
 
   bool IsChecked() const { return m_bChecked; }

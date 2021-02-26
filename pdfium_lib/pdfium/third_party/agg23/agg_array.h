@@ -19,6 +19,8 @@
 #include "agg_basics.h"
 #include "core/fxcrt/fx_memory.h"  // For FXSYS_* macros.
 
+namespace pdfium
+{
 namespace agg
 {
 template <class T>
@@ -32,7 +34,7 @@ public:
     pod_array() : m_size(0), m_capacity(0), m_array(0) {}
     pod_array(unsigned cap, unsigned extra_tail = 0);
     pod_array(const pod_array<T>&);
-    const pod_array<T>& operator = (const pod_array<T>&);
+    pod_array<T>& operator = (const pod_array<T>&);
     void capacity(unsigned cap, unsigned extra_tail = 0);
     unsigned capacity() const
     {
@@ -126,7 +128,7 @@ void pod_array<T>::resize(unsigned new_size)
 {
     if(new_size > m_size) {
         if(new_size > m_capacity) {
-            T* data = FX_Alloc(T, new_size);
+            T* data = FX_AllocUninit(T, new_size);
             memcpy(data, m_array, m_size * sizeof(T));
             FX_Free(m_array);
             m_array = data;
@@ -144,7 +146,7 @@ template<class T> pod_array<T>::pod_array(const pod_array<T>& v) :
 {
   memcpy(m_array, v.m_array, sizeof(T) * v.m_size);
 }
-template<class T> const pod_array<T>&
+template<class T> pod_array<T>&
 pod_array<T>::operator = (const pod_array<T>&v)
 {
     allocate(v.m_size);
@@ -166,7 +168,7 @@ public:
     pod_deque();
     pod_deque(unsigned block_ptr_inc);
     pod_deque(const pod_deque<T, S>& v);
-    const pod_deque<T, S>& operator = (const pod_deque<T, S>& v);
+    pod_deque<T, S>& operator = (const pod_deque<T, S>& v);
     void remove_all()
     {
         m_size = 0;
@@ -318,12 +320,12 @@ pod_deque<T, S>::pod_deque(const pod_deque<T, S>& v) :
 {
     unsigned i;
     for(i = 0; i < v.m_num_blocks; ++i) {
-        m_blocks[i] = FX_Alloc(T, block_size);
+        m_blocks[i] = FX_AllocUninit(T, block_size);
         memcpy(m_blocks[i], v.m_blocks[i], block_size * sizeof(T));
     }
 }
 template<class T, unsigned S>
-const pod_deque<T, S>& pod_deque<T, S>::operator = (const pod_deque<T, S>& v)
+pod_deque<T, S>& pod_deque<T, S>::operator = (const pod_deque<T, S>& v)
 {
     unsigned i;
     for(i = m_num_blocks; i < v.m_num_blocks; ++i) {
@@ -499,4 +501,5 @@ template<class T> inline void swap_elements(T& a, T& b)
     b = temp;
 }
 }
+}  // namespace pdfium
 #endif

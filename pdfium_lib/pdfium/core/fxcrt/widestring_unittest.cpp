@@ -8,6 +8,7 @@
 #include <iterator>
 #include <vector>
 
+#include "build/build_config.h"
 #include "core/fxcrt/fx_string.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/base/span.h"
@@ -24,7 +25,7 @@ TEST(WideString, ElementAccess) {
   EXPECT_DEATH({ abc[4]; }, ".*");
 #endif
 
-  pdfium::span<const wchar_t> abc_span = abc.AsSpan();
+  pdfium::span<const wchar_t> abc_span = abc.span();
   EXPECT_EQ(3u, abc_span.size());
   EXPECT_EQ(0, wmemcmp(abc_span.data(), L"abc", 3));
 
@@ -56,6 +57,27 @@ TEST(WideString, ElementAccess) {
 #endif
 }
 
+TEST(WideString, Construct) {
+  {
+    // Copy-construct.
+    WideString string1(L"abc");
+    WideString string2(string1);
+    EXPECT_EQ(L"abc", string1);
+    EXPECT_EQ(L"abc", string2);
+    EXPECT_EQ(2, string1.ReferenceCountForTesting());
+    EXPECT_EQ(2, string2.ReferenceCountForTesting());
+  }
+  {
+    // Move-construct.
+    WideString string1(L"abc");
+    WideString string2(std::move(string1));
+    EXPECT_TRUE(string1.IsEmpty());
+    EXPECT_EQ(L"abc", string2);
+    EXPECT_EQ(0, string1.ReferenceCountForTesting());
+    EXPECT_EQ(1, string2.ReferenceCountForTesting());
+  }
+}
+
 TEST(WideString, Assign) {
   {
     // Copy-assign.
@@ -80,10 +102,32 @@ TEST(WideString, Assign) {
       EXPECT_EQ(1, string2.ReferenceCountForTesting());
 
       string1 = std::move(string2);
+      EXPECT_EQ(L"abc", string1);
+      EXPECT_TRUE(string2.IsEmpty());
       EXPECT_EQ(1, string1.ReferenceCountForTesting());
       EXPECT_EQ(0, string2.ReferenceCountForTesting());
     }
     EXPECT_EQ(1, string1.ReferenceCountForTesting());
+  }
+  {
+    // From wchar_t*.
+    WideString string1 = L"abc";
+    EXPECT_EQ(L"abc", string1);
+    string1 = nullptr;
+    EXPECT_TRUE(string1.IsEmpty());
+    string1 = L"def";
+    EXPECT_EQ(L"def", string1);
+    string1 = L"";
+    EXPECT_TRUE(string1.IsEmpty());
+  }
+  {
+    // From WideStringView.
+    WideString string1(WideStringView(L"abc"));
+    EXPECT_EQ(L"abc", string1);
+    string1 = WideStringView(L"");
+    EXPECT_TRUE(string1.IsEmpty());
+    string1 = WideStringView(L"def");
+    EXPECT_EQ(L"def", string1);
   }
 }
 
@@ -490,7 +534,16 @@ TEST(WideString, RemoveCopies) {
 }
 
 TEST(WideString, Replace) {
+  WideString empty;
+  empty.Replace(L"", L"CLAMS");
+  empty.Replace(L"xx", L"CLAMS");
+  EXPECT_EQ(L"", empty);
+
   WideString fred(L"FRED");
+  fred.Replace(L"", L"");
+  EXPECT_EQ(L"FRED", fred);
+  fred.Replace(L"", L"CLAMS");
+  EXPECT_EQ(L"FRED", fred);
   fred.Replace(L"FR", L"BL");
   EXPECT_EQ(L"BLED", fred);
   fred.Replace(L"D", L"DDY");
@@ -501,10 +554,20 @@ TEST(WideString, Replace) {
   EXPECT_EQ(L"BY", fred);
   fred.Replace(L"BY", L"HI");
   EXPECT_EQ(L"HI", fred);
-  fred.Replace(L"", L"CLAMS");
-  EXPECT_EQ(L"HI", fred);
-  fred.Replace(L"HI", L"");
+  fred.Replace(L"I", L"IHIHI");
+  EXPECT_EQ(L"HIHIHI", fred);
+  fred.Replace(L"HI", L"HO");
+  EXPECT_EQ(L"HOHOHO", fred);
+  fred.Replace(L"HO", L"");
   EXPECT_EQ(L"", fred);
+
+  WideString five_xs(L"xxxxx");
+  five_xs.Replace(L"xx", L"xxx");
+  EXPECT_EQ(L"xxxxxxx", five_xs);
+
+  WideString five_ys(L"yyyyy");
+  five_ys.Replace(L"yy", L"y");
+  EXPECT_EQ(L"yyy", five_ys);
 }
 
 TEST(WideString, Insert) {
@@ -587,57 +650,57 @@ TEST(WideString, Delete) {
   EXPECT_EQ(L"", empty);
 }
 
-TEST(WideString, Mid) {
+TEST(WideString, Substr) {
   WideString fred(L"FRED");
-  EXPECT_EQ(L"", fred.Mid(0, 0));
-  EXPECT_EQ(L"", fred.Mid(3, 0));
-  EXPECT_EQ(L"FRED", fred.Mid(0, 4));
-  EXPECT_EQ(L"RED", fred.Mid(1, 3));
-  EXPECT_EQ(L"ED", fred.Mid(2, 2));
-  EXPECT_EQ(L"D", fred.Mid(3, 1));
-  EXPECT_EQ(L"F", fred.Mid(0, 1));
-  EXPECT_EQ(L"R", fred.Mid(1, 1));
-  EXPECT_EQ(L"E", fred.Mid(2, 1));
-  EXPECT_EQ(L"D", fred.Mid(3, 1));
-  EXPECT_EQ(L"FR", fred.Mid(0, 2));
-  EXPECT_EQ(L"FRED", fred.Mid(0, 4));
-  EXPECT_EQ(L"", fred.Mid(0, 10));
+  EXPECT_EQ(L"", fred.Substr(0, 0));
+  EXPECT_EQ(L"", fred.Substr(3, 0));
+  EXPECT_EQ(L"FRED", fred.Substr(0, 4));
+  EXPECT_EQ(L"RED", fred.Substr(1, 3));
+  EXPECT_EQ(L"ED", fred.Substr(2, 2));
+  EXPECT_EQ(L"D", fred.Substr(3, 1));
+  EXPECT_EQ(L"F", fred.Substr(0, 1));
+  EXPECT_EQ(L"R", fred.Substr(1, 1));
+  EXPECT_EQ(L"E", fred.Substr(2, 1));
+  EXPECT_EQ(L"D", fred.Substr(3, 1));
+  EXPECT_EQ(L"FR", fred.Substr(0, 2));
+  EXPECT_EQ(L"FRED", fred.Substr(0, 4));
+  EXPECT_EQ(L"", fred.Substr(0, 10));
 
-  EXPECT_EQ(L"", fred.Mid(1, 4));
-  EXPECT_EQ(L"", fred.Mid(4, 1));
+  EXPECT_EQ(L"", fred.Substr(1, 4));
+  EXPECT_EQ(L"", fred.Substr(4, 1));
 
   WideString empty;
-  EXPECT_EQ(L"", empty.Mid(0, 0));
+  EXPECT_EQ(L"", empty.Substr(0, 0));
 }
 
-TEST(WideString, Left) {
+TEST(WideString, First) {
   WideString fred(L"FRED");
-  EXPECT_EQ(L"", fred.Left(0));
-  EXPECT_EQ(L"F", fred.Left(1));
-  EXPECT_EQ(L"FR", fred.Left(2));
-  EXPECT_EQ(L"FRE", fred.Left(3));
-  EXPECT_EQ(L"FRED", fred.Left(4));
+  EXPECT_EQ(L"", fred.First(0));
+  EXPECT_EQ(L"F", fred.First(1));
+  EXPECT_EQ(L"FR", fred.First(2));
+  EXPECT_EQ(L"FRE", fred.First(3));
+  EXPECT_EQ(L"FRED", fred.First(4));
 
-  EXPECT_EQ(L"", fred.Left(5));
+  EXPECT_EQ(L"", fred.First(5));
 
   WideString empty;
-  EXPECT_EQ(L"", empty.Left(0));
-  EXPECT_EQ(L"", empty.Left(1));
+  EXPECT_EQ(L"", empty.First(0));
+  EXPECT_EQ(L"", empty.First(1));
 }
 
-TEST(WideString, Right) {
+TEST(WideString, Last) {
   WideString fred(L"FRED");
-  EXPECT_EQ(L"", fred.Right(0));
-  EXPECT_EQ(L"D", fred.Right(1));
-  EXPECT_EQ(L"ED", fred.Right(2));
-  EXPECT_EQ(L"RED", fred.Right(3));
-  EXPECT_EQ(L"FRED", fred.Right(4));
+  EXPECT_EQ(L"", fred.Last(0));
+  EXPECT_EQ(L"D", fred.Last(1));
+  EXPECT_EQ(L"ED", fred.Last(2));
+  EXPECT_EQ(L"RED", fred.Last(3));
+  EXPECT_EQ(L"FRED", fred.Last(4));
 
-  EXPECT_EQ(L"", fred.Right(5));
+  EXPECT_EQ(L"", fred.Last(5));
 
   WideString empty;
-  EXPECT_EQ(L"", empty.Right(0));
-  EXPECT_EQ(L"", empty.Right(1));
+  EXPECT_EQ(L"", empty.Last(0));
+  EXPECT_EQ(L"", empty.Last(1));
 }
 
 TEST(WideString, Find) {
@@ -649,9 +712,8 @@ TEST(WideString, Find) {
   EXPECT_FALSE(empty_string.Find(L'a').has_value());
   EXPECT_FALSE(empty_string.Find(L'\0').has_value());
 
-  Optional<size_t> result;
   WideString single_string(L"a");
-  result = single_string.Find(L'a');
+  Optional<size_t> result = single_string.Find(L'a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find(L'b').has_value());
@@ -684,6 +746,39 @@ TEST(WideString, Find) {
       L"ab\xff8c"
       L"def");
   result = hibyte_string.Find(L'\xff8c');
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(2u, result.value());
+}
+
+TEST(WideString, ReverseFind) {
+  WideString null_string;
+  EXPECT_FALSE(null_string.ReverseFind(L'a').has_value());
+  EXPECT_FALSE(null_string.ReverseFind(L'\0').has_value());
+
+  WideString empty_string(L"");
+  EXPECT_FALSE(empty_string.ReverseFind(L'a').has_value());
+  EXPECT_FALSE(empty_string.ReverseFind(L'\0').has_value());
+
+  WideString single_string(L"a");
+  Optional<size_t> result = single_string.ReverseFind(L'a');
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(0u, result.value());
+  EXPECT_FALSE(single_string.ReverseFind(L'b').has_value());
+  EXPECT_FALSE(single_string.ReverseFind(L'\0').has_value());
+
+  WideString longer_string(L"abccc");
+  result = longer_string.ReverseFind(L'a');
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(0u, result.value());
+  result = longer_string.ReverseFind(L'c');
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(4u, result.value());
+  EXPECT_FALSE(longer_string.ReverseFind(L'\0').has_value());
+
+  WideString hibyte_string(
+      L"ab\xff8c"
+      L"def");
+  result = hibyte_string.ReverseFind(L'\xff8c');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(2u, result.value());
 }
@@ -957,46 +1052,64 @@ TEST(WideString, OneCharReverseIterator) {
 TEST(WideString, MultiCharReverseIterator) {
   WideString multi_str(L"abcd");
   auto iter = multi_str.rbegin();
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(4, multi_str.rend() - iter);
+  EXPECT_EQ(0, iter - multi_str.rbegin());
 
   char ch = *iter++;
   EXPECT_EQ('d', ch);
   EXPECT_EQ('c', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(3, multi_str.rend() - iter);
+  EXPECT_EQ(1, iter - multi_str.rbegin());
 
   ch = *(++iter);
   EXPECT_EQ('b', ch);
   EXPECT_EQ('b', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(2, multi_str.rend() - iter);
+  EXPECT_EQ(2, iter - multi_str.rbegin());
 
   ch = *iter++;
   EXPECT_EQ('b', ch);
   EXPECT_EQ('a', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(1, multi_str.rend() - iter);
+  EXPECT_EQ(3, iter - multi_str.rbegin());
 
   ch = *iter++;
   EXPECT_EQ('a', ch);
-  EXPECT_TRUE(iter == multi_str.rend());
+  EXPECT_EQ(iter, multi_str.rend());
+  EXPECT_EQ(0, multi_str.rend() - iter);
+  EXPECT_EQ(4, iter - multi_str.rbegin());
 
   ch = *(--iter);
   EXPECT_EQ('a', ch);
   EXPECT_EQ('a', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(1, multi_str.rend() - iter);
+  EXPECT_EQ(3, iter - multi_str.rbegin());
 
   ch = *iter--;
   EXPECT_EQ('a', ch);
   EXPECT_EQ('b', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(2, multi_str.rend() - iter);
+  EXPECT_EQ(2, iter - multi_str.rbegin());
 
   ch = *iter--;
   EXPECT_EQ('b', ch);
   EXPECT_EQ('c', *iter);
-  EXPECT_FALSE(iter == multi_str.rend());
+  EXPECT_NE(iter, multi_str.rend());
+  EXPECT_EQ(3, multi_str.rend() - iter);
+  EXPECT_EQ(1, iter - multi_str.rbegin());
 
   ch = *(--iter);
   EXPECT_EQ('d', ch);
   EXPECT_EQ('d', *iter);
-  EXPECT_TRUE(iter == multi_str.rbegin());
+  EXPECT_EQ(iter, multi_str.rbegin());
+  EXPECT_EQ(4, multi_str.rend() - iter);
+  EXPECT_EQ(0, iter - multi_str.rbegin());
 }
 
 TEST(WideString, ToUTF16LE) {
@@ -1012,11 +1125,16 @@ TEST(WideString, ToUTF16LE) {
       {L"\x3132\x6162", ByteString("\x32\x31\x62\x61\0\0", 6)},
   };
 
-  for (size_t i = 0; i < FX_ArraySize(utf16le_encode_cases); ++i) {
+  for (size_t i = 0; i < pdfium::size(utf16le_encode_cases); ++i) {
     EXPECT_EQ(utf16le_encode_cases[i].bs,
               utf16le_encode_cases[i].ws.ToUTF16LE())
         << " for case number " << i;
   }
+}
+
+TEST(WideString, EncodeEntities) {
+  EXPECT_EQ(WideString(L"Symbols &<>'\".").EncodeEntities(),
+            L"Symbols &amp;&lt;&gt;&apos;&quot;.");
 }
 
 TEST(WideString, IsASCII) {
@@ -1081,7 +1199,7 @@ TEST(WideString, ToLatin1) {
 
 TEST(WideString, ToDefANSI) {
   EXPECT_EQ("", WideString().ToDefANSI());
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
   const char* kResult =
       "x"
       "?"
@@ -1133,7 +1251,7 @@ TEST(WideString, FromLatin1) {
 
 TEST(WideString, FromDefANSI) {
   EXPECT_EQ(L"", WideString::FromDefANSI(ByteStringView()));
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
   const wchar_t* kResult =
       L"x"
       L"\u20ac"
@@ -1354,9 +1472,8 @@ TEST(WideStringView, Find) {
   EXPECT_FALSE(empty_string.Find(L'a').has_value());
   EXPECT_FALSE(empty_string.Find(L'\0').has_value());
 
-  Optional<size_t> result;
   WideStringView single_string(L"a");
-  result = single_string.Find(L'a');
+  Optional<size_t> result = single_string.Find(L'a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find(L'b').has_value());
@@ -1506,9 +1623,9 @@ TEST(WideStringView, AnyAllNoneOf) {
   EXPECT_TRUE(std::any_of(str.begin(), str.end(),
                           [](const wchar_t& c) { return c == L'a'; }));
 
-  EXPECT_TRUE(pdfium::ContainsValue(str, L'a'));
-  EXPECT_TRUE(pdfium::ContainsValue(str, L'b'));
-  EXPECT_FALSE(pdfium::ContainsValue(str, L'z'));
+  EXPECT_TRUE(pdfium::Contains(str, L'a'));
+  EXPECT_TRUE(pdfium::Contains(str, L'b'));
+  EXPECT_FALSE(pdfium::Contains(str, L'z'));
 }
 
 TEST(WideStringView, TrimmedRight) {
@@ -1549,7 +1666,7 @@ TEST(WideString, FormatString) {
   EXPECT_EQ(L"cla", WideString::Format(L"%.3ls", L"clams"));
   EXPECT_EQ(L"\u043e\u043f", WideString(L"\u043e\u043f"));
 
-#if _FX_OS_ != _FX_OS_MACOSX_
+#if !defined(OS_APPLE)
   // See https://bugs.chromium.org/p/pdfium/issues/detail?id=1132
   EXPECT_EQ(L"\u043e\u043f", WideString::Format(L"\u043e\u043f"));
   EXPECT_EQ(L"\u043e\u043f", WideString::Format(L"%ls", L"\u043e\u043f"));
@@ -1566,7 +1683,7 @@ TEST(WideString, Empty) {
   EXPECT_NE(nullptr, cstr);
   EXPECT_EQ(0u, wcslen(cstr));
 
-  pdfium::span<const wchar_t> cspan = empty_str.AsSpan();
+  pdfium::span<const wchar_t> cspan = empty_str.span();
   EXPECT_TRUE(cspan.empty());
   EXPECT_EQ(nullptr, cspan.data());
 }
@@ -1646,9 +1763,9 @@ TEST(WideString, AnyAllNoneOf) {
   EXPECT_TRUE(std::any_of(str.begin(), str.end(),
                           [](const wchar_t& c) { return c == L'a'; }));
 
-  EXPECT_TRUE(pdfium::ContainsValue(str, L'a'));
-  EXPECT_TRUE(pdfium::ContainsValue(str, L'b'));
-  EXPECT_FALSE(pdfium::ContainsValue(str, L'z'));
+  EXPECT_TRUE(pdfium::Contains(str, L'a'));
+  EXPECT_TRUE(pdfium::Contains(str, L'b'));
+  EXPECT_FALSE(pdfium::Contains(str, L'z'));
 }
 
 TEST(WideString, OStreamOverload) {

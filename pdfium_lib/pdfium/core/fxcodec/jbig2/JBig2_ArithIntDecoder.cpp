@@ -8,7 +8,8 @@
 
 #include <vector>
 
-#include "core/fxcrt/fx_memory.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -27,7 +28,7 @@ size_t RecursiveDecode(CJBig2_ArithDecoder* decoder,
                        std::vector<JBig2ArithCtx>* context,
                        int* prev,
                        size_t depth) {
-  static const size_t kDepthEnd = FX_ArraySize(g_ArithIntDecodeData) - 1;
+  static const size_t kDepthEnd = pdfium::size(g_ArithIntDecodeData) - 1;
   if (depth == kDepthEnd)
     return kDepthEnd;
 
@@ -45,7 +46,7 @@ CJBig2_ArithIntDecoder::CJBig2_ArithIntDecoder() {
   m_IAx.resize(512);
 }
 
-CJBig2_ArithIntDecoder::~CJBig2_ArithIntDecoder() {}
+CJBig2_ArithIntDecoder::~CJBig2_ArithIntDecoder() = default;
 
 bool CJBig2_ArithIntDecoder::Decode(CJBig2_ArithDecoder* pArithDecoder,
                                     int* nResult) {
@@ -67,8 +68,7 @@ bool CJBig2_ArithIntDecoder::Decode(CJBig2_ArithDecoder* pArithDecoder,
       PREV = (PREV & 511) | 256;
     nTemp = ShiftOr(nTemp, D);
   }
-  pdfium::base::CheckedNumeric<int> safeValue =
-      g_ArithIntDecodeData[nDecodeDataIndex].nValue;
+  FX_SAFE_INT32 safeValue = g_ArithIntDecodeData[nDecodeDataIndex].nValue;
   safeValue += nTemp;
 
   // Value does not fit in int.
@@ -90,7 +90,7 @@ CJBig2_ArithIaidDecoder::CJBig2_ArithIaidDecoder(unsigned char SBSYMCODELENA)
   m_IAID.resize(static_cast<size_t>(1) << SBSYMCODELEN);
 }
 
-CJBig2_ArithIaidDecoder::~CJBig2_ArithIaidDecoder() {}
+CJBig2_ArithIaidDecoder::~CJBig2_ArithIaidDecoder() = default;
 
 void CJBig2_ArithIaidDecoder::Decode(CJBig2_ArithDecoder* pArithDecoder,
                                      uint32_t* nResult) {

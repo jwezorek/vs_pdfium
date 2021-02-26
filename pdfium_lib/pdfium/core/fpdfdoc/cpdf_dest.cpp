@@ -12,6 +12,8 @@
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_name.h"
 #include "core/fpdfapi/parser/cpdf_number.h"
+#include "core/fpdfdoc/cpdf_nametree.h"
+#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -24,19 +26,28 @@ const char* const g_sZoomModes[] = {"Unknown", "XYZ",  "Fit",  "FitH",
 
 const uint8_t g_sZoomModeMaxParamCount[] = {0, 3, 0, 1, 1, 4, 0, 1, 1, 0};
 
-static_assert(FX_ArraySize(g_sZoomModes) ==
-                  FX_ArraySize(g_sZoomModeMaxParamCount),
+static_assert(pdfium::size(g_sZoomModes) ==
+                  pdfium::size(g_sZoomModeMaxParamCount),
               "Zoom mode count Mismatch");
 
 }  // namespace
 
-CPDF_Dest::CPDF_Dest() {}
+CPDF_Dest::CPDF_Dest(const CPDF_Array* pArray) : m_pArray(pArray) {}
 
 CPDF_Dest::CPDF_Dest(const CPDF_Dest& that) = default;
 
-CPDF_Dest::CPDF_Dest(const CPDF_Array* pArray) : m_pArray(pArray) {}
+CPDF_Dest::~CPDF_Dest() = default;
 
-CPDF_Dest::~CPDF_Dest() {}
+// static
+CPDF_Dest CPDF_Dest::Create(CPDF_Document* pDoc, const CPDF_Object* pDest) {
+  if (!pDest)
+    return CPDF_Dest(nullptr);
+
+  if (pDest->IsString() || pDest->IsName())
+    return CPDF_Dest(CPDF_NameTree::LookupNamedDest(pDoc, pDest->GetString()));
+
+  return CPDF_Dest(pDest->AsArray());
+}
 
 int CPDF_Dest::GetDestPageIndex(CPDF_Document* pDoc) const {
   if (!m_pArray)
@@ -129,8 +140,4 @@ unsigned long CPDF_Dest::GetNumParams() const {
 
 float CPDF_Dest::GetParam(int index) const {
   return m_pArray ? m_pArray->GetNumberAt(2 + index) : 0;
-}
-
-ByteString CPDF_Dest::GetRemoteName() const {
-  return m_pArray ? m_pArray->GetString() : ByteString();
 }

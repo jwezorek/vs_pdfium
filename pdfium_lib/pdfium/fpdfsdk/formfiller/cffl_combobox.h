@@ -12,12 +12,12 @@
 #include "core/fxcrt/fx_string.h"
 #include "fpdfsdk/formfiller/cffl_textobject.h"
 
-class CBA_FontMap;
+class CPWL_ComboBox;
 
 struct FFL_ComboBoxState {
-  int nIndex;
-  int nStart;
-  int nEnd;
+  int nIndex = 0;
+  int nStart = 0;
+  int nEnd = 0;
   WideString sValue;
 };
 
@@ -31,7 +31,8 @@ class CFFL_ComboBox final : public CFFL_TextObject,
   CPWL_Wnd::CreateParams GetCreateParam() override;
   std::unique_ptr<CPWL_Wnd> NewPWLWindow(
       const CPWL_Wnd::CreateParams& cp,
-      std::unique_ptr<CPWL_Wnd::PrivateData> pAttachedData) override;
+      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData)
+      override;
   bool OnChar(CPDFSDK_Annot* pAnnot, uint32_t nChar, uint32_t nFlags) override;
   bool IsDataChanged(CPDFSDK_PageView* pPageView) override;
   void SaveData(CPDFSDK_PageView* pPageView) override;
@@ -41,9 +42,6 @@ class CFFL_ComboBox final : public CFFL_TextObject,
   void SetActionData(CPDFSDK_PageView* pPageView,
                      CPDF_AAction::AActionType type,
                      const CPDFSDK_FieldAction& fa) override;
-  bool IsActionDataChanged(CPDF_AAction::AActionType type,
-                           const CPDFSDK_FieldAction& faOld,
-                           const CPDFSDK_FieldAction& faNew) override;
   void SaveState(CPDFSDK_PageView* pPageView) override;
   void RestoreState(CPDFSDK_PageView* pPageView) override;
   bool SetIndexSelected(int index, bool selected) override;
@@ -57,6 +55,7 @@ class CFFL_ComboBox final : public CFFL_TextObject,
 
  private:
   WideString GetSelectExportText();
+  CPWL_ComboBox* GetComboBox(CPDFSDK_PageView* pPageView, bool bNew);
 
   FFL_ComboBoxState m_State;
 };

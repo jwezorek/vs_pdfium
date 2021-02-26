@@ -9,8 +9,6 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_safe_types.h"
-#include "core/fxcrt/fx_stream.h"
 #include "core/fxcrt/fx_string.h"
 
 class FileAccessIface {

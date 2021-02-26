@@ -10,12 +10,21 @@
 #include "core/fpdfdoc/cpdf_iconfit.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
-#include "core/fxcrt/unowned_ptr.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxge/dib/fx_dib.h"
 
 class CPDF_Dictionary;
 class CPDF_FormControl;
 class CPDF_Stream;
+
+// Corresponds to PDF spec section 12.5.6.19 (Widget annotation TP dictionary).
+#define TEXTPOS_CAPTION 0
+#define TEXTPOS_ICON 1
+#define TEXTPOS_BELOW 2
+#define TEXTPOS_ABOVE 3
+#define TEXTPOS_RIGHT 4
+#define TEXTPOS_LEFT 5
+#define TEXTPOS_OVERLAID 6
 
 class CPDF_ApSettings {
  public:
@@ -57,6 +66,8 @@ class CPDF_ApSettings {
   CPDF_Stream* GetRolloverIcon() const { return GetIcon("RI"); }
   CPDF_Stream* GetDownIcon() const { return GetIcon("IX"); }
   CPDF_IconFit GetIconFit() const;
+
+  // Returns one of the TEXTPOS_* values above.
   int GetTextPosition() const;
 
   FX_ARGB GetColor(int& iColorType, const ByteString& csEntry) const;
@@ -69,7 +80,7 @@ class CPDF_ApSettings {
   CPDF_Stream* GetIcon(const ByteString& csEntry) const;
 
  private:
-  UnownedPtr<CPDF_Dictionary> const m_pDict;
+  RetainPtr<CPDF_Dictionary> const m_pDict;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_APSETTINGS_H_

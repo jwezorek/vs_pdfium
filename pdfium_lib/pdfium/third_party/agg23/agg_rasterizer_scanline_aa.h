@@ -38,6 +38,8 @@
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_memory.h"
 
+namespace pdfium
+{
 namespace agg
 {
 enum poly_base_scale_e {
@@ -338,25 +340,43 @@ public:
                 const cell_aa* cur_cell = *cells;
                 int x    = cur_cell->x;
                 int area = cur_cell->area;
-                unsigned alpha;
-                cover += cur_cell->cover;
+                bool seen_area_overflow = false;
+                bool seen_cover_overflow = false;
+                if(!safe_add(&cover, cur_cell->cover)) {
+                    break;
+                }
                 while(--num_cells) {
                     cur_cell = *++cells;
                     if(cur_cell->x != x) {
                         break;
                     }
-                    area  += cur_cell->area;
-                    cover += cur_cell->cover;
+                    if(seen_area_overflow) {
+                        continue;
+                    }
+                    if(!safe_add(&area, cur_cell->area)) {
+                        seen_area_overflow = true;
+                        continue;
+                    }
+                    if(!safe_add(&cover, cur_cell->cover)) {
+                        seen_cover_overflow = true;
+                        break;
+                    }
+                }
+                if(seen_area_overflow) {
+                    continue;
+                }
+                if(seen_cover_overflow) {
+                    break;
                 }
                 if(area) {
-                    alpha = calculate_alpha(calculate_area(cover, poly_base_shift + 1) - area, no_smooth);
+                    unsigned alpha = calculate_alpha(calculate_area(cover, poly_base_shift + 1) - area, no_smooth);
                     if(alpha) {
                         sl.add_cell(x, alpha);
                     }
                     x++;
                 }
                 if(num_cells && cur_cell->x > x) {
-                    alpha = calculate_alpha(calculate_area(cover, poly_base_shift + 1), no_smooth);
+                    unsigned alpha = calculate_alpha(calculate_area(cover, poly_base_shift + 1), no_smooth);
                     if(alpha) {
                         sl.add_span(x, cur_cell->x - x, alpha);
                     }
@@ -458,12 +478,10 @@ private:
         m_prev_x = x;
         m_prev_y = y;
     }
-    static int calculate_area(int cover, int shift) {
-        unsigned int result = cover;
-        result <<= shift;
-        return result;
-    }
 private:
+    static int calculate_area(int cover, int shift);
+    static bool safe_add(int* op1, int op2);
+
     outline_aa     m_outline;
     filling_rule_e m_filling_rule;
     int            m_clipped_start_x;
@@ -479,4 +497,5 @@ private:
     int            m_cur_y;
 };
 }
+}  // namespace pdfium
 #endif

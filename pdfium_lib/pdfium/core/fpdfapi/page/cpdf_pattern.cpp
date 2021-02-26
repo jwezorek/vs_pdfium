@@ -7,13 +7,25 @@
 #include "core/fpdfapi/page/cpdf_pattern.h"
 
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
+#include "third_party/base/check.h"
 
 CPDF_Pattern::CPDF_Pattern(CPDF_Document* pDoc,
                            CPDF_Object* pObj,
                            const CFX_Matrix& parentMatrix)
-    : m_pDocument(pDoc), m_pPatternObj(pObj), m_ParentMatrix(parentMatrix) {}
+    : m_pDocument(pDoc), m_pPatternObj(pObj), m_ParentMatrix(parentMatrix) {
+  DCHECK(m_pDocument);
+  DCHECK(m_pPatternObj);
+}
 
-CPDF_Pattern::~CPDF_Pattern() {}
+CPDF_Pattern::~CPDF_Pattern() = default;
+
+CPDF_TilingPattern* CPDF_Pattern::AsTilingPattern() {
+  return nullptr;
+}
+
+CPDF_ShadingPattern* CPDF_Pattern::AsShadingPattern() {
+  return nullptr;
+}
 
 void CPDF_Pattern::SetPatternToFormMatrix() {
   const CPDF_Dictionary* pDict = pattern_obj()->GetDict();

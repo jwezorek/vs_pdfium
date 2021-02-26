@@ -25,8 +25,10 @@
 #include <cctype>
 #include <memory>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "fxbarcode/BC_Writer.h"
 #include "fxbarcode/oned/BC_OneDimWriter.h"
+#include "third_party/base/check.h"
 
 namespace {
 
@@ -74,22 +76,23 @@ const int32_t CODE_START_B = 104;
 const int32_t CODE_START_C = 105;
 const int32_t CODE_STOP = 106;
 
+bool IsInOnedCode128Alphabet(wchar_t ch) {
+  int32_t index = static_cast<int32_t>(ch);
+  return index >= 32 && index <= 126 && index != 34;
+}
+
 }  // namespace
 
 CBC_OnedCode128Writer::CBC_OnedCode128Writer(BC_TYPE type)
     : m_codeFormat(type) {
-  ASSERT(m_codeFormat == BC_CODE128_B || m_codeFormat == BC_CODE128_C);
+  DCHECK(m_codeFormat == BC_CODE128_B || m_codeFormat == BC_CODE128_C);
 }
 
 CBC_OnedCode128Writer::~CBC_OnedCode128Writer() = default;
 
 bool CBC_OnedCode128Writer::CheckContentValidity(WideStringView contents) {
-  for (const auto& ch : contents) {
-    int32_t patternIndex = static_cast<int32_t>(ch);
-    if (patternIndex < 32 || patternIndex > 126 || patternIndex == 34)
-      return false;
-  }
-  return true;
+  return HasValidContentSize(contents) &&
+         std::all_of(contents.begin(), contents.end(), IsInOnedCode128Alphabet);
 }
 
 WideString CBC_OnedCode128Writer::FilterContents(WideStringView contents) {
@@ -186,7 +189,7 @@ int32_t CBC_OnedCode128Writer::Encode128C(const ByteString& contents,
     char ch = contents[position];
     if (std::isdigit(ch)) {
       patternIndex = FXSYS_atoi(
-          contents.Mid(position, contents.IsValidIndex(position + 1) ? 2 : 1)
+          contents.Substr(position, contents.IsValidIndex(position + 1) ? 2 : 1)
               .c_str());
       ++position;
       if (position < contents.GetLength() && std::isdigit(contents[position]))

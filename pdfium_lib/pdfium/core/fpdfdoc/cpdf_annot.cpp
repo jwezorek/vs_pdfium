@@ -17,13 +17,16 @@
 #include "core/fpdfapi/parser/cpdf_boolean.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
+#include "core/fpdfapi/parser/fpdf_parser_utility.h"
+#include "core/fpdfapi/render/cpdf_pagerendercache.h"
 #include "core/fpdfapi/render/cpdf_rendercontext.h"
 #include "core/fpdfapi/render/cpdf_renderoptions.h"
 #include "core/fpdfdoc/cpvt_generateap.h"
+#include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/cfx_graphstatedata.h"
 #include "core/fxge/cfx_pathdata.h"
 #include "core/fxge/cfx_renderdevice.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 
 namespace {
 
@@ -92,7 +95,7 @@ CPDF_Stream* GetAnnotAPInternal(CPDF_Dictionary* pAnnotDict,
 
 }  // namespace
 
-CPDF_Annot::CPDF_Annot(std::unique_ptr<CPDF_Dictionary> pDict,
+CPDF_Annot::CPDF_Annot(RetainPtr<CPDF_Dictionary> pDict,
                        CPDF_Document* pDocument)
     : m_pAnnotDict(std::move(pDict)), m_pDocument(pDocument) {
   Init();
@@ -177,13 +180,13 @@ bool CPDF_Annot::IsHidden() const {
 
 CPDF_Stream* GetAnnotAP(CPDF_Dictionary* pAnnotDict,
                         CPDF_Annot::AppearanceMode eMode) {
-  ASSERT(pAnnotDict);
+  DCHECK(pAnnotDict);
   return GetAnnotAPInternal(pAnnotDict, eMode, true);
 }
 
 CPDF_Stream* GetAnnotAPNoFallback(CPDF_Dictionary* pAnnotDict,
                                   CPDF_Annot::AppearanceMode eMode) {
-  ASSERT(pAnnotDict);
+  DCHECK(pAnnotDict);
   return GetAnnotAPInternal(pAnnotDict, eMode, false);
 }
 
@@ -196,9 +199,9 @@ CPDF_Form* CPDF_Annot::GetAPForm(const CPDF_Page* pPage, AppearanceMode mode) {
   if (it != m_APMap.end())
     return it->second.get();
 
-  auto pNewForm = pdfium::MakeUnique<CPDF_Form>(
+  auto pNewForm = std::make_unique<CPDF_Form>(
       m_pDocument.Get(), pPage->m_pResources.Get(), pStream);
-  pNewForm->ParseContent(nullptr, nullptr, nullptr, nullptr);
+  pNewForm->ParseContent();
 
   CPDF_Form* pResult = pNewForm.get();
   m_APMap[pStream] = std::move(pNewForm);
@@ -208,8 +211,8 @@ CPDF_Form* CPDF_Annot::GetAPForm(const CPDF_Page* pPage, AppearanceMode mode) {
 // static
 CFX_FloatRect CPDF_Annot::RectFromQuadPointsArray(const CPDF_Array* pArray,
                                                   size_t nIndex) {
-  ASSERT(pArray);
-  ASSERT(nIndex < pArray->size() / 8);
+  DCHECK(pArray);
+  DCHECK(nIndex < pArray->size() / 8);
 
   // QuadPoints are defined with 4 pairs of numbers
   // ([ pair0, pair1, pair2, pair3 ]), where
@@ -311,6 +314,8 @@ CPDF_Annot::Subtype CPDF_Annot::StringToAnnotSubtype(
     return CPDF_Annot::Subtype::RICHMEDIA;
   if (sSubtype == "XFAWidget")
     return CPDF_Annot::Subtype::XFAWIDGET;
+  if (sSubtype == "Redact")
+    return CPDF_Annot::Subtype::REDACT;
   return CPDF_Annot::Subtype::UNKNOWN;
 }
 
@@ -370,6 +375,8 @@ ByteString CPDF_Annot::AnnotSubtypeToString(CPDF_Annot::Subtype nSubtype) {
     return "RichMedia";
   if (nSubtype == CPDF_Annot::Subtype::XFAWIDGET)
     return "XFAWidget";
+  if (nSubtype == CPDF_Annot::Subtype::REDACT)
+    return "Redact";
   return ByteString();
 }
 
@@ -398,7 +405,9 @@ bool CPDF_Annot::DrawAppearance(CPDF_Page* pPage,
   if (!pForm)
     return false;
 
-  CPDF_RenderContext context(pPage);
+  CPDF_RenderContext context(
+      pPage->GetDocument(), pPage->m_pPageResources.Get(),
+      static_cast<CPDF_PageRenderCache*>(pPage->GetRenderCache()));
   context.AppendLayer(pForm, &matrix);
   context.Render(pDevice, pOptions, nullptr);
   return true;
@@ -437,8 +446,7 @@ void CPDF_Annot::DrawBorder(CFX_RenderDevice* pDevice,
   if (annot_flags & pdfium::annotation_flags::kHidden)
     return;
 
-  bool bPrinting = pDevice->GetDeviceClass() == FXDC_PRINTER ||
-                   (pOptions && pOptions->GetOptions().bPrintPreview);
+  bool bPrinting = pDevice->GetDeviceType() == DeviceType::kPrinter;
   if (bPrinting && (annot_flags & pdfium::annotation_flags::kPrint) == 0) {
     return;
   }
@@ -479,7 +487,7 @@ void CPDF_Annot::DrawBorder(CFX_RenderDevice* pDevice,
   } else {
     ByteString style = pBS->GetStringFor("S");
     pDashArray = pBS->GetArrayFor("D");
-    style_char = style[1];
+    style_char = style[0];
     width = pBS->GetNumberFor("W");
   }
   if (width <= 0) {
@@ -488,27 +496,25 @@ void CPDF_Annot::DrawBorder(CFX_RenderDevice* pDevice,
   CPDF_Array* pColor = m_pAnnotDict->GetArrayFor(pdfium::annotation::kC);
   uint32_t argb = 0xff000000;
   if (pColor) {
-    int R = (int32_t)(pColor->GetNumberAt(0) * 255);
-    int G = (int32_t)(pColor->GetNumberAt(1) * 255);
-    int B = (int32_t)(pColor->GetNumberAt(2) * 255);
+    int R = static_cast<int32_t>(pColor->GetNumberAt(0) * 255);
+    int G = static_cast<int32_t>(pColor->GetNumberAt(1) * 255);
+    int B = static_cast<int32_t>(pColor->GetNumberAt(2) * 255);
     argb = ArgbEncode(0xff, R, G, B);
   }
   CFX_GraphStateData graph_state;
   graph_state.m_LineWidth = width;
+  if (style_char == 'U') {
+    // TODO(https://crbug.com/237527): Handle the "Underline" border style
+    // instead of drawing the rectangle border.
+    return;
+  }
+
   if (style_char == 'D') {
     if (pDashArray) {
-      size_t dash_count = pDashArray->size();
-      if (dash_count % 2) {
-        dash_count++;
-      }
-      graph_state.m_DashArray.resize(dash_count);
-      size_t i;
-      for (i = 0; i < pDashArray->size(); ++i) {
-        graph_state.m_DashArray[i] = pDashArray->GetNumberAt(i);
-      }
-      if (i < dash_count) {
-        graph_state.m_DashArray[i] = graph_state.m_DashArray[i - 1];
-      }
+      graph_state.m_DashArray =
+          ReadArrayElementsToVector(pDashArray, pDashArray->size());
+      if (graph_state.m_DashArray.size() % 2)
+        graph_state.m_DashArray.push_back(graph_state.m_DashArray.back());
     } else {
       graph_state.m_DashArray = {3.0f, 3.0f};
     }
@@ -517,11 +523,12 @@ void CPDF_Annot::DrawBorder(CFX_RenderDevice* pDevice,
   CFX_FloatRect rect = GetRect();
   rect.Deflate(width / 2, width / 2);
   CFX_PathData path;
-  path.AppendRect(rect);
+  path.AppendFloatRect(rect);
 
-  int fill_type = 0;
+  CFX_FillRenderOptions fill_options;
   if (pOptions && pOptions->GetOptions().bNoPathSmooth)
-    fill_type |= FXFILL_NOPATHSMOOTH;
+    fill_options.aliased_path = true;
 
-  pDevice->DrawPath(&path, pUser2Device, &graph_state, argb, argb, fill_type);
+  pDevice->DrawPath(&path, pUser2Device, &graph_state, argb, argb,
+                    fill_options);
 }

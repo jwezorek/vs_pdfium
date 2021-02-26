@@ -19,7 +19,7 @@
 //    an unowned ptr will fail to compile rather than silently succeeding,
 //    since it is a class and not a raw pointer.
 //
-// 2. When built for a memory tool like ASAN, the class provides a destructor
+// 2. When built using the memory tool ASAN, the class provides a destructor
 //    which checks that the object being pointed to is still alive.
 //
 // Hence, when using UnownedPtr, no dangling pointers are ever permitted,
@@ -50,6 +50,9 @@ class UnownedPtr {
   constexpr UnownedPtr() noexcept = default;
   constexpr UnownedPtr(const UnownedPtr& that) noexcept = default;
 
+  // Move-construct an UnownedPtr. After construction, |that| will be NULL.
+  constexpr UnownedPtr(UnownedPtr&& that) noexcept : m_pObj(that.Release()) {}
+
   template <typename U>
   explicit constexpr UnownedPtr(U* pObj) noexcept : m_pObj(pObj) {}
 
@@ -59,16 +62,26 @@ class UnownedPtr {
 
   ~UnownedPtr() { ProbeForLowSeverityLifetimeIssue(); }
 
-  UnownedPtr& operator=(T* that) noexcept {
+  void Reset(T* obj = nullptr) {
     ProbeForLowSeverityLifetimeIssue();
-    m_pObj = that;
+    m_pObj = obj;
+  }
+
+  UnownedPtr& operator=(T* that) noexcept {
+    Reset(that);
     return *this;
   }
 
   UnownedPtr& operator=(const UnownedPtr& that) noexcept {
-    ProbeForLowSeverityLifetimeIssue();
     if (*this != that)
-      m_pObj = that.Get();
+      Reset(that.Get());
+    return *this;
+  }
+
+  // Move-assign an UnownedPtr. After assignment, |that| will be NULL.
+  UnownedPtr& operator=(UnownedPtr&& that) noexcept {
+    if (*this != that)
+      Reset(that.Release());
     return *this;
   }
 
@@ -78,16 +91,7 @@ class UnownedPtr {
     return std::less<T*>()(Get(), that.Get());
   }
 
-  template <typename U>
-  bool operator==(const U* that) const {
-    return Get() == that;
-  }
-
-  template <typename U>
-  bool operator!=(const U* that) const {
-    return !(*this == that);
-  }
-
+  operator T*() const noexcept { return Get(); }
   T* Get() const noexcept { return m_pObj; }
 
   T* Release() {
@@ -105,30 +109,20 @@ class UnownedPtr {
   friend class pdfium::span<T>;
 
   inline void ProbeForLowSeverityLifetimeIssue() {
-#if defined(MEMORY_TOOL_REPLACES_ALLOCATOR)
+#if defined(ADDRESS_SANITIZER)
     if (m_pObj)
       reinterpret_cast<const volatile uint8_t*>(m_pObj)[0];
 #endif
   }
 
   inline void ReleaseBadPointer() {
-#if defined(MEMORY_TOOL_REPLACES_ALLOCATOR)
+#if defined(ADDRESS_SANITIZER)
     m_pObj = nullptr;
 #endif
   }
 
   T* m_pObj = nullptr;
 };
-
-template <typename T, typename U>
-inline bool operator==(const U* lhs, const UnownedPtr<T>& rhs) {
-  return rhs == lhs;
-}
-
-template <typename T, typename U>
-inline bool operator!=(const U* lhs, const UnownedPtr<T>& rhs) {
-  return rhs != lhs;
-}
 
 }  // namespace fxcrt
 

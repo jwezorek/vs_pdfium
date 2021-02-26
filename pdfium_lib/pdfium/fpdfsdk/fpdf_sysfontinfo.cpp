@@ -6,6 +6,8 @@
 
 #include "public/fpdf_sysfontinfo.h"
 
+#include <stddef.h>
+
 #include <memory>
 
 #include "core/fxcrt/fx_codepage.h"
@@ -15,8 +17,6 @@
 #include "core/fxge/cfx_gemodule.h"
 #include "core/fxge/fx_font.h"
 #include "core/fxge/systemfontinfo_iface.h"
-#include "fpdfsdk/cpdfsdk_helpers.h"
-#include "third_party/base/ptr_util.h"
 
 static_assert(FXFONT_ANSI_CHARSET == FX_CHARSET_ANSI, "Charset must match");
 static_assert(FXFONT_DEFAULT_CHARSET == FX_CHARSET_Default,
@@ -30,8 +30,21 @@ static_assert(FXFONT_GB2312_CHARSET == FX_CHARSET_ChineseSimplified,
               "Charset must match");
 static_assert(FXFONT_CHINESEBIG5_CHARSET == FX_CHARSET_ChineseTraditional,
               "Charset must match");
+static_assert(FXFONT_ARABIC_CHARSET == FX_CHARSET_MSWin_Arabic,
+              "Charset must match");
+static_assert(FXFONT_CYRILLIC_CHARSET == FX_CHARSET_MSWin_Cyrillic,
+              "Charset must match");
+static_assert(FXFONT_EASTERNEUROPEAN_CHARSET ==
+                  FX_CHARSET_MSWin_EasternEuropean,
+              "Charset must match");
+static_assert(offsetof(CFX_Font::CharsetFontMap, charset) ==
+                  offsetof(FPDF_CharsetFontMap, charset),
+              "CFX_Font::CharsetFontMap must be same as FPDF_CharsetFontMap");
+static_assert(offsetof(CFX_Font::CharsetFontMap, fontname) ==
+                  offsetof(FPDF_CharsetFontMap, fontname),
+              "CFX_Font::CharsetFontMap must be same as FPDF_CharsetFontMap");
 static_assert(sizeof(CFX_Font::CharsetFontMap) == sizeof(FPDF_CharsetFontMap),
-              "CFX_Font::CharsetFontMap should be same as FPDF_CharsetFontMap");
+              "CFX_Font::CharsetFontMap must be same as FPDF_CharsetFontMap");
 
 class CFX_ExternalFontInfo final : public SystemFontInfoIface {
  public:
@@ -70,11 +83,11 @@ class CFX_ExternalFontInfo final : public SystemFontInfoIface {
 
   uint32_t GetFontData(void* hFont,
                        uint32_t table,
-                       uint8_t* buffer,
-                       uint32_t size) override {
+                       pdfium::span<uint8_t> buffer) override {
     if (!m_pInfo->GetFontData)
       return 0;
-    return m_pInfo->GetFontData(m_pInfo, hFont, table, buffer, size);
+    return m_pInfo->GetFontData(m_pInfo, hFont, table, buffer.data(),
+                                buffer.size());
   }
 
   bool GetFaceName(void* hFont, ByteString* name) override {
@@ -108,10 +121,10 @@ class CFX_ExternalFontInfo final : public SystemFontInfoIface {
 };
 
 FPDF_EXPORT void FPDF_CALLCONV FPDF_AddInstalledFont(void* mapper,
-                                                     const char* name,
+                                                     const char* face,
                                                      int charset) {
   CFX_FontMapper* pMapper = static_cast<CFX_FontMapper*>(mapper);
-  pMapper->AddInstalledFont(name, charset);
+  pMapper->AddInstalledFont(face, charset);
 }
 
 FPDF_EXPORT void FPDF_CALLCONV
@@ -120,11 +133,11 @@ FPDF_SetSystemFontInfo(FPDF_SYSFONTINFO* pFontInfoExt) {
     return;
 
   CFX_GEModule::Get()->GetFontMgr()->SetSystemFontInfo(
-      pdfium::MakeUnique<CFX_ExternalFontInfo>(pFontInfoExt));
+      std::make_unique<CFX_ExternalFontInfo>(pFontInfoExt));
 }
 
 FPDF_EXPORT const FPDF_CharsetFontMap* FPDF_CALLCONV FPDF_GetDefaultTTFMap() {
-  return reinterpret_cast<const FPDF_CharsetFontMap*>(CFX_Font::defaultTTFMap);
+  return reinterpret_cast<const FPDF_CharsetFontMap*>(CFX_Font::kDefaultTTFMap);
 }
 
 struct FPDF_SYSFONTINFO_DEFAULT final : public FPDF_SYSFONTINFO {
@@ -164,7 +177,7 @@ static unsigned long DefaultGetFontData(struct _FPDF_SYSFONTINFO* pThis,
                                         unsigned char* buffer,
                                         unsigned long buf_size) {
   auto* pDefault = static_cast<FPDF_SYSFONTINFO_DEFAULT*>(pThis);
-  return pDefault->m_pFontInfo->GetFontData(hFont, table, buffer, buf_size);
+  return pDefault->m_pFontInfo->GetFontData(hFont, table, {buffer, buf_size});
 }
 
 static unsigned long DefaultGetFaceName(struct _FPDF_SYSFONTINFO* pThis,
@@ -198,7 +211,7 @@ static void DefaultDeleteFont(struct _FPDF_SYSFONTINFO* pThis, void* hFont) {
 
 FPDF_EXPORT FPDF_SYSFONTINFO* FPDF_CALLCONV FPDF_GetDefaultSystemFontInfo() {
   std::unique_ptr<SystemFontInfoIface> pFontInfo =
-      SystemFontInfoIface::CreateDefault(nullptr);
+      CFX_GEModule::Get()->GetPlatform()->CreateDefaultSystemFontInfo();
   if (!pFontInfo)
     return nullptr;
 
@@ -218,6 +231,6 @@ FPDF_EXPORT FPDF_SYSFONTINFO* FPDF_CALLCONV FPDF_GetDefaultSystemFontInfo() {
 }
 
 FPDF_EXPORT void FPDF_CALLCONV
-FPDF_FreeDefaultSystemFontInfo(FPDF_SYSFONTINFO* pDefaultFontInfo) {
-  FX_Free(static_cast<FPDF_SYSFONTINFO_DEFAULT*>(pDefaultFontInfo));
+FPDF_FreeDefaultSystemFontInfo(FPDF_SYSFONTINFO* pFontInfo) {
+  FX_Free(static_cast<FPDF_SYSFONTINFO_DEFAULT*>(pFontInfo));
 }

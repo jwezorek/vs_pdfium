@@ -7,8 +7,6 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_STRING_H_
 #define CORE_FPDFAPI_PARSER_CPDF_STRING_H_
 
-#include <memory>
-
 #include "core/fpdfapi/parser/cpdf_object.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
@@ -17,14 +15,11 @@
 
 class CPDF_String final : public CPDF_Object {
  public:
-  CPDF_String();
-  CPDF_String(WeakPtr<ByteStringPool> pPool, const ByteString& str, bool bHex);
-  CPDF_String(WeakPtr<ByteStringPool> pPool, const WideString& str);
-  ~CPDF_String() override;
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   // CPDF_Object:
   Type GetType() const override;
-  std::unique_ptr<CPDF_Object> Clone() const override;
+  RetainPtr<CPDF_Object> Clone() const override;
   ByteString GetString() const override;
   WideString GetUnicodeText() const override;
   void SetString(const ByteString& str) override;
@@ -37,8 +32,13 @@ class CPDF_String final : public CPDF_Object {
   bool IsHex() const { return m_bHex; }
 
  private:
+  CPDF_String();
+  CPDF_String(WeakPtr<ByteStringPool> pPool, const ByteString& str, bool bHex);
+  CPDF_String(WeakPtr<ByteStringPool> pPool, const WideString& str);
+  ~CPDF_String() override;
+
   ByteString m_String;
-  bool m_bHex;
+  bool m_bHex = false;
 };
 
 inline CPDF_String* ToString(CPDF_Object* obj) {

@@ -16,8 +16,8 @@
 #include "core/fpdfdoc/csection.h"
 #include "core/fpdfdoc/ipvt_fontmap.h"
 #include "core/fxcrt/fx_codepage.h"
+#include "third_party/base/check.h"
 #include "third_party/base/compiler_specific.h"
-#include "third_party/base/ptr_util.h"
 #include "third_party/base/stl_util.h"
 
 namespace {
@@ -33,41 +33,42 @@ const uint8_t gFontSizeSteps[] = {4,  6,  8,   9,   10,  12,  14, 18, 20,
 
 CPDF_VariableText::Provider::Provider(IPVT_FontMap* pFontMap)
     : m_pFontMap(pFontMap) {
-  ASSERT(m_pFontMap);
+  DCHECK(m_pFontMap);
 }
 
-CPDF_VariableText::Provider::~Provider() {}
+CPDF_VariableText::Provider::~Provider() = default;
 
-uint32_t CPDF_VariableText::Provider::GetCharWidth(int32_t nFontIndex,
-                                                   uint16_t word) {
-  if (CPDF_Font* pPDFFont = m_pFontMap->GetPDFFont(nFontIndex)) {
-    uint32_t charcode = pPDFFont->CharCodeFromUnicode(word);
-    if (charcode != CPDF_Font::kInvalidCharCode)
-      return pPDFFont->GetCharWidthF(charcode);
-  }
-  return 0;
+int CPDF_VariableText::Provider::GetCharWidth(int32_t nFontIndex,
+                                              uint16_t word) {
+  RetainPtr<CPDF_Font> pPDFFont = m_pFontMap->GetPDFFont(nFontIndex);
+  if (!pPDFFont)
+    return 0;
+
+  uint32_t charcode = pPDFFont->CharCodeFromUnicode(word);
+  if (charcode == CPDF_Font::kInvalidCharCode)
+    return 0;
+
+  return pPDFFont->GetCharWidthF(charcode);
 }
 
 int32_t CPDF_VariableText::Provider::GetTypeAscent(int32_t nFontIndex) {
-  if (CPDF_Font* pPDFFont = m_pFontMap->GetPDFFont(nFontIndex))
-    return pPDFFont->GetTypeAscent();
-  return 0;
+  RetainPtr<CPDF_Font> pPDFFont = m_pFontMap->GetPDFFont(nFontIndex);
+  return pPDFFont ? pPDFFont->GetTypeAscent() : 0;
 }
 
 int32_t CPDF_VariableText::Provider::GetTypeDescent(int32_t nFontIndex) {
-  if (CPDF_Font* pPDFFont = m_pFontMap->GetPDFFont(nFontIndex))
-    return pPDFFont->GetTypeDescent();
-  return 0;
+  RetainPtr<CPDF_Font> pPDFFont = m_pFontMap->GetPDFFont(nFontIndex);
+  return pPDFFont ? pPDFFont->GetTypeDescent() : 0;
 }
 
 int32_t CPDF_VariableText::Provider::GetWordFontIndex(uint16_t word,
                                                       int32_t charset,
                                                       int32_t nFontIndex) {
-  if (CPDF_Font* pDefFont = m_pFontMap->GetPDFFont(0)) {
+  if (RetainPtr<CPDF_Font> pDefFont = m_pFontMap->GetPDFFont(0)) {
     if (pDefFont->CharCodeFromUnicode(word) != CPDF_Font::kInvalidCharCode)
       return 0;
   }
-  if (CPDF_Font* pSysFont = m_pFontMap->GetPDFFont(1)) {
+  if (RetainPtr<CPDF_Font> pSysFont = m_pFontMap->GetPDFFont(1)) {
     if (pSysFont->CharCodeFromUnicode(word) != CPDF_Font::kInvalidCharCode)
       return 1;
   }
@@ -86,14 +87,14 @@ int32_t CPDF_VariableText::Provider::GetDefaultFontIndex() {
 CPDF_VariableText::Iterator::Iterator(CPDF_VariableText* pVT)
     : m_CurPos(-1, -1, -1), m_pVT(pVT) {}
 
-CPDF_VariableText::Iterator::~Iterator() {}
+CPDF_VariableText::Iterator::~Iterator() = default;
 
 void CPDF_VariableText::Iterator::SetAt(int32_t nWordIndex) {
   m_CurPos = m_pVT->WordIndexToWordPlace(nWordIndex);
 }
 
 void CPDF_VariableText::Iterator::SetAt(const CPVT_WordPlace& place) {
-  ASSERT(m_pVT);
+  DCHECK(m_pVT);
   m_CurPos = place;
 }
 
@@ -157,7 +158,7 @@ bool CPDF_VariableText::Iterator::GetWord(CPVT_Word& word) const {
 }
 
 bool CPDF_VariableText::Iterator::GetLine(CPVT_Line& line) const {
-  ASSERT(m_pVT);
+  DCHECK(m_pVT);
   line.lineplace = CPVT_WordPlace(m_CurPos.nSecIndex, m_CurPos.nLineIndex, -1);
   if (!pdfium::IndexInBounds(m_pVT->m_SectionArray, m_CurPos.nSecIndex))
     return false;
@@ -543,7 +544,7 @@ CPVT_WordPlace CPDF_VariableText::AddSection(const CPVT_WordPlace& place) {
   int32_t nSecIndex = pdfium::clamp(
       place.nSecIndex, 0, pdfium::CollectionSize<int32_t>(m_SectionArray));
 
-  auto pSection = pdfium::MakeUnique<CSection>(this);
+  auto pSection = std::make_unique<CSection>(this);
   pSection->m_Rect = CPVT_FloatRect();
   pSection->SecPlace.nSecIndex = nSecIndex;
   m_SectionArray.insert(m_SectionArray.begin() + nSecIndex,
@@ -862,9 +863,9 @@ CPVT_FloatRect CPDF_VariableText::RearrangeSections(
   return rcRet;
 }
 
-uint32_t CPDF_VariableText::GetCharWidth(int32_t nFontIndex,
-                                         uint16_t Word,
-                                         uint16_t SubWord) {
+int CPDF_VariableText::GetCharWidth(int32_t nFontIndex,
+                                    uint16_t Word,
+                                    uint16_t SubWord) {
   if (!m_pVTProvider)
     return 0;
   uint16_t word = SubWord ? SubWord : Word;
@@ -892,12 +893,12 @@ int32_t CPDF_VariableText::GetDefaultFontIndex() {
 }
 
 bool CPDF_VariableText::IsLatinWord(uint16_t word) {
-  return m_pVTProvider ? m_pVTProvider->IsLatinWord(word) : false;
+  return m_pVTProvider && m_pVTProvider->IsLatinWord(word);
 }
 
 CPDF_VariableText::Iterator* CPDF_VariableText::GetIterator() {
   if (!m_pVTIterator)
-    m_pVTIterator = pdfium::MakeUnique<CPDF_VariableText::Iterator>(this);
+    m_pVTIterator = std::make_unique<CPDF_VariableText::Iterator>(this);
   return m_pVTIterator.get();
 }
 

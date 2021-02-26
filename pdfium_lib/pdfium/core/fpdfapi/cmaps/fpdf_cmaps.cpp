@@ -4,14 +4,12 @@
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
-#include "core/fpdfapi/cmaps/cmap_int.h"
+#include "core/fpdfapi/cmaps/fpdf_cmaps.h"
 
 #include <algorithm>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
-#include "core/fpdfapi/font/cpdf_fontglobals.h"
-#include "core/fpdfapi/page/cpdf_pagemodule.h"
-#include "third_party/base/span.h"
+#include "third_party/base/check.h"
+#include "third_party/base/notreached.h"
 
 namespace {
 
@@ -32,15 +30,8 @@ const FXCMAP_CMap* FindNextCMap(const FXCMAP_CMap* pMap) {
 
 }  // namespace
 
-const FXCMAP_CMap* FindEmbeddedCMap(const ByteString& bsName,
-                                    int charset,
-                                    int coding) {
-  CPDF_FontGlobals* pFontGlobals =
-      CPDF_ModuleMgr::Get()->GetPageModule()->GetFontGlobals();
-
-  pdfium::span<const FXCMAP_CMap> pCMaps =
-      pFontGlobals->GetEmbeddedCharset(charset);
-
+const FXCMAP_CMap* FindEmbeddedCMap(pdfium::span<const FXCMAP_CMap> pCMaps,
+                                    ByteStringView bsName) {
   for (size_t i = 0; i < pCMaps.size(); i++) {
     if (bsName == pCMaps[i].m_Name)
       return &pCMaps[i];
@@ -49,7 +40,7 @@ const FXCMAP_CMap* FindEmbeddedCMap(const ByteString& bsName,
 }
 
 uint16_t CIDFromCharCode(const FXCMAP_CMap* pMap, uint32_t charcode) {
-  ASSERT(pMap);
+  DCHECK(pMap);
   const uint16_t loword = static_cast<uint16_t>(charcode);
   if (charcode >> 16) {
     while (pMap) {
@@ -117,7 +108,7 @@ uint32_t CharCodeFromCID(const FXCMAP_CMap* pMap, uint16_t cid) {
   // the first always returns. Investigate and determine how this should
   // really be working. (https://codereview.chromium.org/2235743003 removed the
   // second while loop.)
-  ASSERT(pMap);
+  DCHECK(pMap);
   while (pMap) {
     switch (pMap->m_WordMapType) {
       case FXCMAP_CMap::Single: {

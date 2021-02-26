@@ -13,7 +13,7 @@
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxge/dib/cfx_imagerenderer.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxge/dib/fx_dib.h"
 #include "third_party/base/optional.h"
 
 class CFX_DIBitmap;
@@ -40,11 +40,9 @@ class CPDF_ImageRenderer {
   bool Start(CPDF_RenderStatus* pStatus,
              const RetainPtr<CFX_DIBBase>& pDIBBase,
              FX_ARGB bitmap_argb,
-             int bitmap_alpha,
              const CFX_Matrix& mtImage2Device,
              const FXDIB_ResampleOptions& options,
-             bool bStdCS,
-             BlendMode blendType);
+             bool bStdCS);
 
   bool Continue(PauseIndicatorIface* pPause);
   bool GetResult() const { return m_Result; }
@@ -69,8 +67,8 @@ class CPDF_ImageRenderer {
   bool NotDrawing() const;
   FX_RECT GetDrawRect() const;
   CFX_Matrix GetDrawMatrix(const FX_RECT& rect) const;
-  void CalculateDrawImage(CFX_DefaultRenderDevice* bitmap_device1,
-                          CFX_DefaultRenderDevice* bitmap_device2,
+  void CalculateDrawImage(CFX_DefaultRenderDevice* pBitmapDevice1,
+                          CFX_DefaultRenderDevice* pBitmapDevice2,
                           const RetainPtr<CFX_DIBBase>& pDIBBase,
                           const CFX_Matrix& mtNewMatrix,
                           const FX_RECT& rect) const;
@@ -85,7 +83,7 @@ class CPDF_ImageRenderer {
 
   UnownedPtr<CPDF_RenderStatus> m_pRenderStatus;
   UnownedPtr<CPDF_ImageObject> m_pImageObject;
-  UnownedPtr<CPDF_Pattern> m_pPattern;
+  RetainPtr<CPDF_Pattern> m_pPattern;
   RetainPtr<CFX_DIBBase> m_pDIBBase;
   CFX_Matrix m_mtObj2Device;
   CFX_Matrix m_ImageMatrix;

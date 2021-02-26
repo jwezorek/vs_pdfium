@@ -8,13 +8,13 @@
 
 #include "core/fpdfapi/parser/cpdf_indirect_object_holder.h"
 #include "core/fxcrt/fx_stream.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 #include "third_party/base/stl_util.h"
 
 CPDF_Reference::CPDF_Reference(CPDF_IndirectObjectHolder* pDoc, uint32_t objnum)
     : m_pObjList(pDoc), m_RefObjNum(objnum) {}
 
-CPDF_Reference::~CPDF_Reference() {}
+CPDF_Reference::~CPDF_Reference() = default;
 
 CPDF_Object::Type CPDF_Reference::GetType() const {
   return kReference;
@@ -57,21 +57,21 @@ const CPDF_Reference* CPDF_Reference::AsReference() const {
   return this;
 }
 
-std::unique_ptr<CPDF_Object> CPDF_Reference::Clone() const {
+RetainPtr<CPDF_Object> CPDF_Reference::Clone() const {
   return CloneObjectNonCyclic(false);
 }
 
-std::unique_ptr<CPDF_Object> CPDF_Reference::CloneNonCyclic(
+RetainPtr<CPDF_Object> CPDF_Reference::CloneNonCyclic(
     bool bDirect,
     std::set<const CPDF_Object*>* pVisited) const {
   pVisited->insert(this);
   if (bDirect) {
     auto* pDirect = GetDirect();
-    return pDirect && !pdfium::ContainsKey(*pVisited, pDirect)
+    return pDirect && !pdfium::Contains(*pVisited, pDirect)
                ? pDirect->CloneNonCyclic(true, pVisited)
                : nullptr;
   }
-  return pdfium::MakeUnique<CPDF_Reference>(m_pObjList.Get(), m_RefObjNum);
+  return pdfium::MakeRetain<CPDF_Reference>(m_pObjList.Get(), m_RefObjNum);
 }
 
 CPDF_Object* CPDF_Reference::SafeGetDirect() {
@@ -105,10 +105,10 @@ bool CPDF_Reference::WriteTo(IFX_ArchiveStream* archive,
          archive->WriteString(" 0 R ");
 }
 
-std::unique_ptr<CPDF_Object> CPDF_Reference::MakeReference(
+RetainPtr<CPDF_Object> CPDF_Reference::MakeReference(
     CPDF_IndirectObjectHolder* holder) const {
-  ASSERT(holder == m_pObjList.Get());
+  DCHECK(holder == m_pObjList);
   // Do not allow reference to reference, just create other reference for same
   // object.
-  return pdfium::MakeUnique<CPDF_Reference>(holder, GetRefObjNum());
+  return pdfium::MakeRetain<CPDF_Reference>(holder, GetRefObjNum());
 }

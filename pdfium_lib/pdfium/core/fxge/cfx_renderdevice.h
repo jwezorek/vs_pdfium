@@ -10,52 +10,12 @@
 #include <memory>
 #include <vector>
 
-#include "core/fpdfdoc/cpdf_defaultappearance.h"
+#include "build/build_config.h"
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "core/fxge/fx_dib.h"
-
-#define FXDC_DEVICE_CLASS 1
-#define FXDC_PIXEL_WIDTH 2
-#define FXDC_PIXEL_HEIGHT 3
-#define FXDC_BITS_PIXEL 4
-#define FXDC_HORZ_SIZE 5
-#define FXDC_VERT_SIZE 6
-#define FXDC_RENDER_CAPS 7
-#define FXDC_DISPLAY 1
-#define FXDC_PRINTER 2
-
-#define FXRC_GET_BITS 0x01
-#define FXRC_BIT_MASK 0x02
-#define FXRC_ALPHA_PATH 0x10
-#define FXRC_ALPHA_IMAGE 0x20
-#define FXRC_ALPHA_OUTPUT 0x40
-#define FXRC_BLEND_MODE 0x80
-#define FXRC_SOFT_CLIP 0x100
-#define FXRC_CMYK_OUTPUT 0x200
-#define FXRC_BITMASK_OUTPUT 0x400
-#define FXRC_BYTEMASK_OUTPUT 0x800
-#define FXRENDER_IMAGE_LOSSY 0x1000
-#define FXRC_FILLSTROKE_PATH 0x2000
-#define FXRC_SHADING 0x4000
-
-#define FXFILL_ALTERNATE 1
-#define FXFILL_WINDING 2
-#define FXFILL_FULLCOVER 4
-#define FXFILL_RECT_AA 8
-#define FX_FILL_STROKE 16
-#define FX_STROKE_ADJUST 32
-#define FX_STROKE_TEXT_MODE 64
-#define FX_FILL_TEXT_MODE 128
-#define FX_ZEROAREA_FILL 256
-#define FXFILL_NOPATHSMOOTH 512
-
-#define FXTEXT_CLEARTYPE 0x01
-#define FXTEXT_BGR_STRIPE 0x02
-#define FXTEXT_PRINTGRAPHICTEXT 0x04
-#define FXTEXT_NO_NATIVETEXT 0x08
-#define FXTEXT_PRINTIMAGETEXT 0x10
-#define FXTEXT_NOSMOOTH 0x20
+#include "core/fxge/dib/fx_dib.h"
+#include "core/fxge/render_defines.h"
+#include "core/fxge/renderdevicedriver_iface.h"
 
 class CFX_DIBBase;
 class CFX_DIBitmap;
@@ -63,31 +23,18 @@ class CFX_Font;
 class CFX_GraphStateData;
 class CFX_ImageRenderer;
 class CFX_PathData;
+class FX_PATHPOINT;
 class PauseIndicatorIface;
-class RenderDeviceDriverIface;
+class TextCharPos;
 struct CFX_Color;
+struct CFX_FillRenderOptions;
+struct CFX_TextRenderOptions;
 
-enum class FXPT_TYPE : uint8_t { LineTo, BezierTo, MoveTo };
+enum class BorderStyle { kSolid, kDash, kBeveled, kInset, kUnderline };
 
-class TextCharPos {
- public:
-  TextCharPos();
-  TextCharPos(const TextCharPos&);
-  ~TextCharPos();
-
-  CFX_PointF m_Origin;
-  uint32_t m_Unicode;
-  uint32_t m_GlyphIndex;
-  uint32_t m_FontCharWidth;
-#if _FX_PLATFORM_ == _FX_PLATFORM_APPLE_
-  uint32_t m_ExtGID;
-#endif
-  int32_t m_FallbackFontPosition;
-  bool m_bGlyphAdjust;
-  bool m_bFontStyle;
-  float m_AdjustMatrix[4];
-};
-
+// Base class for all render devices. Derived classes must call
+// SetDeviceDriver() to fully initialize the class. Until then, class methods
+// are not safe to call, or may return invalid results.
 class CFX_RenderDevice {
  public:
   class StateRestorer {
@@ -99,7 +46,6 @@ class CFX_RenderDevice {
     UnownedPtr<CFX_RenderDevice> m_pDevice;
   };
 
-  CFX_RenderDevice();
   virtual ~CFX_RenderDevice();
 
   static CFX_Matrix GetFlipMatrix(float width,
@@ -107,7 +53,6 @@ class CFX_RenderDevice {
                                   float left,
                                   float top);
 
-  void SetDeviceDriver(std::unique_ptr<RenderDeviceDriverIface> pDriver);
   RenderDeviceDriverIface* GetDeviceDriver() const {
     return m_pDeviceDriver.get();
   }
@@ -117,7 +62,7 @@ class CFX_RenderDevice {
 
   int GetWidth() const { return m_Width; }
   int GetHeight() const { return m_Height; }
-  int GetDeviceClass() const { return m_DeviceClass; }
+  DeviceType GetDeviceType() const { return m_DeviceType; }
   int GetRenderCaps() const { return m_RenderCaps; }
   int GetDeviceCaps(int id) const;
   RetainPtr<CFX_DIBitmap> GetBitmap() const;
@@ -126,31 +71,26 @@ class CFX_RenderDevice {
                               int width,
                               int height) const;
   const FX_RECT& GetClipBox() const { return m_ClipBox; }
+  void SetBaseClip(const FX_RECT& rect);
   bool SetClip_PathFill(const CFX_PathData* pPathData,
                         const CFX_Matrix* pObject2Device,
-                        int fill_mode);
-#ifdef PDF_ENABLE_XFA
-  bool SetClip_Rect(const CFX_RectF& rtClip);
-#endif
-  bool SetClip_Rect(const FX_RECT& pRect);
+                        const CFX_FillRenderOptions& fill_options);
   bool SetClip_PathStroke(const CFX_PathData* pPathData,
                           const CFX_Matrix* pObject2Device,
                           const CFX_GraphStateData* pGraphState);
+  bool SetClip_Rect(const FX_RECT& pRect);
   bool DrawPath(const CFX_PathData* pPathData,
                 const CFX_Matrix* pObject2Device,
                 const CFX_GraphStateData* pGraphState,
                 uint32_t fill_color,
                 uint32_t stroke_color,
-                int fill_mode) {
-    return DrawPathWithBlend(pPathData, pObject2Device, pGraphState, fill_color,
-                             stroke_color, fill_mode, BlendMode::kNormal);
-  }
+                const CFX_FillRenderOptions& fill_options);
   bool DrawPathWithBlend(const CFX_PathData* pPathData,
                          const CFX_Matrix* pObject2Device,
                          const CFX_GraphStateData* pGraphState,
                          uint32_t fill_color,
                          uint32_t stroke_color,
-                         int fill_mode,
+                         const CFX_FillRenderOptions& fill_options,
                          BlendMode blend_type);
   bool FillRect(const FX_RECT& rect, uint32_t color) {
     return FillRectWithBlend(rect, color, BlendMode::kNormal);
@@ -164,7 +104,7 @@ class CFX_RenderDevice {
   bool SetDIBitsWithBlend(const RetainPtr<CFX_DIBBase>& pBitmap,
                           int left,
                           int top,
-                          BlendMode blend_type);
+                          BlendMode blend_mode);
   bool StretchDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
                      int left,
                      int top,
@@ -180,11 +120,11 @@ class CFX_RenderDevice {
                                       int dest_width,
                                       int dest_height,
                                       const FXDIB_ResampleOptions& options,
-                                      BlendMode blend_type);
+                                      BlendMode blend_mode);
   bool SetBitMask(const RetainPtr<CFX_DIBBase>& pBitmap,
                   int left,
                   int top,
-                  uint32_t color);
+                  uint32_t argb);
   bool StretchBitMask(const RetainPtr<CFX_DIBBase>& pBitmap,
                       int left,
                       int top,
@@ -196,7 +136,7 @@ class CFX_RenderDevice {
                                int top,
                                int dest_width,
                                int dest_height,
-                               uint32_t color,
+                               uint32_t argb,
                                const FXDIB_ResampleOptions& options);
   bool StartDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
                    int bitmap_alpha,
@@ -209,31 +149,31 @@ class CFX_RenderDevice {
   }
   bool StartDIBitsWithBlend(const RetainPtr<CFX_DIBBase>& pBitmap,
                             int bitmap_alpha,
-                            uint32_t color,
+                            uint32_t argb,
                             const CFX_Matrix& matrix,
                             const FXDIB_ResampleOptions& options,
                             std::unique_ptr<CFX_ImageRenderer>* handle,
-                            BlendMode blend_type);
+                            BlendMode blend_mode);
   bool ContinueDIBits(CFX_ImageRenderer* handle, PauseIndicatorIface* pPause);
 
   bool DrawNormalText(int nChars,
                       const TextCharPos* pCharPos,
                       CFX_Font* pFont,
                       float font_size,
-                      const CFX_Matrix* pText2Device,
+                      const CFX_Matrix& mtText2Device,
                       uint32_t fill_color,
-                      uint32_t text_flags);
+                      const CFX_TextRenderOptions& options);
   bool DrawTextPath(int nChars,
                     const TextCharPos* pCharPos,
                     CFX_Font* pFont,
                     float font_size,
-                    const CFX_Matrix* pText2User,
+                    const CFX_Matrix& mtText2User,
                     const CFX_Matrix* pUser2Device,
                     const CFX_GraphStateData* pGraphState,
                     uint32_t fill_color,
                     uint32_t stroke_color,
                     CFX_PathData* pClippingPath,
-                    int nFlag);
+                    const CFX_FillRenderOptions& fill_options);
 
   void DrawFillRect(const CFX_Matrix* pUser2Device,
                     const CFX_FloatRect& rect,
@@ -270,7 +210,7 @@ class CFX_RenderDevice {
                   int32_t nStartGray,
                   int32_t nEndGray);
 
-#ifdef _SKIA_SUPPORT_
+#if defined(_SKIA_SUPPORT_)
   virtual void DebugVerifyBitmapIsPreMultiplied() const;
   virtual bool SetBitsWithMask(const RetainPtr<CFX_DIBBase>& pBitmap,
                                const RetainPtr<CFX_DIBBase>& pMask,
@@ -279,9 +219,14 @@ class CFX_RenderDevice {
                                int bitmap_alpha,
                                BlendMode blend_type);
 #endif
-#if defined _SKIA_SUPPORT_ || defined _SKIA_SUPPORT_PATHS_
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
   void Flush(bool release);
 #endif
+
+ protected:
+  CFX_RenderDevice();
+
+  void SetDeviceDriver(std::unique_ptr<RenderDeviceDriverIface> pDriver);
 
  private:
   void InitDeviceInfo();
@@ -291,12 +236,19 @@ class CFX_RenderDevice {
                           const CFX_GraphStateData* pGraphState,
                           uint32_t fill_color,
                           uint32_t stroke_color,
-                          int fill_mode,
+                          const CFX_FillRenderOptions& fill_options,
                           BlendMode blend_type);
   bool DrawCosmeticLine(const CFX_PointF& ptMoveTo,
                         const CFX_PointF& ptLineTo,
                         uint32_t color,
-                        int fill_mode,
+                        const CFX_FillRenderOptions& fill_options,
+                        BlendMode blend_type);
+  void DrawZeroAreaPath(const std::vector<FX_PATHPOINT>& path,
+                        const CFX_Matrix* matrix,
+                        bool adjust,
+                        bool aliased_path,
+                        uint32_t fill_color,
+                        uint8_t fill_alpha,
                         BlendMode blend_type);
   bool FillRectWithBlend(const FX_RECT& rect,
                          uint32_t color,
@@ -307,7 +259,7 @@ class CFX_RenderDevice {
   int m_Height = 0;
   int m_bpp = 0;
   int m_RenderCaps = 0;
-  int m_DeviceClass = 0;
+  DeviceType m_DeviceType = DeviceType::kDisplay;
   FX_RECT m_ClipBox;
   std::unique_ptr<RenderDeviceDriverIface> m_pDeviceDriver;
 };

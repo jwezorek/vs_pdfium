@@ -11,7 +11,7 @@
 
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxge/dib/fx_dib.h"
 #include "fxbarcode/BC_Library.h"
 
 class CBC_Reader;
@@ -40,8 +40,6 @@ class CBC_CodeBase {
   bool SetModuleWidth(int32_t moduleWidth);
   bool SetHeight(int32_t height);
   bool SetWidth(int32_t width);
-  void SetBackgroundColor(FX_ARGB backgroundColor);
-  void SetBarcodeColor(FX_ARGB foregroundColor);
 
  protected:
   std::unique_ptr<CBC_Writer> m_pBCWriter;

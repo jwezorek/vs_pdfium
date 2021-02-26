@@ -9,9 +9,36 @@
 #include <algorithm>
 #include <utility>
 
+#include "core/fxcrt/fx_safe_types.h"
+
 CFX_BinaryBuf::CFX_BinaryBuf() = default;
 
+CFX_BinaryBuf::CFX_BinaryBuf(CFX_BinaryBuf&& that) noexcept
+    : m_AllocStep(that.m_AllocStep),
+      m_AllocSize(that.m_AllocSize),
+      m_DataSize(that.m_DataSize),
+      m_pBuffer(std::move(that.m_pBuffer)) {
+  // Can't just default, need to leave |that| in a valid state, which means
+  // that the size members reflect the (null) moved-from buffer.
+  that.m_AllocStep = 0;
+  that.m_AllocSize = 0;
+  that.m_DataSize = 0;
+}
+
 CFX_BinaryBuf::~CFX_BinaryBuf() = default;
+
+CFX_BinaryBuf& CFX_BinaryBuf::operator=(CFX_BinaryBuf&& that) noexcept {
+  // Can't just default, need to leave |that| in a valid state, which means
+  // that the size members reflect the (null) moved-from buffer.
+  m_AllocStep = that.m_AllocStep;
+  m_AllocSize = that.m_AllocSize;
+  m_DataSize = that.m_DataSize;
+  m_pBuffer = std::move(that.m_pBuffer);
+  that.m_AllocStep = 0;
+  that.m_AllocSize = 0;
+  that.m_DataSize = 0;
+  return *this;
+}
 
 void CFX_BinaryBuf::Delete(size_t start_index, size_t count) {
   if (!m_pBuffer || count > m_DataSize || start_index > m_DataSize - count)
@@ -20,6 +47,14 @@ void CFX_BinaryBuf::Delete(size_t start_index, size_t count) {
   memmove(m_pBuffer.get() + start_index, m_pBuffer.get() + start_index + count,
           m_DataSize - start_index - count);
   m_DataSize -= count;
+}
+
+pdfium::span<uint8_t> CFX_BinaryBuf::GetSpan() {
+  return {GetBuffer(), GetSize()};
+}
+
+pdfium::span<const uint8_t> CFX_BinaryBuf::GetSpan() const {
+  return {GetBuffer(), GetSize()};
 }
 
 size_t CFX_BinaryBuf::GetLength() const {
@@ -56,6 +91,10 @@ void CFX_BinaryBuf::ExpandBuf(size_t add_size) {
   m_pBuffer.reset(m_pBuffer
                       ? FX_Realloc(uint8_t, m_pBuffer.release(), m_AllocSize)
                       : FX_Alloc(uint8_t, m_AllocSize));
+}
+
+void CFX_BinaryBuf::AppendSpan(pdfium::span<const uint8_t> span) {
+  return AppendBlock(span.data(), span.size());
 }
 
 void CFX_BinaryBuf::AppendBlock(const void* pBuf, size_t size) {

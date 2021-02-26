@@ -17,7 +17,6 @@
 
 class CPDFSDK_Annot;
 class CPDFSDK_FormFillEnvironment;
-class CPDF_Bookmark;
 class CPDF_Dictionary;
 class CPDF_FormField;
 class IJS_EventContext;
@@ -30,22 +29,11 @@ class CPDFSDK_ActionHandler {
                            WideString csJSName,
                            CPDFSDK_FormFillEnvironment* pFormFillEnv);
   bool DoAction_Page(const CPDF_Action& action,
-                     enum CPDF_AAction::AActionType eType,
+                     CPDF_AAction::AActionType eType,
                      CPDFSDK_FormFillEnvironment* pFormFillEnv);
   bool DoAction_Document(const CPDF_Action& action,
-                         enum CPDF_AAction::AActionType eType,
+                         CPDF_AAction::AActionType eType,
                          CPDFSDK_FormFillEnvironment* pFormFillEnv);
-  bool DoAction_BookMark(CPDF_Bookmark* pBookMark,
-                         const CPDF_Action& action,
-                         CPDF_AAction::AActionType type,
-                         CPDFSDK_FormFillEnvironment* pFormFillEnv);
-  bool DoAction_Screen(const CPDF_Action& action,
-                       CPDF_AAction::AActionType type,
-                       CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                       CPDFSDK_Annot* pScreen);
-  bool DoAction_Link(const CPDF_Action& action,
-                     CPDF_AAction::AActionType type,
-                     CPDFSDK_FormFillEnvironment* pFormFillEnv);
   bool DoAction_Field(const CPDF_Action& action,
                       CPDF_AAction::AActionType type,
                       CPDFSDK_FormFillEnvironment* pFormFillEnv,
@@ -56,13 +44,16 @@ class CPDFSDK_ActionHandler {
                                 CPDFSDK_FormFillEnvironment* pFormFillEnv,
                                 CPDF_FormField* pFormField,
                                 CPDFSDK_FieldAction* data);
+  bool DoAction_Link(const CPDF_Action& action,
+                     CPDF_AAction::AActionType type,
+                     CPDFSDK_FormFillEnvironment* form_fill_env,
+                     int modifiers);
+  bool DoAction_Destination(const CPDF_Dest& dest,
+                            CPDFSDK_FormFillEnvironment* form_fill_env);
 
  private:
   using RunScriptCallback = std::function<void(IJS_EventContext* context)>;
 
-  void RunScriptForAction(const CPDF_Action& action,
-                          CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                          const RunScriptCallback& cb);
   void RunScript(CPDFSDK_FormFillEnvironment* pFormFillEnv,
                  const WideString& script,
                  const RunScriptCallback& cb);
@@ -80,24 +71,11 @@ class CPDFSDK_ActionHandler {
                           CPDF_FormField* pFormField,
                           CPDFSDK_FieldAction* data,
                           std::set<const CPDF_Dictionary*>* visited);
-  bool ExecuteScreenAction(const CPDF_Action& action,
-                           CPDF_AAction::AActionType type,
-                           CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                           CPDFSDK_Annot* pScreen,
-                           std::set<const CPDF_Dictionary*>* visited);
-  bool ExecuteBookMark(const CPDF_Action& action,
-                       CPDF_AAction::AActionType type,
-                       CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                       CPDF_Bookmark* pBookmark,
-                       std::set<const CPDF_Dictionary*>* visited);
-  bool ExecuteLinkAction(const CPDF_Action& action,
-                         CPDF_AAction::AActionType type,
-                         CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                         std::set<const CPDF_Dictionary*>* visited);
 
   void DoAction_NoJs(const CPDF_Action& action,
                      CPDF_AAction::AActionType type,
-                     CPDFSDK_FormFillEnvironment* pFormFillEnv);
+                     CPDFSDK_FormFillEnvironment* pFormFillEnv,
+                     int modifiers);
   void RunDocumentPageJavaScript(CPDFSDK_FormFillEnvironment* pFormFillEnv,
                                  CPDF_AAction::AActionType type,
                                  const WideString& script);
@@ -118,7 +96,8 @@ class CPDFSDK_ActionHandler {
   void DoAction_Launch(CPDFSDK_FormFillEnvironment* pFormFillEnv,
                        const CPDF_Action& action);
   void DoAction_URI(CPDFSDK_FormFillEnvironment* pFormFillEnv,
-                    const CPDF_Action& action);
+                    const CPDF_Action& action,
+                    int modifiers);
   void DoAction_Named(CPDFSDK_FormFillEnvironment* pFormFillEnv,
                       const CPDF_Action& action);
 

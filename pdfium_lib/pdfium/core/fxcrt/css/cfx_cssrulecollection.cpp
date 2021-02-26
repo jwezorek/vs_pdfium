@@ -14,7 +14,6 @@
 #include "core/fxcrt/css/cfx_cssstylerule.h"
 #include "core/fxcrt/css/cfx_cssstylesheet.h"
 #include "core/fxcrt/css/cfx_csssyntaxparser.h"
-#include "third_party/base/ptr_util.h"
 
 CFX_CSSRuleCollection::CFX_CSSRuleCollection() : m_iSelectors(0) {}
 
@@ -34,9 +33,8 @@ CFX_CSSRuleCollection::GetTagRuleData(const WideString& tagname) const {
 }
 
 void CFX_CSSRuleCollection::AddRulesFrom(const CFX_CSSStyleSheet* sheet) {
-  int32_t iRules = sheet->CountRules();
-  for (int32_t j = 0; j < iRules; j++)
-    AddRulesFrom(sheet, sheet->GetRule(j));
+  for (size_t i = 0; i < sheet->CountRules(); ++i)
+    AddRulesFrom(sheet, sheet->GetRule(i));
 }
 
 void CFX_CSSRuleCollection::AddRulesFrom(const CFX_CSSStyleSheet* pStyleSheet,
@@ -45,8 +43,8 @@ void CFX_CSSRuleCollection::AddRulesFrom(const CFX_CSSStyleSheet* pStyleSheet,
   int32_t iSelectors = pStyleRule->CountSelectorLists();
   for (int32_t i = 0; i < iSelectors; ++i) {
     CFX_CSSSelector* pSelector = pStyleRule->GetSelectorList(i);
-    m_TagRules[pSelector->GetNameHash()].push_back(
-        pdfium::MakeUnique<Data>(pSelector, pDeclaration));
+    m_TagRules[pSelector->name_hash()].push_back(
+        std::make_unique<Data>(pSelector, pDeclaration));
     m_iSelectors++;
   }
 }

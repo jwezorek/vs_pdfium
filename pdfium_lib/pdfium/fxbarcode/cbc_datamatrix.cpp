@@ -21,13 +21,14 @@
 
 #include "fxbarcode/cbc_datamatrix.h"
 
+#include <memory>
 #include <vector>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "fxbarcode/datamatrix/BC_DataMatrixWriter.h"
-#include "third_party/base/ptr_util.h"
 
 CBC_DataMatrix::CBC_DataMatrix()
-    : CBC_CodeBase(pdfium::MakeUnique<CBC_DataMatrixWriter>()) {}
+    : CBC_CodeBase(std::make_unique<CBC_DataMatrixWriter>()) {}
 
 CBC_DataMatrix::~CBC_DataMatrix() = default;
 
@@ -35,7 +36,7 @@ bool CBC_DataMatrix::Encode(WideStringView contents) {
   int32_t width;
   int32_t height;
   auto* pWriter = GetDataMatrixWriter();
-  std::vector<uint8_t> data =
+  std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
       pWriter->Encode(WideString(contents), &width, &height);
   return pWriter->RenderResult(data, width, height);
 }

@@ -14,6 +14,8 @@
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_number.h"
 #include "core/fpdfapi/parser/cpdf_syntax_parser.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "third_party/base/check.h"
 #include "third_party/base/ptr_util.h"
 
 namespace {
@@ -39,7 +41,7 @@ bool IsValidNumericDictionaryValue(const CPDF_Dictionary* pDict,
 
 bool IsLinearizedHeaderValid(const CPDF_LinearizedHeader* header,
                              FX_FILESIZE document_size) {
-  ASSERT(header);
+  DCHECK(header);
   return header->GetFileSize() == document_size &&
          header->GetFirstPageNo() < kMaxInt &&
          header->GetFirstPageNo() < header->GetPageCount() &&
@@ -60,12 +62,12 @@ std::unique_ptr<CPDF_LinearizedHeader> CPDF_LinearizedHeader::Parse(
       parser->GetIndirectObject(nullptr, CPDF_SyntaxParser::ParseType::kLoose));
 
   if (!pDict || !pDict->KeyExist("Linearized") ||
-      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.get(), "L", 1) ||
-      !IsValidNumericDictionaryValue<uint32_t>(pDict.get(), "P", 0, false) ||
-      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.get(), "T", 1) ||
-      !IsValidNumericDictionaryValue<uint32_t>(pDict.get(), "N", 1) ||
-      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.get(), "E", 1) ||
-      !IsValidNumericDictionaryValue<uint32_t>(pDict.get(), "O", 1)) {
+      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.Get(), "L", 1) ||
+      !IsValidNumericDictionaryValue<uint32_t>(pDict.Get(), "P", 0, false) ||
+      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.Get(), "T", 1) ||
+      !IsValidNumericDictionaryValue<uint32_t>(pDict.Get(), "N", 1) ||
+      !IsValidNumericDictionaryValue<FX_FILESIZE>(pDict.Get(), "E", 1) ||
+      !IsValidNumericDictionaryValue<uint32_t>(pDict.Get(), "O", 1)) {
     return nullptr;
   }
   // Move parser to the start of the xref table for the documents first page.
@@ -74,7 +76,7 @@ std::unique_ptr<CPDF_LinearizedHeader> CPDF_LinearizedHeader::Parse(
     return nullptr;
 
   auto result = pdfium::WrapUnique(
-      new CPDF_LinearizedHeader(pDict.get(), parser->GetPos()));
+      new CPDF_LinearizedHeader(pDict.Get(), parser->GetPos()));
 
   if (!IsLinearizedHeaderValid(result.get(), parser->GetDocumentSize()))
     return nullptr;
@@ -102,7 +104,7 @@ CPDF_LinearizedHeader::CPDF_LinearizedHeader(const CPDF_Dictionary* pDict,
   }
 }
 
-CPDF_LinearizedHeader::~CPDF_LinearizedHeader() {}
+CPDF_LinearizedHeader::~CPDF_LinearizedHeader() = default;
 
 bool CPDF_LinearizedHeader::HasHintTable() const {
   return GetPageCount() > 1 && GetHintStart() > 0 && GetHintLength() > 0;

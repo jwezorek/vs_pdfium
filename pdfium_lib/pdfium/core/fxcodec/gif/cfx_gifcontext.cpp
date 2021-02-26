@@ -9,11 +9,10 @@
 #include <algorithm>
 #include <utility>
 
-#include "core/fxcodec/codec/ccodec_gifmodule.h"
-#include "core/fxcodec/codec/cfx_codec_memory.h"
-#include "core/fxcodec/gif/cfx_gif.h"
-#include "third_party/base/ptr_util.h"
+#include "core/fxcodec/cfx_codec_memory.h"
 #include "third_party/base/stl_util.h"
+
+namespace fxcodec {
 
 namespace {
 
@@ -21,9 +20,8 @@ constexpr int32_t kGifInterlaceStep[4] = {8, 8, 4, 2};
 
 }  // namespace
 
-CFX_GifContext::CFX_GifContext(CCodec_GifModule* gif_module,
-                               CCodec_GifModule::Delegate* delegate)
-    : gif_module_(gif_module), delegate_(delegate) {}
+CFX_GifContext::CFX_GifContext(GifDecoder::Delegate* delegate)
+    : delegate_(delegate) {}
 
 CFX_GifContext::~CFX_GifContext() = default;
 
@@ -221,7 +219,7 @@ CFX_GifDecodeStatus CFX_GifContext::LoadFrame(int32_t frame_num) {
   }
 
   uint8_t img_data_size;
-  std::vector<uint8_t> img_data;
+  std::vector<uint8_t, FxAllocAllocator<uint8_t>> img_data;
   size_t read_marker = input_buffer_->GetPosition();
 
   if (decode_status_ == GIF_D_STATUS_IMG_DATA) {
@@ -235,11 +233,10 @@ CFX_GifDecodeStatus CFX_GifContext::LoadFrame(int32_t frame_num) {
         return CFX_GifDecodeStatus::Unfinished;
       }
 
-      if (!lzw_decompressor_.get())
+      if (!lzw_decompressor_.get()) {
         lzw_decompressor_ = CFX_LZWDecompressor::Create(
-            !gif_image->local_palettes.empty() ? gif_image->local_pallette_exp
-                                               : global_pal_exp_,
-            gif_image->code_exp);
+            GetPaletteExp(gif_image), gif_image->code_exp);
+      }
       SaveDecodingStatus(GIF_D_STATUS_IMG_DATA);
       img_row_offset_ += img_row_avail_size_;
       img_row_avail_size_ = gif_img_row_bytes - img_row_offset_;
@@ -275,12 +272,10 @@ CFX_GifDecodeStatus CFX_GifContext::LoadFrame(int32_t frame_num) {
               return CFX_GifDecodeStatus::Unfinished;
             }
 
-            if (!lzw_decompressor_.get())
+            if (!lzw_decompressor_.get()) {
               lzw_decompressor_ = CFX_LZWDecompressor::Create(
-                  !gif_image->local_palettes.empty()
-                      ? gif_image->local_pallette_exp
-                      : global_pal_exp_,
-                  gif_image->code_exp);
+                  GetPaletteExp(gif_image), gif_image->code_exp);
+            }
             SaveDecodingStatus(GIF_D_STATUS_IMG_DATA);
             img_row_offset_ += img_row_avail_size_;
             img_row_avail_size_ = gif_img_row_bytes - img_row_offset_;
@@ -300,7 +295,7 @@ CFX_GifDecodeStatus CFX_GifContext::LoadFrame(int32_t frame_num) {
             if (gif_image->row_num >=
                 static_cast<int32_t>(gif_image->image_info.height)) {
               img_pass_num_++;
-              if (img_pass_num_ == FX_ArraySize(kGifInterlaceStep)) {
+              if (img_pass_num_ == pdfium::size(kGifInterlaceStep)) {
                 DecodingFailureAtTailCleanup(gif_image);
                 return CFX_GifDecodeStatus::Error;
               }
@@ -391,7 +386,7 @@ CFX_GifDecodeStatus CFX_GifContext::ReadLogicalScreenDescriptor() {
       return CFX_GifDecodeStatus::Unfinished;
     }
 
-    global_pal_exp_ = lsd.global_flags.pal_bits;
+    global_palette_exp_ = lsd.global_flags.pal_bits;
     global_sort_flag_ = lsd.global_flags.sort_flag;
     global_color_resolution_ = lsd.global_flags.color_resolution;
     std::swap(global_palette_, palette);
@@ -439,7 +434,7 @@ CFX_GifDecodeStatus CFX_GifContext::DecodeExtension() {
 
       if (!graphic_control_extension_.get())
         graphic_control_extension_ =
-            pdfium::MakeUnique<CFX_GifGraphicControlExtension>();
+            std::make_unique<CFX_GifGraphicControlExtension>();
       graphic_control_extension_->block_size = gif_gce.block_size;
       graphic_control_extension_->gce_flags = gif_gce.gce_flags;
       graphic_control_extension_->delay_time =
@@ -466,11 +461,11 @@ CFX_GifDecodeStatus CFX_GifContext::DecodeImageInfo() {
     return CFX_GifDecodeStatus::Error;
 
   size_t read_marker = input_buffer_->GetPosition();
-  CFX_CFX_GifImageInfo img_info;
+  CFX_GifImageInfo img_info;
   if (!ReadAllOrNone(reinterpret_cast<uint8_t*>(&img_info), sizeof(img_info)))
     return CFX_GifDecodeStatus::Unfinished;
 
-  auto gif_image = pdfium::MakeUnique<CFX_GifImage>();
+  auto gif_image = std::make_unique<CFX_GifImage>();
   gif_image->image_info.left =
       FXWORD_GET_LSBFIRST(reinterpret_cast<uint8_t*>(&img_info.left));
   gif_image->image_info.top =
@@ -486,7 +481,7 @@ CFX_GifDecodeStatus CFX_GifContext::DecodeImageInfo() {
 
   CFX_GifLocalFlags* gif_img_info_lf = &img_info.local_flags;
   if (gif_img_info_lf->local_pal) {
-    gif_image->local_pallette_exp = gif_img_info_lf->pal_bits;
+    gif_image->local_palette_exp = gif_img_info_lf->pal_bits;
     uint32_t loc_pal_count = unsigned(2 << gif_img_info_lf->pal_bits);
     std::vector<CFX_GifPalette> loc_pal(loc_pal_count);
     if (!ReadAllOrNone(reinterpret_cast<uint8_t*>(loc_pal.data()),
@@ -513,10 +508,9 @@ CFX_GifDecodeStatus CFX_GifContext::DecodeImageInfo() {
       // Need to test that the color that is going to be transparent is actually
       // in the palette being used.
       if (graphic_control_extension_->trans_index >=
-          2 << (gif_image->local_palettes.empty()
-                    ? global_pal_exp_
-                    : gif_image->local_pallette_exp))
+          (2 << GetPaletteExp(gif_image.get()))) {
         return CFX_GifDecodeStatus::Error;
+      }
     }
     gif_image->image_GCE = std::move(graphic_control_extension_);
     graphic_control_extension_ = nullptr;
@@ -547,3 +541,10 @@ bool CFX_GifContext::ScanForTerminalMarker() {
 
   return true;
 }
+
+uint8_t CFX_GifContext::GetPaletteExp(CFX_GifImage* gif_image) const {
+  return !gif_image->local_palettes.empty() ? gif_image->local_palette_exp
+                                            : global_palette_exp_;
+}
+
+}  // namespace fxcodec

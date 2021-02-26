@@ -8,8 +8,8 @@
 #define CORE_FPDFDOC_CPDF_FILESPEC_H_
 
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/string_pool_template.h"
-#include "core/fxcrt/unowned_ptr.h"
 #include "core/fxcrt/weak_ptr.h"
 
 class CPDF_Dictionary;
@@ -40,8 +40,8 @@ class CPDF_FileSpec {
   void SetFileName(const WideString& wsFileName);
 
  private:
-  UnownedPtr<const CPDF_Object> const m_pObj;
-  UnownedPtr<CPDF_Object> const m_pWritableObj;
+  RetainPtr<const CPDF_Object> const m_pObj;
+  RetainPtr<CPDF_Object> const m_pWritableObj;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_FILESPEC_H_

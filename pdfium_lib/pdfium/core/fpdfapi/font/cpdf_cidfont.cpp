@@ -10,20 +10,21 @@
 #include <limits>
 #include <vector>
 
-#include "core/fpdfapi/cmaps/cmap_int.h"
-#include "core/fpdfapi/cpdf_modulemgr.h"
+#include "build/build_config.h"
+#include "core/fpdfapi/cmaps/fpdf_cmaps.h"
 #include "core/fpdfapi/font/cfx_cttgsubtable.h"
 #include "core/fpdfapi/font/cpdf_cid2unicodemap.h"
 #include "core/fpdfapi/font/cpdf_cmap.h"
 #include "core/fpdfapi/font/cpdf_cmapparser.h"
 #include "core/fpdfapi/font/cpdf_fontencoding.h"
-#include "core/fpdfapi/page/cpdf_pagemodule.h"
+#include "core/fpdfapi/font/cpdf_fontglobals.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
+#include "core/fxcrt/fx_memory.h"
+#include "core/fxcrt/fx_safe_types.h"
 #include "core/fxge/fx_font.h"
-#include "third_party/base/numerics/safe_math.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 #include "third_party/base/span.h"
 #include "third_party/base/stl_util.h"
 
@@ -126,11 +127,7 @@ constexpr long kMaxCBox = 2147483;
 // Boundary value to avoid integer overflow when adding 1/64th of the value.
 constexpr int kMaxRectTop = 2114445437;
 
-CPDF_FontGlobals* GetFontGlobals() {
-  return CPDF_ModuleMgr::Get()->GetPageModule()->GetFontGlobals();
-}
-
-#if _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+#if !defined(OS_WIN)
 
 bool IsValidEmbeddedCharcodeFromUnicodeCharset(CIDSet charset) {
   switch (charset) {
@@ -156,7 +153,7 @@ wchar_t EmbeddedUnicodeFromCharcode(const FXCMAP_CMap* pEmbedMap,
     return 0;
 
   pdfium::span<const uint16_t> map =
-      GetFontGlobals()->GetEmbeddedToUnicode(charset);
+      CPDF_FontGlobals::GetInstance()->GetEmbeddedToUnicode(charset);
   return cid < map.size() ? map[cid] : 0;
 }
 
@@ -167,7 +164,7 @@ uint32_t EmbeddedCharcodeFromUnicode(const FXCMAP_CMap* pEmbedMap,
     return 0;
 
   pdfium::span<const uint16_t> map =
-      GetFontGlobals()->GetEmbeddedToUnicode(charset);
+      CPDF_FontGlobals::GetInstance()->GetEmbeddedToUnicode(charset);
   for (uint32_t i = 0; i < map.size(); ++i) {
     if (map[i] == unicode) {
       uint32_t charCode = CharCodeFromCID(pEmbedMap, i);
@@ -178,46 +175,98 @@ uint32_t EmbeddedCharcodeFromUnicode(const FXCMAP_CMap* pEmbedMap,
   return 0;
 }
 
-#endif  // _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+#endif  // !defined(OS_WIN)
 
-void FT_UseCIDCharmap(FXFT_Face face, int coding) {
+void FT_UseCIDCharmap(FXFT_FaceRec* face, int coding) {
   int encoding;
   switch (coding) {
     case CIDCODING_GB:
-      encoding = FXFT_ENCODING_GB2312;
+      encoding = FT_ENCODING_GB2312;
       break;
     case CIDCODING_BIG5:
-      encoding = FXFT_ENCODING_BIG5;
+      encoding = FT_ENCODING_BIG5;
       break;
     case CIDCODING_JIS:
-      encoding = FXFT_ENCODING_SJIS;
+      encoding = FT_ENCODING_SJIS;
       break;
     case CIDCODING_KOREA:
-      encoding = FXFT_ENCODING_JOHAB;
+      encoding = FT_ENCODING_JOHAB;
       break;
     default:
-      encoding = FXFT_ENCODING_UNICODE;
+      encoding = FT_ENCODING_UNICODE;
   }
   int err = FXFT_Select_Charmap(face, encoding);
   if (err)
-    err = FXFT_Select_Charmap(face, FXFT_ENCODING_UNICODE);
+    err = FXFT_Select_Charmap(face, FT_ENCODING_UNICODE);
   if (err && FXFT_Get_Face_Charmaps(face))
-    FXFT_Set_Charmap(face, *FXFT_Get_Face_Charmaps(face));
+    FT_Set_Charmap(face, *FXFT_Get_Face_Charmaps(face));
 }
 
-bool IsMetricForCID(const uint32_t* pEntry, uint16_t CID) {
-  return pEntry[0] <= CID && pEntry[1] >= CID;
+bool IsMetricForCID(const int* pEntry, uint16_t cid) {
+  return pEntry[0] <= cid && pEntry[1] >= cid;
+}
+
+void LoadMetricsArray(const CPDF_Array* pArray,
+                      std::vector<int>* result,
+                      int nElements) {
+  int width_status = 0;
+  int iCurElement = 0;
+  int first_code = 0;
+  int last_code = 0;
+  for (size_t i = 0; i < pArray->size(); i++) {
+    const CPDF_Object* pObj = pArray->GetDirectObjectAt(i);
+    if (!pObj)
+      continue;
+
+    const CPDF_Array* pObjArray = pObj->AsArray();
+    if (pObjArray) {
+      if (width_status != 1)
+        return;
+      if (first_code > std::numeric_limits<int>::max() -
+                           pdfium::CollectionSize<int>(*pObjArray)) {
+        width_status = 0;
+        continue;
+      }
+
+      for (size_t j = 0; j < pObjArray->size(); j += nElements) {
+        result->push_back(first_code);
+        result->push_back(first_code);
+        for (int k = 0; k < nElements; k++)
+          result->push_back(pObjArray->GetIntegerAt(j + k));
+        first_code++;
+      }
+      width_status = 0;
+    } else {
+      if (width_status == 0) {
+        first_code = pObj->GetInteger();
+        width_status = 1;
+      } else if (width_status == 1) {
+        last_code = pObj->GetInteger();
+        width_status = 2;
+        iCurElement = 0;
+      } else {
+        if (!iCurElement) {
+          result->push_back(first_code);
+          result->push_back(last_code);
+        }
+        result->push_back(pObj->GetInteger());
+        iCurElement++;
+        if (iCurElement == nElements)
+          width_status = 0;
+      }
+    }
+  }
 }
 
 }  // namespace
 
 CPDF_CIDFont::CPDF_CIDFont(CPDF_Document* pDocument, CPDF_Dictionary* pFontDict)
     : CPDF_Font(pDocument, pFontDict) {
-  for (size_t i = 0; i < FX_ArraySize(m_CharBBox); ++i)
+  for (size_t i = 0; i < pdfium::size(m_CharBBox); ++i)
     m_CharBBox[i] = FX_RECT(-1, -1, -1, -1);
 }
 
-CPDF_CIDFont::~CPDF_CIDFont() {}
+CPDF_CIDFont::~CPDF_CIDFont() = default;
 
 bool CPDF_CIDFont::IsCIDFont() const {
   return true;
@@ -261,7 +310,7 @@ wchar_t CPDF_CIDFont::GetUnicodeFromCharCode(uint32_t charcode) const {
   if (m_pCID2UnicodeMap && m_pCID2UnicodeMap->IsLoaded() && m_pCMap->IsLoaded())
     return m_pCID2UnicodeMap->UnicodeFromCID(CIDFromCharCode(charcode));
 
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
   wchar_t unicode;
   int charsize = 1;
   if (charcode > 255) {
@@ -293,13 +342,13 @@ uint32_t CPDF_CIDFont::CharCodeFromUnicode(wchar_t unicode) const {
     case CIDCODING_CID: {
       if (!m_pCID2UnicodeMap || !m_pCID2UnicodeMap->IsLoaded())
         return 0;
-      uint32_t CID = 0;
-      while (CID < 65536) {
+      uint32_t cid = 0;
+      while (cid < 65536) {
         wchar_t this_unicode =
-            m_pCID2UnicodeMap->UnicodeFromCID(static_cast<uint16_t>(CID));
+            m_pCID2UnicodeMap->UnicodeFromCID(static_cast<uint16_t>(cid));
         if (this_unicode == unicode)
-          return CID;
-        CID++;
+          return cid;
+        cid++;
       }
       break;
     }
@@ -309,7 +358,7 @@ uint32_t CPDF_CIDFont::CharCodeFromUnicode(wchar_t unicode) const {
     return static_cast<uint32_t>(unicode);
   if (m_pCMap->GetCoding() == CIDCODING_CID)
     return 0;
-#if _FX_PLATFORM_ == _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
   uint8_t buffer[32];
   int ret = FXSYS_WideCharToMultiByte(
       g_CharsetCPs[m_pCMap->GetCoding()], 0, &unicode, 1,
@@ -341,39 +390,41 @@ bool CPDF_CIDFont::Load() {
   if (!pCIDFontDict)
     return false;
 
-  m_BaseFont = pCIDFontDict->GetStringFor("BaseFont");
-  if ((m_BaseFont.Compare("CourierStd") == 0 ||
-       m_BaseFont.Compare("CourierStd-Bold") == 0 ||
-       m_BaseFont.Compare("CourierStd-BoldOblique") == 0 ||
-       m_BaseFont.Compare("CourierStd-Oblique") == 0) &&
+  m_BaseFontName = pCIDFontDict->GetStringFor("BaseFont");
+  if ((m_BaseFontName.Compare("CourierStd") == 0 ||
+       m_BaseFontName.Compare("CourierStd-Bold") == 0 ||
+       m_BaseFontName.Compare("CourierStd-BoldOblique") == 0 ||
+       m_BaseFontName.Compare("CourierStd-Oblique") == 0) &&
       !IsEmbedded()) {
     m_bAdobeCourierStd = true;
   }
-  const CPDF_Dictionary* pFontDesc = pCIDFontDict->GetDictFor("FontDescriptor");
-  if (pFontDesc)
-    LoadFontDescriptor(pFontDesc);
 
-  CPDF_Object* pEncoding = m_pFontDict->GetDirectObjectFor("Encoding");
+  const CPDF_Object* pEncoding = m_pFontDict->GetDirectObjectFor("Encoding");
   if (!pEncoding)
     return false;
 
   ByteString subtype = pCIDFontDict->GetStringFor("Subtype");
   m_bType1 = (subtype == "CIDFontType0");
 
-  CPDF_CMapManager* manager = GetFontGlobals()->GetCMapManager();
-  if (pEncoding->IsName()) {
+  if (!pEncoding->IsName() && !pEncoding->IsStream())
+    return false;
+
+  CPDF_CMapManager* manager = CPDF_FontGlobals::GetInstance()->GetCMapManager();
+  const CPDF_Stream* pEncodingStream = pEncoding->AsStream();
+  if (pEncodingStream) {
+    auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pEncodingStream);
+    pAcc->LoadAllDataFiltered();
+    pdfium::span<const uint8_t> span = pAcc->GetSpan();
+    m_pCMap = pdfium::MakeRetain<CPDF_CMap>(span);
+  } else {
+    DCHECK(pEncoding->IsName());
     ByteString cmap = pEncoding->GetString();
     m_pCMap = manager->GetPredefinedCMap(cmap);
-    if (!m_pCMap)
-      return false;
-  } else if (CPDF_Stream* pStream = pEncoding->AsStream()) {
-    auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream);
-    pAcc->LoadAllDataFiltered();
-    m_pCMap = pdfium::MakeRetain<CPDF_CMap>();
-    m_pCMap->LoadEmbedded(pAcc->GetSpan());
-  } else {
-    return false;
   }
+
+  const CPDF_Dictionary* pFontDesc = pCIDFontDict->GetDictFor("FontDescriptor");
+  if (pFontDesc)
+    LoadFontDescriptor(pFontDesc);
 
   m_Charset = m_pCMap->GetCharset();
   if (m_Charset == CIDSET_UNKNOWN) {
@@ -386,11 +437,11 @@ bool CPDF_CIDFont::Load() {
   if (m_Charset != CIDSET_UNKNOWN) {
     m_pCID2UnicodeMap = manager->GetCID2UnicodeMap(m_Charset);
   }
-  if (m_Font.GetFace()) {
+  if (m_Font.GetFaceRec()) {
     if (m_bType1)
-      FXFT_Select_Charmap(m_Font.GetFace(), FXFT_ENCODING_UNICODE);
+      FXFT_Select_Charmap(m_Font.GetFaceRec(), FT_ENCODING_UNICODE);
     else
-      FT_UseCIDCharmap(m_Font.GetFace(), m_pCMap->GetCoding());
+      FT_UseCIDCharmap(m_Font.GetFaceRec(), m_pCMap->GetCoding());
   }
   m_DefaultWidth = pCIDFontDict->GetIntegerFor("DW", 1000);
   const CPDF_Array* pWidthArray = pCIDFontDict->GetArrayFor("W");
@@ -401,10 +452,12 @@ bool CPDF_CIDFont::Load() {
 
   const CPDF_Object* pmap = pCIDFontDict->GetDirectObjectFor("CIDToGIDMap");
   if (pmap) {
-    if (const CPDF_Stream* pStream = pmap->AsStream()) {
-      m_pStreamAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream);
+    const CPDF_Stream* pMapStream = pmap->AsStream();
+    if (pMapStream) {
+      m_pStreamAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pMapStream);
       m_pStreamAcc->LoadAllDataFiltered();
-    } else if (m_pFontFile && pmap->GetString() == "Identity") {
+    } else if (m_pFontFile && pmap->IsName() &&
+               pmap->GetString() == "Identity") {
       m_bCIDIsGID = true;
     }
   }
@@ -430,23 +483,23 @@ FX_RECT CPDF_CIDFont::GetCharBBox(uint32_t charcode) {
   FX_RECT rect;
   bool bVert = false;
   int glyph_index = GlyphFromCharCode(charcode, &bVert);
-  FXFT_Face face = m_Font.GetFace();
+  FXFT_FaceRec* face = m_Font.GetFaceRec();
   if (face) {
     if (FXFT_Is_Face_Tricky(face)) {
-      int err = FXFT_Load_Glyph(face, glyph_index,
-                                FXFT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH);
+      int err =
+          FT_Load_Glyph(face, glyph_index, FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH);
       if (!err) {
-        FXFT_Glyph glyph;
-        err = FXFT_Get_Glyph(((FXFT_Face)face)->glyph, &glyph);
+        FT_Glyph glyph;
+        err = FT_Get_Glyph(face->glyph, &glyph);
         if (!err) {
-          FXFT_BBox cbox;
-          FXFT_Glyph_Get_CBox(glyph, FXFT_GLYPH_BBOX_PIXELS, &cbox);
+          FT_BBox cbox;
+          FT_Glyph_Get_CBox(glyph, FT_GLYPH_BBOX_PIXELS, &cbox);
           cbox.xMin = pdfium::clamp(cbox.xMin, kMinCBox, kMaxCBox);
           cbox.xMax = pdfium::clamp(cbox.xMax, kMinCBox, kMaxCBox);
           cbox.yMin = pdfium::clamp(cbox.yMin, kMinCBox, kMaxCBox);
           cbox.yMax = pdfium::clamp(cbox.yMax, kMinCBox, kMaxCBox);
-          int pixel_size_x = ((FXFT_Face)face)->size->metrics.x_ppem;
-          int pixel_size_y = ((FXFT_Face)face)->size->metrics.y_ppem;
+          int pixel_size_x = face->size->metrics.x_ppem;
+          int pixel_size_y = face->size->metrics.y_ppem;
           if (pixel_size_x == 0 || pixel_size_y == 0) {
             rect = FX_RECT(cbox.xMin, cbox.yMax, cbox.xMax, cbox.yMin);
           } else {
@@ -459,11 +512,11 @@ FX_RECT CPDF_CIDFont::GetCharBBox(uint32_t charcode) {
                               static_cast<int>(FXFT_Get_Face_Ascender(face)));
           rect.bottom = std::max(
               rect.bottom, static_cast<int>(FXFT_Get_Face_Descender(face)));
-          FXFT_Done_Glyph(glyph);
+          FT_Done_Glyph(glyph);
         }
       }
     } else {
-      int err = FXFT_Load_Glyph(face, glyph_index, FXFT_LOAD_NO_SCALE);
+      int err = FT_Load_Glyph(face, glyph_index, FT_LOAD_NO_SCALE);
       if (err == 0) {
         rect = FX_RECT(TT2PDF(FXFT_Get_Glyph_HoriBearingX(face), face),
                        TT2PDF(FXFT_Get_Glyph_HoriBearingY(face), face),
@@ -481,8 +534,8 @@ FX_RECT CPDF_CIDFont::GetCharBBox(uint32_t charcode) {
     }
   }
   if (!m_pFontFile && m_Charset == CIDSET_JAPAN1) {
-    uint16_t CID = CIDFromCharCode(charcode);
-    const uint8_t* pTransform = GetCIDTransform(CID);
+    uint16_t cid = CIDFromCharCode(charcode);
+    const uint8_t* pTransform = GetCIDTransform(cid);
     if (pTransform && !bVert) {
       CFX_Matrix matrix(CIDTransformToFloat(pTransform[0]),
                         CIDTransformToFloat(pTransform[1]),
@@ -499,67 +552,65 @@ FX_RECT CPDF_CIDFont::GetCharBBox(uint32_t charcode) {
   return rect;
 }
 
-uint32_t CPDF_CIDFont::GetCharWidthF(uint32_t charcode) {
+int CPDF_CIDFont::GetCharWidthF(uint32_t charcode) {
   if (charcode < 0x80 && m_bAnsiWidthsFixed)
     return (charcode >= 32 && charcode < 127) ? 500 : 0;
 
   uint16_t cid = CIDFromCharCode(charcode);
   size_t size = m_WidthList.size();
-  const uint32_t* pList = m_WidthList.data();
+  const int* pList = m_WidthList.data();
   for (size_t i = 0; i < size; i += 3) {
-    const uint32_t* pEntry = pList + i;
+    const int* pEntry = pList + i;
     if (IsMetricForCID(pEntry, cid))
       return pEntry[2];
   }
   return m_DefaultWidth;
 }
 
-short CPDF_CIDFont::GetVertWidth(uint16_t CID) const {
+int16_t CPDF_CIDFont::GetVertWidth(uint16_t cid) const {
   size_t vertsize = m_VertMetrics.size() / 5;
   if (vertsize) {
-    const uint32_t* pTable = m_VertMetrics.data();
+    const int* pTable = m_VertMetrics.data();
     for (size_t i = 0; i < vertsize; i++) {
-      const uint32_t* pEntry = pTable + (i * 5);
-      if (IsMetricForCID(pEntry, CID))
-        return static_cast<short>(pEntry[2]);
+      const int* pEntry = pTable + (i * 5);
+      if (IsMetricForCID(pEntry, cid))
+        return static_cast<int16_t>(pEntry[2]);
     }
   }
   return m_DefaultW1;
 }
 
-void CPDF_CIDFont::GetVertOrigin(uint16_t CID, short& vx, short& vy) const {
+CFX_Point16 CPDF_CIDFont::GetVertOrigin(uint16_t cid) const {
   size_t vertsize = m_VertMetrics.size() / 5;
   if (vertsize) {
-    const uint32_t* pTable = m_VertMetrics.data();
+    const int* pTable = m_VertMetrics.data();
     for (size_t i = 0; i < vertsize; i++) {
-      const uint32_t* pEntry = pTable + (i * 5);
-      if (IsMetricForCID(pEntry, CID)) {
-        vx = static_cast<short>(pEntry[3]);
-        vy = static_cast<short>(pEntry[4]);
-        return;
+      const int* pEntry = pTable + (i * 5);
+      if (IsMetricForCID(pEntry, cid)) {
+        return {static_cast<int16_t>(pEntry[3]),
+                static_cast<int16_t>(pEntry[4])};
       }
     }
   }
-  uint32_t dwWidth = m_DefaultWidth;
+  int width = m_DefaultWidth;
   size_t size = m_WidthList.size();
-  const uint32_t* pList = m_WidthList.data();
+  const int* pList = m_WidthList.data();
   for (size_t i = 0; i < size; i += 3) {
-    const uint32_t* pEntry = pList + i;
-    if (IsMetricForCID(pEntry, CID)) {
-      dwWidth = pEntry[2];
+    const int* pEntry = pList + i;
+    if (IsMetricForCID(pEntry, cid)) {
+      width = pEntry[2];
       break;
     }
   }
-  vx = static_cast<short>(dwWidth) / 2;
-  vy = m_DefaultVY;
+  return {static_cast<int16_t>(width / 2), m_DefaultVY};
 }
 
 int CPDF_CIDFont::GetGlyphIndex(uint32_t unicode, bool* pVertGlyph) {
   if (pVertGlyph)
     *pVertGlyph = false;
 
-  FXFT_Face face = m_Font.GetFace();
-  int index = FXFT_Get_Char_Index(face, unicode);
+  FXFT_FaceRec* face = m_Font.GetFaceRec();
+  int index = FT_Get_Char_Index(face, unicode);
   if (unicode == 0x2502)
     return index;
 
@@ -571,17 +622,17 @@ int CPDF_CIDFont::GetGlyphIndex(uint32_t unicode, bool* pVertGlyph) {
 
   if (!m_Font.GetSubData()) {
     unsigned long length = 0;
-    int error = FXFT_Load_Sfnt_Table(face, FT_MAKE_TAG('G', 'S', 'U', 'B'), 0,
-                                     nullptr, &length);
+    int error = FT_Load_Sfnt_Table(face, FT_MAKE_TAG('G', 'S', 'U', 'B'), 0,
+                                   nullptr, &length);
     if (!error)
       m_Font.SetSubData(FX_Alloc(uint8_t, length));
   }
-  int error = FXFT_Load_Sfnt_Table(face, FT_MAKE_TAG('G', 'S', 'U', 'B'), 0,
-                                   m_Font.GetSubData(), nullptr);
+  int error = FT_Load_Sfnt_Table(face, FT_MAKE_TAG('G', 'S', 'U', 'B'), 0,
+                                 m_Font.GetSubData(), nullptr);
   if (error || !m_Font.GetSubData())
     return index;
 
-  m_pTTGSUBTable = pdfium::MakeUnique<CFX_CTTGSUBTable>(m_Font.GetSubData());
+  m_pTTGSUBTable = std::make_unique<CFX_CTTGSUBTable>(m_Font.GetSubData());
   return GetVerticalGlyph(index, pVertGlyph);
 }
 
@@ -600,13 +651,11 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
   if (pVertGlyph)
     *pVertGlyph = false;
 
-  if (!m_pFontFile && !m_pStreamAcc) {
+  if (!m_pFontFile && (!m_pStreamAcc || m_pCID2UnicodeMap)) {
     uint16_t cid = CIDFromCharCode(charcode);
     wchar_t unicode = 0;
     if (m_bCIDIsGID) {
-#if _FX_PLATFORM_ != _FX_PLATFORM_APPLE_
-      return cid;
-#else
+#if defined(OS_APPLE)
       if (FontStyleIsSymbolic(m_Flags))
         return cid;
 
@@ -615,6 +664,8 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
         return cid;
 
       unicode = uni_str[0];
+#else
+      return cid;
 #endif
     } else {
       if (cid && m_pCID2UnicodeMap && m_pCID2UnicodeMap->IsLoaded())
@@ -627,7 +678,7 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
           unicode = unicode_str[0];
       }
     }
-    FXFT_Face face = m_Font.GetFace();
+    FXFT_FaceRec* face = m_Font.GetFaceRec();
     if (unicode == 0) {
       if (!m_bAdobeCourierStd)
         return charcode ? static_cast<int>(charcode) : -1;
@@ -651,15 +702,15 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
         return charcode ? static_cast<int>(charcode) : -1;
 
       if (iBaseEncoding == PDFFONT_ENCODING_STANDARD)
-        return FXFT_Get_Char_Index(face, name_unicode);
+        return FT_Get_Char_Index(face, name_unicode);
 
       if (iBaseEncoding == PDFFONT_ENCODING_WINANSI) {
-        index = FXFT_Get_Char_Index(face, name_unicode);
+        index = FT_Get_Char_Index(face, name_unicode);
       } else {
-        ASSERT(iBaseEncoding == PDFFONT_ENCODING_MACROMAN);
+        DCHECK(iBaseEncoding == PDFFONT_ENCODING_MACROMAN);
         uint32_t maccode =
-            FT_CharCodeFromUnicode(FXFT_ENCODING_APPLE_ROMAN, name_unicode);
-        index = maccode ? FXFT_Get_Char_Index(face, maccode)
+            FT_CharCodeFromUnicode(FT_ENCODING_APPLE_ROMAN, name_unicode);
+        index = maccode ? FT_Get_Char_Index(face, maccode)
                         : FXFT_Get_Name_Index(face, name);
       }
       if (index == 0 || index == 0xffff)
@@ -669,7 +720,7 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
     if (m_Charset == CIDSET_JAPAN1) {
       if (unicode == '\\') {
         unicode = '/';
-#if _FX_PLATFORM_ != _FX_PLATFORM_APPLE_
+#if !defined(OS_APPLE)
       } else if (unicode == 0xa5) {
         unicode = 0x5c;
 #endif
@@ -678,7 +729,7 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
     if (!face)
       return unicode;
 
-    int err = FXFT_Select_Charmap(face, FXFT_ENCODING_UNICODE);
+    int err = FXFT_Select_Charmap(face, FT_ENCODING_UNICODE);
     if (err) {
       int i;
       for (i = 0; i < FXFT_Get_Face_CharmapCount(face); i++) {
@@ -687,12 +738,12 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
             static_cast<wchar_t>(charcode));
         if (ret == 0)
           continue;
-        FXFT_Set_Charmap(face, FXFT_Get_Face_Charmaps(face)[i]);
+        FT_Set_Charmap(face, FXFT_Get_Face_Charmaps(face)[i]);
         unicode = static_cast<wchar_t>(ret);
         break;
       }
       if (i == FXFT_Get_Face_CharmapCount(face) && i) {
-        FXFT_Set_Charmap(face, FXFT_Get_Face_Charmaps(face)[0]);
+        FT_Set_Charmap(face, FXFT_Get_Face_Charmaps(face)[0]);
         unicode = static_cast<wchar_t>(charcode);
       }
     }
@@ -703,7 +754,7 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
     return unicode;
   }
 
-  if (!m_Font.GetFace())
+  if (!m_Font.GetFaceRec())
     return -1;
 
   uint16_t cid = CIDFromCharCode(charcode);
@@ -713,11 +764,11 @@ int CPDF_CIDFont::GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) {
     if (m_pFontFile && m_pCMap->IsDirectCharcodeToCIDTableIsEmpty())
       return cid;
     if (m_pCMap->GetCoding() == CIDCODING_UNKNOWN ||
-        !FXFT_Get_Face_Charmap(m_Font.GetFace())) {
+        !FXFT_Get_Face_Charmap(m_Font.GetFaceRec())) {
       return cid;
     }
-    if (FXFT_Get_Charmap_Encoding(FXFT_Get_Face_Charmap(m_Font.GetFace())) ==
-        FXFT_ENCODING_UNICODE) {
+    if (FXFT_Get_Charmap_Encoding(FXFT_Get_Face_Charmap(m_Font.GetFaceRec())) ==
+        FT_ENCODING_UNICODE) {
       WideString unicode_str = UnicodeFromCharCode(charcode);
       if (unicode_str.IsEmpty())
         return -1;
@@ -758,62 +809,11 @@ bool CPDF_CIDFont::IsUnicodeCompatible() const {
 }
 
 void CPDF_CIDFont::LoadSubstFont() {
-  pdfium::base::CheckedNumeric<int> safeStemV(m_StemV);
+  FX_SAFE_INT32 safeStemV(m_StemV);
   safeStemV *= 5;
-  m_Font.LoadSubst(m_BaseFont, !m_bType1, m_Flags,
+  m_Font.LoadSubst(m_BaseFontName, !m_bType1, m_Flags,
                    safeStemV.ValueOrDefault(FXFONT_FW_NORMAL), m_ItalicAngle,
                    g_CharsetCPs[m_Charset], IsVertWriting());
-}
-
-void CPDF_CIDFont::LoadMetricsArray(const CPDF_Array* pArray,
-                                    std::vector<uint32_t>* result,
-                                    int nElements) {
-  int width_status = 0;
-  int iCurElement = 0;
-  uint32_t first_code = 0;
-  uint32_t last_code = 0;
-  for (size_t i = 0; i < pArray->size(); i++) {
-    const CPDF_Object* pObj = pArray->GetDirectObjectAt(i);
-    if (!pObj)
-      continue;
-
-    if (const CPDF_Array* pObjArray = pObj->AsArray()) {
-      if (width_status != 1)
-        return;
-      if (first_code >
-          std::numeric_limits<uint32_t>::max() - pObjArray->size()) {
-        width_status = 0;
-        continue;
-      }
-
-      for (size_t j = 0; j < pObjArray->size(); j += nElements) {
-        result->push_back(first_code);
-        result->push_back(first_code);
-        for (int k = 0; k < nElements; k++)
-          result->push_back(pObjArray->GetIntegerAt(j + k));
-        first_code++;
-      }
-      width_status = 0;
-    } else {
-      if (width_status == 0) {
-        first_code = pObj->GetInteger();
-        width_status = 1;
-      } else if (width_status == 1) {
-        last_code = pObj->GetInteger();
-        width_status = 2;
-        iCurElement = 0;
-      } else {
-        if (!iCurElement) {
-          result->push_back(first_code);
-          result->push_back(last_code);
-        }
-        result->push_back(pObj->GetInteger());
-        iCurElement++;
-        if (iCurElement == nElements)
-          width_status = 0;
-      }
-    }
-  }
 }
 
 // static
@@ -822,31 +822,30 @@ float CPDF_CIDFont::CIDTransformToFloat(uint8_t ch) {
 }
 
 void CPDF_CIDFont::LoadGB2312() {
-  m_BaseFont = m_pFontDict->GetStringFor("BaseFont");
+  m_BaseFontName = m_pFontDict->GetStringFor("BaseFont");
+  m_Charset = CIDSET_GB1;
+
+  CPDF_CMapManager* manager = CPDF_FontGlobals::GetInstance()->GetCMapManager();
+  m_pCMap = manager->GetPredefinedCMap("GBK-EUC-H");
+  m_pCID2UnicodeMap = manager->GetCID2UnicodeMap(m_Charset);
   const CPDF_Dictionary* pFontDesc = m_pFontDict->GetDictFor("FontDescriptor");
   if (pFontDesc)
     LoadFontDescriptor(pFontDesc);
 
-  m_Charset = CIDSET_GB1;
-
-  CPDF_CMapManager* manager = GetFontGlobals()->GetCMapManager();
-  m_pCMap = manager->GetPredefinedCMap("GBK-EUC-H");
-  m_pCID2UnicodeMap = manager->GetCID2UnicodeMap(m_Charset);
   if (!IsEmbedded())
     LoadSubstFont();
-
   CheckFontMetrics();
   m_bAnsiWidthsFixed = true;
 }
 
-const uint8_t* CPDF_CIDFont::GetCIDTransform(uint16_t CID) const {
+const uint8_t* CPDF_CIDFont::GetCIDTransform(uint16_t cid) const {
   if (m_Charset != CIDSET_JAPAN1 || m_pFontFile)
     return nullptr;
 
-  const auto* pEnd = g_Japan1_VertCIDs + FX_ArraySize(g_Japan1_VertCIDs);
+  const auto* pEnd = g_Japan1_VertCIDs + pdfium::size(g_Japan1_VertCIDs);
   const auto* pTransform = std::lower_bound(
-      g_Japan1_VertCIDs, pEnd, CID,
+      g_Japan1_VertCIDs, pEnd, cid,
       [](const CIDTransform& entry, uint16_t cid) { return entry.cid < cid; });
-  return (pTransform < pEnd && CID == pTransform->cid) ? &pTransform->a
+  return (pTransform < pEnd && cid == pTransform->cid) ? &pTransform->a
                                                        : nullptr;
 }

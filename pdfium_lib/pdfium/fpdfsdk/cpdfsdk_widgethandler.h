@@ -21,27 +21,23 @@ class CPDFSDK_Annot;
 class CPDFSDK_FormFillEnvironment;
 class CPDFSDK_PageView;
 
-#ifdef PDF_ENABLE_XFA
-class CXFA_FFWidget;
-#endif  // PDF_ENABLE_XFA
-
 class CPDFSDK_WidgetHandler final : public IPDFSDK_AnnotHandler {
  public:
-  explicit CPDFSDK_WidgetHandler(CPDFSDK_FormFillEnvironment* pApp);
+  CPDFSDK_WidgetHandler();
   ~CPDFSDK_WidgetHandler() override;
 
+  void SetFormFillEnvironment(
+      CPDFSDK_FormFillEnvironment* pFormFillEnv) override;
   bool CanAnswer(CPDFSDK_Annot* pAnnot) override;
-  CPDFSDK_Annot* NewAnnot(CPDF_Annot* pAnnot, CPDFSDK_PageView* pPage) override;
-#ifdef PDF_ENABLE_XFA
-  CPDFSDK_Annot* NewAnnot(CXFA_FFWidget* hWidget,
-                          CPDFSDK_PageView* pPage) override;
-#endif  // PDF_ENABLE_XFA
+  std::unique_ptr<CPDFSDK_Annot> NewAnnot(CPDF_Annot* pAnnot,
+                                          CPDFSDK_PageView* pPageView) override;
   void ReleaseAnnot(std::unique_ptr<CPDFSDK_Annot> pAnnot) override;
   CFX_FloatRect GetViewBBox(CPDFSDK_PageView* pPageView,
                             CPDFSDK_Annot* pAnnot) override;
   WideString GetText(CPDFSDK_Annot* pAnnot) override;
   WideString GetSelectedText(CPDFSDK_Annot* pAnnot) override;
   void ReplaceSelection(CPDFSDK_Annot* pAnnot, const WideString& text) override;
+  bool SelectAllText(CPDFSDK_Annot* pAnnot) override;
   bool CanUndo(CPDFSDK_Annot* pAnnot) override;
   bool CanRedo(CPDFSDK_Annot* pAnnot) override;
   bool Undo(CPDFSDK_Annot* pAnnot) override;
@@ -57,61 +53,59 @@ class CPDFSDK_WidgetHandler final : public IPDFSDK_AnnotHandler {
   void OnLoad(CPDFSDK_Annot* pAnnot) override;
 
   void OnMouseEnter(CPDFSDK_PageView* pPageView,
-                    CPDFSDK_Annot::ObservedPtr* pAnnot,
+                    ObservedPtr<CPDFSDK_Annot>* pAnnot,
                     uint32_t nFlag) override;
   void OnMouseExit(CPDFSDK_PageView* pPageView,
-                   CPDFSDK_Annot::ObservedPtr* pAnnot,
+                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
                    uint32_t nFlag) override;
   bool OnLButtonDown(CPDFSDK_PageView* pPageView,
-                     CPDFSDK_Annot::ObservedPtr* pAnnot,
+                     ObservedPtr<CPDFSDK_Annot>* pAnnot,
                      uint32_t nFlags,
                      const CFX_PointF& point) override;
   bool OnLButtonUp(CPDFSDK_PageView* pPageView,
-                   CPDFSDK_Annot::ObservedPtr* pAnnot,
+                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
                    uint32_t nFlags,
                    const CFX_PointF& point) override;
   bool OnLButtonDblClk(CPDFSDK_PageView* pPageView,
-                       CPDFSDK_Annot::ObservedPtr* pAnnot,
+                       ObservedPtr<CPDFSDK_Annot>* pAnnot,
                        uint32_t nFlags,
                        const CFX_PointF& point) override;
   bool OnMouseMove(CPDFSDK_PageView* pPageView,
-                   CPDFSDK_Annot::ObservedPtr* pAnnot,
+                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
                    uint32_t nFlags,
                    const CFX_PointF& point) override;
   bool OnMouseWheel(CPDFSDK_PageView* pPageView,
-                    CPDFSDK_Annot::ObservedPtr* pAnnot,
+                    ObservedPtr<CPDFSDK_Annot>* pAnnot,
                     uint32_t nFlags,
-                    short zDelta,
-                    const CFX_PointF& point) override;
+                    const CFX_PointF& point,
+                    const CFX_Vector& delta) override;
   bool OnRButtonDown(CPDFSDK_PageView* pPageView,
-                     CPDFSDK_Annot::ObservedPtr* pAnnot,
+                     ObservedPtr<CPDFSDK_Annot>* pAnnot,
                      uint32_t nFlags,
                      const CFX_PointF& point) override;
   bool OnRButtonUp(CPDFSDK_PageView* pPageView,
-                   CPDFSDK_Annot::ObservedPtr* pAnnot,
+                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
                    uint32_t nFlags,
                    const CFX_PointF& point) override;
   bool OnRButtonDblClk(CPDFSDK_PageView* pPageView,
-                       CPDFSDK_Annot::ObservedPtr* pAnnot,
+                       ObservedPtr<CPDFSDK_Annot>* pAnnot,
                        uint32_t nFlags,
                        const CFX_PointF& point) override;
   bool OnChar(CPDFSDK_Annot* pAnnot, uint32_t nChar, uint32_t nFlags) override;
   bool OnKeyDown(CPDFSDK_Annot* pAnnot, int nKeyCode, int nFlag) override;
   bool OnKeyUp(CPDFSDK_Annot* pAnnot, int nKeyCode, int nFlag) override;
-  bool OnSetFocus(CPDFSDK_Annot::ObservedPtr* pAnnot, uint32_t nFlag) override;
-  bool OnKillFocus(CPDFSDK_Annot::ObservedPtr* pAnnot, uint32_t nFlag) override;
-  bool SetIndexSelected(CPDFSDK_Annot::ObservedPtr* pAnnot,
+  bool OnSetFocus(ObservedPtr<CPDFSDK_Annot>* pAnnot, uint32_t nFlag) override;
+  bool OnKillFocus(ObservedPtr<CPDFSDK_Annot>* pAnnot, uint32_t nFlag) override;
+  bool SetIndexSelected(ObservedPtr<CPDFSDK_Annot>* pAnnot,
                         int index,
                         bool selected) override;
-  bool IsIndexSelected(CPDFSDK_Annot::ObservedPtr* pAnnot, int index) override;
-#ifdef PDF_ENABLE_XFA
-  bool OnXFAChangedFocus(CPDFSDK_Annot::ObservedPtr* pOldAnnot,
-                         CPDFSDK_Annot::ObservedPtr* pNewAnnot) override;
-#endif  // PDF_ENABLE_XFA
+  bool IsIndexSelected(ObservedPtr<CPDFSDK_Annot>* pAnnot, int index) override;
 
  private:
-  UnownedPtr<CPDFSDK_FormFillEnvironment> const m_pFormFillEnv;
-  UnownedPtr<CFFL_InteractiveFormFiller> const m_pFormFiller;
+  bool IsFocusableAnnot(const CPDF_Annot::Subtype& annot_type) const;
+
+  UnownedPtr<CPDFSDK_FormFillEnvironment> m_pFormFillEnv;
+  UnownedPtr<CFFL_InteractiveFormFiller> m_pFormFiller;
 };
 
 #endif  // FPDFSDK_CPDFSDK_WIDGETHANDLER_H_

@@ -10,7 +10,9 @@
 #include <vector>
 
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxge/cfx_textrenderoptions.h"
 #include "fxbarcode/BC_Library.h"
 #include "fxbarcode/BC_Writer.h"
 #include "fxbarcode/utils.h"
@@ -22,6 +24,11 @@ class TextCharPos;
 
 class CBC_OneDimWriter : public CBC_Writer {
  public:
+  static constexpr CFX_TextRenderOptions GetTextRenderOptions() {
+    return CFX_TextRenderOptions(CFX_TextRenderOptions::kLcd);
+  }
+  static bool HasValidContentSize(WideStringView contents);
+
   CBC_OneDimWriter();
   ~CBC_OneDimWriter() override;
 
@@ -30,7 +37,6 @@ class CBC_OneDimWriter : public CBC_Writer {
                             int32_t codeLength);
   virtual bool CheckContentValidity(WideStringView contents) = 0;
   virtual WideString FilterContents(WideStringView contents) = 0;
-  virtual WideString RenderTextContents(WideStringView contents);
   virtual void SetPrintChecksum(bool checksum);
   virtual void SetDataLength(int32_t length);
   virtual void SetCalcChecksum(bool state);

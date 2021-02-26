@@ -7,9 +7,11 @@
 #include <memory>
 
 #include "core/fpdfapi/page/cpdf_page.h"
+#include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfdoc/cpdf_structelement.h"
 #include "core/fpdfdoc/cpdf_structtree.h"
+#include "core/fxcrt/fx_safe_types.h"
 #include "fpdfsdk/cpdfsdk_helpers.h"
 
 namespace {
@@ -53,7 +55,7 @@ FPDF_StructTree_CountChildren(FPDF_STRUCTTREE struct_tree) {
   if (!tree)
     return -1;
 
-  pdfium::base::CheckedNumeric<int> tmp_size = tree->CountTopElements();
+  FX_SAFE_INT32 tmp_size = tree->CountTopElements();
   return tmp_size.ValueOrDefault(-1);
 }
 
@@ -74,18 +76,67 @@ FPDF_StructElement_GetAltText(FPDF_STRUCTELEMENT struct_element,
                               unsigned long buflen) {
   CPDF_StructElement* elem =
       CPDFStructElementFromFPDFStructElement(struct_element);
-  return (elem && elem->GetDict())
-             ? WideStringToBuffer(elem->GetDict()->GetUnicodeTextFor("Alt"),
-                                  buffer, buflen)
-             : 0;
+  return elem ? WideStringToBuffer(elem->GetAltText(), buffer, buflen) : 0;
+}
+
+FPDF_EXPORT unsigned long FPDF_CALLCONV
+FPDF_StructElement_GetID(FPDF_STRUCTELEMENT struct_element,
+                         void* buffer,
+                         unsigned long buflen) {
+  CPDF_StructElement* elem =
+      CPDFStructElementFromFPDFStructElement(struct_element);
+  const CPDF_Dictionary* dict = elem ? elem->GetDict() : nullptr;
+  if (!dict)
+    return 0;
+  const CPDF_Object* obj = dict->GetObjectFor("ID");
+  if (!obj || !obj->IsString())
+    return 0;
+  return Utf16EncodeMaybeCopyAndReturnLength(obj->GetUnicodeText(), buffer,
+                                             buflen);
+}
+
+FPDF_EXPORT unsigned long FPDF_CALLCONV
+FPDF_StructElement_GetLang(FPDF_STRUCTELEMENT struct_element,
+                           void* buffer,
+                           unsigned long buflen) {
+  CPDF_StructElement* elem =
+      CPDFStructElementFromFPDFStructElement(struct_element);
+  const CPDF_Dictionary* dict = elem ? elem->GetDict() : nullptr;
+  const CPDF_Object* obj = dict->GetObjectFor("Lang");
+  if (!obj || !obj->IsString())
+    return 0;
+  return Utf16EncodeMaybeCopyAndReturnLength(obj->GetUnicodeText(), buffer,
+                                             buflen);
+}
+
+FPDF_EXPORT unsigned long FPDF_CALLCONV
+FPDF_StructElement_GetStringAttribute(FPDF_STRUCTELEMENT struct_element,
+                                      FPDF_BYTESTRING attr_name,
+                                      void* buffer,
+                                      unsigned long buflen) {
+  CPDF_StructElement* elem =
+      CPDFStructElementFromFPDFStructElement(struct_element);
+  const CPDF_Dictionary* dict = elem ? elem->GetDict() : nullptr;
+  const CPDF_Array* array = dict ? dict->GetArrayFor("A") : nullptr;
+  if (!array)
+    return 0;
+  CPDF_ArrayLocker locker(array);
+  for (const RetainPtr<CPDF_Object>& obj : locker) {
+    const CPDF_Dictionary* obj_dict = obj->AsDictionary();
+    const CPDF_Object* attr = obj_dict->GetObjectFor(attr_name);
+    if (!attr || !(attr->IsString() || attr->IsName()))
+      continue;
+    return Utf16EncodeMaybeCopyAndReturnLength(attr->GetUnicodeText(), buffer,
+                                               buflen);
+  }
+  return 0;
 }
 
 FPDF_EXPORT int FPDF_CALLCONV
 FPDF_StructElement_GetMarkedContentID(FPDF_STRUCTELEMENT struct_element) {
   CPDF_StructElement* elem =
       CPDFStructElementFromFPDFStructElement(struct_element);
-  const CPDF_Object* p =
-      (elem && elem->GetDict()) ? elem->GetDict()->GetObjectFor("K") : nullptr;
+  const CPDF_Object* p = elem ? elem->GetDict()->GetObjectFor("K") : nullptr;
   return p && p->IsNumber() ? p->GetInteger() : -1;
 }
 
@@ -107,10 +158,7 @@ FPDF_StructElement_GetTitle(FPDF_STRUCTELEMENT struct_element,
                             unsigned long buflen) {
   CPDF_StructElement* elem =
       CPDFStructElementFromFPDFStructElement(struct_element);
-  return elem ? WideStringToBuffer(
-                    WideString::FromUTF8(elem->GetTitle().AsStringView()),
-                    buffer, buflen)
-              : 0;
+  return elem ? WideStringToBuffer(elem->GetTitle(), buffer, buflen) : 0;
 }
 
 FPDF_EXPORT int FPDF_CALLCONV
@@ -120,7 +168,7 @@ FPDF_StructElement_CountChildren(FPDF_STRUCTELEMENT struct_element) {
   if (!elem)
     return -1;
 
-  pdfium::base::CheckedNumeric<int> tmp_size = elem->CountKids();
+  FX_SAFE_INT32 tmp_size = elem->CountKids();
   return tmp_size.ValueOrDefault(-1);
 }
 
@@ -132,6 +180,5 @@ FPDF_StructElement_GetChildAtIndex(FPDF_STRUCTELEMENT struct_element,
   if (!elem || index < 0 || static_cast<size_t>(index) >= elem->CountKids())
     return nullptr;
 
-  return FPDFStructElementFromCPDFStructElement(
-      elem->GetKidIfElement(static_cast<size_t>(index)));
+  return FPDFStructElementFromCPDFStructElement(elem->GetKidIfElement(index));
 }

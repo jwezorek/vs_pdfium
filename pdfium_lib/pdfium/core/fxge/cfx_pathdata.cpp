@@ -7,6 +7,7 @@
 #include "core/fxge/cfx_pathdata.h"
 
 #include "core/fxcrt/fx_system.h"
+#include "third_party/base/check.h"
 #include "third_party/base/numerics/safe_math.h"
 
 namespace {
@@ -170,7 +171,7 @@ CFX_PathData::CFX_PathData() = default;
 
 CFX_PathData::CFX_PathData(const CFX_PathData& src) = default;
 
-CFX_PathData::CFX_PathData(CFX_PathData&& src) = default;
+CFX_PathData::CFX_PathData(CFX_PathData&& src) noexcept = default;
 
 CFX_PathData::~CFX_PathData() = default;
 
@@ -184,35 +185,38 @@ void CFX_PathData::ClosePath() {
   m_Points.back().m_CloseFigure = true;
 }
 
-void CFX_PathData::Append(const CFX_PathData* pSrc, const CFX_Matrix* pMatrix) {
-  if (pSrc->m_Points.empty())
+void CFX_PathData::Append(const CFX_PathData* src, const CFX_Matrix* matrix) {
+  if (src->m_Points.empty())
     return;
 
   size_t cur_size = m_Points.size();
-  m_Points.insert(m_Points.end(), pSrc->m_Points.begin(), pSrc->m_Points.end());
+  m_Points.insert(m_Points.end(), src->m_Points.begin(), src->m_Points.end());
 
-  if (!pMatrix)
+  if (!matrix)
     return;
 
   for (size_t i = cur_size; i < m_Points.size(); i++)
-    m_Points[i].m_Point = pMatrix->Transform(m_Points[i].m_Point);
+    m_Points[i].m_Point = matrix->Transform(m_Points[i].m_Point);
 }
 
-void CFX_PathData::AppendPoint(const CFX_PointF& point,
-                               FXPT_TYPE type,
-                               bool closeFigure) {
-  m_Points.push_back(FX_PATHPOINT(point, type, closeFigure));
+void CFX_PathData::AppendPoint(const CFX_PointF& point, FXPT_TYPE type) {
+  m_Points.push_back(FX_PATHPOINT(point, type, /*close=*/false));
+}
+
+void CFX_PathData::AppendPointAndClose(const CFX_PointF& point,
+                                       FXPT_TYPE type) {
+  m_Points.push_back(FX_PATHPOINT(point, type, /*close=*/true));
 }
 
 void CFX_PathData::AppendLine(const CFX_PointF& pt1, const CFX_PointF& pt2) {
   if (m_Points.empty() || fabs(m_Points.back().m_Point.x - pt1.x) > 0.001 ||
       fabs(m_Points.back().m_Point.y - pt1.y) > 0.001) {
-    AppendPoint(pt1, FXPT_TYPE::MoveTo, false);
+    AppendPoint(pt1, FXPT_TYPE::MoveTo);
   }
-  AppendPoint(pt2, FXPT_TYPE::LineTo, false);
+  AppendPoint(pt2, FXPT_TYPE::LineTo);
 }
 
-void CFX_PathData::AppendRect(const CFX_FloatRect& rect) {
+void CFX_PathData::AppendFloatRect(const CFX_FloatRect& rect) {
   return AppendRect(rect.left, rect.bottom, rect.right, rect.top);
 }
 
@@ -298,127 +302,6 @@ void CFX_PathData::Transform(const CFX_Matrix& matrix) {
     point.m_Point = matrix.Transform(point.m_Point);
 }
 
-bool CFX_PathData::GetZeroAreaPath(const CFX_Matrix* pMatrix,
-                                   bool bAdjust,
-                                   CFX_PathData* NewPath,
-                                   bool* bThin,
-                                   bool* setIdentity) const {
-  *setIdentity = false;
-  if (m_Points.size() < 3)
-    return false;
-
-  if (m_Points.size() == 3 && m_Points[0].m_Type == FXPT_TYPE::MoveTo &&
-      m_Points[1].m_Type == FXPT_TYPE::LineTo &&
-      m_Points[2].m_Type == FXPT_TYPE::LineTo &&
-      m_Points[0].m_Point == m_Points[2].m_Point) {
-    for (size_t i = 0; i < 2; i++) {
-      CFX_PointF point = m_Points[i].m_Point;
-      if (bAdjust) {
-        if (pMatrix)
-          point = pMatrix->Transform(point);
-
-        point = CFX_PointF(static_cast<int>(point.x) + 0.5f,
-                           static_cast<int>(point.y) + 0.5f);
-      }
-      NewPath->AppendPoint(
-          point, i == 0 ? FXPT_TYPE::MoveTo : FXPT_TYPE::LineTo, false);
-    }
-    if (bAdjust && pMatrix)
-      *setIdentity = true;
-
-    // Note, they both have to be not equal.
-    if (m_Points[0].m_Point.x != m_Points[1].m_Point.x &&
-        m_Points[0].m_Point.y != m_Points[1].m_Point.y) {
-      *bThin = true;
-    }
-    return true;
-  }
-
-  if (((m_Points.size() > 3) && (m_Points.size() % 2))) {
-    int mid = m_Points.size() / 2;
-    bool bZeroArea = false;
-    CFX_PathData t_path;
-    for (int i = 0; i < mid; i++) {
-      if (!(m_Points[mid - i - 1].m_Point == m_Points[mid + i + 1].m_Point &&
-            m_Points[mid - i - 1].m_Type != FXPT_TYPE::BezierTo &&
-            m_Points[mid + i + 1].m_Type != FXPT_TYPE::BezierTo)) {
-        bZeroArea = true;
-        break;
-      }
-
-      t_path.AppendPoint(m_Points[mid - i].m_Point, FXPT_TYPE::MoveTo, false);
-      t_path.AppendPoint(m_Points[mid - i - 1].m_Point, FXPT_TYPE::LineTo,
-                         false);
-    }
-    if (!bZeroArea) {
-      NewPath->Append(&t_path, nullptr);
-      *bThin = true;
-      return true;
-    }
-  }
-
-  int startPoint = 0;
-  int next = 0;
-  for (size_t i = 0; i < m_Points.size(); i++) {
-    FXPT_TYPE point_type = m_Points[i].m_Type;
-    if (point_type == FXPT_TYPE::MoveTo) {
-      startPoint = i;
-    } else if (point_type == FXPT_TYPE::LineTo) {
-      next = (i + 1 - startPoint) % (m_Points.size() - startPoint) + startPoint;
-      if (m_Points[next].m_Type != FXPT_TYPE::BezierTo &&
-          m_Points[next].m_Type != FXPT_TYPE::MoveTo) {
-        if ((m_Points[i - 1].m_Point.x == m_Points[i].m_Point.x &&
-             m_Points[i].m_Point.x == m_Points[next].m_Point.x) &&
-            ((m_Points[i].m_Point.y - m_Points[i - 1].m_Point.y) *
-                 (m_Points[i].m_Point.y - m_Points[next].m_Point.y) >
-             0)) {
-          int pre = i;
-          if (fabs(m_Points[i].m_Point.y - m_Points[i - 1].m_Point.y) <
-              fabs(m_Points[i].m_Point.y - m_Points[next].m_Point.y)) {
-            pre--;
-            next--;
-          }
-
-          NewPath->AppendPoint(m_Points[pre].m_Point, FXPT_TYPE::MoveTo, false);
-          NewPath->AppendPoint(m_Points[next].m_Point, FXPT_TYPE::LineTo,
-                               false);
-        } else if ((m_Points[i - 1].m_Point.y == m_Points[i].m_Point.y &&
-                    m_Points[i].m_Point.y == m_Points[next].m_Point.y) &&
-                   ((m_Points[i].m_Point.x - m_Points[i - 1].m_Point.x) *
-                        (m_Points[i].m_Point.x - m_Points[next].m_Point.x) >
-                    0)) {
-          int pre = i;
-          if (fabs(m_Points[i].m_Point.x - m_Points[i - 1].m_Point.x) <
-              fabs(m_Points[i].m_Point.x - m_Points[next].m_Point.x)) {
-            pre--;
-            next--;
-          }
-
-          NewPath->AppendPoint(m_Points[pre].m_Point, FXPT_TYPE::MoveTo, false);
-          NewPath->AppendPoint(m_Points[next].m_Point, FXPT_TYPE::LineTo,
-                               false);
-        } else if (m_Points[i - 1].m_Type == FXPT_TYPE::MoveTo &&
-                   m_Points[next].m_Type == FXPT_TYPE::LineTo &&
-                   m_Points[i - 1].m_Point == m_Points[next].m_Point &&
-                   m_Points[next].m_CloseFigure) {
-          NewPath->AppendPoint(m_Points[i - 1].m_Point, FXPT_TYPE::MoveTo,
-                               false);
-          NewPath->AppendPoint(m_Points[i].m_Point, FXPT_TYPE::LineTo, false);
-          *bThin = true;
-        }
-      }
-    } else if (point_type == FXPT_TYPE::BezierTo) {
-      i += 2;
-      continue;
-    }
-  }
-
-  size_t new_path_size = NewPath->GetPoints().size();
-  if (m_Points.size() > 3 && new_path_size > 0)
-    *bThin = true;
-  return new_path_size != 0;
-}
-
 bool CFX_PathData::IsRect() const {
   if (m_Points.size() != 5 && m_Points.size() != 4)
     return false;
@@ -446,55 +329,45 @@ bool CFX_PathData::IsRect() const {
   return m_Points.size() == 5 || m_Points[3].m_CloseFigure;
 }
 
-bool CFX_PathData::IsRect(const CFX_Matrix* pMatrix,
-                          CFX_FloatRect* pRect) const {
-  if (!pMatrix) {
+Optional<CFX_FloatRect> CFX_PathData::GetRect(const CFX_Matrix* matrix) const {
+  if (!matrix) {
     if (!IsRect())
-      return false;
+      return pdfium::nullopt;
 
-    if (pRect) {
-      pRect->left = m_Points[0].m_Point.x;
-      pRect->right = m_Points[2].m_Point.x;
-      pRect->bottom = m_Points[0].m_Point.y;
-      pRect->top = m_Points[2].m_Point.y;
-      pRect->Normalize();
-    }
-    return true;
+    CFX_FloatRect rect(m_Points[0].m_Point.x, m_Points[0].m_Point.y,
+                       m_Points[2].m_Point.x, m_Points[2].m_Point.y);
+    rect.Normalize();
+    return rect;
   }
 
   if (m_Points.size() != 5 && m_Points.size() != 4)
-    return false;
+    return pdfium::nullopt;
 
   if ((m_Points.size() == 5 && m_Points[0].m_Point != m_Points[4].m_Point) ||
       m_Points[1].m_Point == m_Points[3].m_Point) {
-    return false;
+    return pdfium::nullopt;
   }
   // Note, both x,y not equal.
   if (m_Points.size() == 4 && m_Points[0].m_Point.x != m_Points[3].m_Point.x &&
       m_Points[0].m_Point.y != m_Points[3].m_Point.y) {
-    return false;
+    return pdfium::nullopt;
   }
 
   CFX_PointF points[5];
   for (size_t i = 0; i < m_Points.size(); i++) {
-    points[i] = pMatrix->Transform(m_Points[i].m_Point);
+    points[i] = matrix->Transform(m_Points[i].m_Point);
 
     if (i == 0)
       continue;
     if (m_Points[i].m_Type != FXPT_TYPE::LineTo)
-      return false;
+      return pdfium::nullopt;
     if (points[i].x != points[i - 1].x && points[i].y != points[i - 1].y)
-      return false;
+      return pdfium::nullopt;
   }
 
-  if (pRect) {
-    pRect->left = points[0].x;
-    pRect->right = points[2].x;
-    pRect->bottom = points[0].y;
-    pRect->top = points[2].y;
-    pRect->Normalize();
-  }
-  return true;
+  CFX_FloatRect rect(points[0].x, points[0].y, points[2].x, points[2].y);
+  rect.Normalize();
+  return rect;
 }
 
 CFX_RetainablePathData::CFX_RetainablePathData() = default;
@@ -509,3 +382,7 @@ CFX_RetainablePathData::CFX_RetainablePathData(
     : CFX_PathData(src) {}
 
 CFX_RetainablePathData::~CFX_RetainablePathData() = default;
+
+RetainPtr<CFX_RetainablePathData> CFX_RetainablePathData::Clone() const {
+  return pdfium::MakeRetain<CFX_RetainablePathData>(*this);
+}

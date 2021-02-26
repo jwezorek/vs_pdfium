@@ -9,9 +9,14 @@
 #include <cmath>
 #include <limits>
 
+#include "build/build_config.h"
 #include "core/fxcrt/fx_extension.h"
 
 namespace {
+
+#if !defined(OS_WIN)
+uint32_t g_last_error = 0;
+#endif
 
 template <typename IntType, typename CharType>
 IntType FXSYS_StrToInt(const CharType* str) {
@@ -83,12 +88,22 @@ STR_T FXSYS_IntToStr(T value, STR_T str, int radix) {
 
 }  // namespace
 
-int FXSYS_round(float d) {
+int FXSYS_roundf(float f) {
+  if (std::isnan(f))
+    return 0;
+  if (f < static_cast<float>(std::numeric_limits<int>::min()))
+    return std::numeric_limits<int>::min();
+  if (f >= static_cast<float>(std::numeric_limits<int>::max()))
+    return std::numeric_limits<int>::max();
+  return static_cast<int>(round(f));
+}
+
+int FXSYS_round(double d) {
   if (std::isnan(d))
     return 0;
-  if (d < static_cast<float>(std::numeric_limits<int>::min()))
+  if (d < static_cast<double>(std::numeric_limits<int>::min()))
     return std::numeric_limits<int>::min();
-  if (d > static_cast<float>(std::numeric_limits<int>::max()))
+  if (d >= static_cast<double>(std::numeric_limits<int>::max()))
     return std::numeric_limits<int>::max();
   return static_cast<int>(round(d));
 }
@@ -109,7 +124,27 @@ const char* FXSYS_i64toa(int64_t value, char* str, int radix) {
   return FXSYS_IntToStr<int64_t, uint64_t, char*>(value, str, radix);
 }
 
-#if _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+#if defined(OS_WIN)
+
+size_t FXSYS_wcsftime(wchar_t* strDest,
+                      size_t maxsize,
+                      const wchar_t* format,
+                      const struct tm* timeptr) {
+  // Avoid tripping an invalid parameter handler and crashing process.
+  // Note: leap seconds may cause tm_sec == 60.
+  if (timeptr->tm_year < -1900 || timeptr->tm_year > 8099 ||
+      timeptr->tm_mon < 0 || timeptr->tm_mon > 11 || timeptr->tm_mday < 1 ||
+      timeptr->tm_mday > 31 || timeptr->tm_hour < 0 || timeptr->tm_hour > 23 ||
+      timeptr->tm_min < 0 || timeptr->tm_min > 59 || timeptr->tm_sec < 0 ||
+      timeptr->tm_sec > 60 || timeptr->tm_wday < 0 || timeptr->tm_wday > 6 ||
+      timeptr->tm_yday < 0 || timeptr->tm_yday > 365) {
+    strDest[0] = L'\0';
+    return 0;
+  }
+  return wcsftime(strDest, maxsize, format, timeptr);
+}
+
+#else   // defined(OS_WIN)
 
 int FXSYS_GetACP() {
   return 0;
@@ -160,26 +195,26 @@ wchar_t* FXSYS_wcsupr(wchar_t* str) {
   return s;
 }
 
-int FXSYS_stricmp(const char* dst, const char* src) {
+int FXSYS_stricmp(const char* str1, const char* str2) {
   int f;
   int l;
   do {
-    f = toupper(*dst);
-    l = toupper(*src);
-    ++dst;
-    ++src;
+    f = toupper(*str1);
+    l = toupper(*str2);
+    ++str1;
+    ++str2;
   } while (f && f == l);
   return f - l;
 }
 
-int FXSYS_wcsicmp(const wchar_t* dst, const wchar_t* src) {
+int FXSYS_wcsicmp(const wchar_t* str1, const wchar_t* str2) {
   wchar_t f;
   wchar_t l;
   do {
-    f = FXSYS_towupper(*dst);
-    l = FXSYS_towupper(*src);
-    ++dst;
-    ++src;
+    f = FXSYS_towupper(*str1);
+    l = FXSYS_towupper(*str2);
+    ++str1;
+    ++str2;
   } while (f && f == l);
   return f - l;
 }
@@ -222,24 +257,11 @@ int FXSYS_MultiByteToWideChar(uint32_t codepage,
   return wlen;
 }
 
-#else  // _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
-
-size_t FXSYS_wcsftime(wchar_t* strDest,
-                      size_t maxsize,
-                      const wchar_t* format,
-                      const struct tm* timeptr) {
-  // Avoid tripping an invalid parameter handler and crashing process.
-  // Note: leap seconds may cause tm_sec == 60.
-  if (timeptr->tm_year < -1900 || timeptr->tm_year > 8099 ||
-      timeptr->tm_mon < 0 || timeptr->tm_mon > 11 || timeptr->tm_mday < 1 ||
-      timeptr->tm_mday > 31 || timeptr->tm_hour < 0 || timeptr->tm_hour > 23 ||
-      timeptr->tm_min < 0 || timeptr->tm_min > 59 || timeptr->tm_sec < 0 ||
-      timeptr->tm_sec > 60 || timeptr->tm_wday < 0 || timeptr->tm_wday > 6 ||
-      timeptr->tm_yday < 0 || timeptr->tm_yday > 365) {
-    strDest[0] = L'\0';
-    return 0;
-  }
-  return wcsftime(strDest, maxsize, format, timeptr);
+void FXSYS_SetLastError(uint32_t err) {
+  g_last_error = err;
 }
 
-#endif  // _FX_PLATFORM_ != _FX_PLATFORM_WINDOWS_
+uint32_t FXSYS_GetLastError() {
+  return g_last_error;
+}
+#endif  // defined(OS_WIN)

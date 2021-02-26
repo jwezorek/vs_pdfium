@@ -15,8 +15,25 @@
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_stream.h"
-#include "third_party/base/ptr_util.h"
+#include "core/fpdfapi/parser/fpdf_parser_utility.h"
+#include "core/fxcrt/fx_safe_types.h"
 #include "third_party/base/stl_util.h"
+
+namespace {
+
+CPDF_Function::Type IntegerToFunctionType(int iType) {
+  switch (iType) {
+    case 0:
+    case 2:
+    case 3:
+    case 4:
+      return static_cast<CPDF_Function::Type>(iType);
+    default:
+      return CPDF_Function::Type::kTypeInvalid;
+  }
+}
+
+}  // namespace
 
 // static
 std::unique_ptr<CPDF_Function> CPDF_Function::Load(
@@ -32,7 +49,7 @@ std::unique_ptr<CPDF_Function> CPDF_Function::Load(
   if (!pFuncObj)
     return nullptr;
 
-  if (pdfium::ContainsKey(*pVisited, pFuncObj))
+  if (pdfium::Contains(*pVisited, pFuncObj))
     return nullptr;
   pdfium::ScopedSetInsertion<const CPDF_Object*> insertion(pVisited, pFuncObj);
 
@@ -45,31 +62,18 @@ std::unique_ptr<CPDF_Function> CPDF_Function::Load(
   std::unique_ptr<CPDF_Function> pFunc;
   Type type = IntegerToFunctionType(iType);
   if (type == Type::kType0Sampled)
-    pFunc = pdfium::MakeUnique<CPDF_SampledFunc>();
-  else if (type == Type::kType2ExpotentialInterpolation)
-    pFunc = pdfium::MakeUnique<CPDF_ExpIntFunc>();
+    pFunc = std::make_unique<CPDF_SampledFunc>();
+  else if (type == Type::kType2ExponentialInterpolation)
+    pFunc = std::make_unique<CPDF_ExpIntFunc>();
   else if (type == Type::kType3Stitching)
-    pFunc = pdfium::MakeUnique<CPDF_StitchFunc>();
+    pFunc = std::make_unique<CPDF_StitchFunc>();
   else if (type == Type::kType4PostScript)
-    pFunc = pdfium::MakeUnique<CPDF_PSFunc>();
+    pFunc = std::make_unique<CPDF_PSFunc>();
 
   if (!pFunc || !pFunc->Init(pFuncObj, pVisited))
     return nullptr;
 
   return pFunc;
-}
-
-// static
-CPDF_Function::Type CPDF_Function::IntegerToFunctionType(int iType) {
-  switch (iType) {
-    case 0:
-    case 2:
-    case 3:
-    case 4:
-      return static_cast<Type>(iType);
-    default:
-      return Type::kTypeInvalid;
-  }
 }
 
 CPDF_Function::CPDF_Function(Type type) : m_Type(type) {}
@@ -91,9 +95,7 @@ bool CPDF_Function::Init(const CPDF_Object* pObj,
     return false;
 
   size_t nInputs = m_nInputs * 2;
-  m_Domains = std::vector<float>(nInputs);
-  for (size_t i = 0; i < nInputs; ++i)
-    m_Domains[i] = pDomains->GetFloatAt(i);
+  m_Domains = ReadArrayElementsToVector(pDomains, nInputs);
 
   const CPDF_Array* pRanges = pDict->GetArrayFor("Range");
   m_nOutputs = pRanges ? pRanges->size() / 2 : 0;
@@ -107,9 +109,7 @@ bool CPDF_Function::Init(const CPDF_Object* pObj,
 
   if (m_nOutputs > 0) {
     size_t nOutputs = m_nOutputs * 2;
-    m_Ranges = std::vector<float>(nOutputs);
-    for (size_t i = 0; i < nOutputs; ++i)
-      m_Ranges[i] = pRanges->GetFloatAt(i);
+    m_Ranges = ReadArrayElementsToVector(pRanges, nOutputs);
   }
 
   uint32_t old_outputs = m_nOutputs;
@@ -167,7 +167,7 @@ const CPDF_SampledFunc* CPDF_Function::ToSampledFunc() const {
 }
 
 const CPDF_ExpIntFunc* CPDF_Function::ToExpIntFunc() const {
-  return m_Type == Type::kType2ExpotentialInterpolation
+  return m_Type == Type::kType2ExponentialInterpolation
              ? static_cast<const CPDF_ExpIntFunc*>(this)
              : nullptr;
 }

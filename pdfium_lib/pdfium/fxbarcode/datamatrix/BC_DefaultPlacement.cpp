@@ -38,7 +38,7 @@ CBC_DefaultPlacement::CBC_DefaultPlacement(WideString codewords,
   }
 }
 
-CBC_DefaultPlacement::~CBC_DefaultPlacement() {}
+CBC_DefaultPlacement::~CBC_DefaultPlacement() = default;
 
 int32_t CBC_DefaultPlacement::getNumrows() {
   return m_numrows;
@@ -46,7 +46,8 @@ int32_t CBC_DefaultPlacement::getNumrows() {
 int32_t CBC_DefaultPlacement::getNumcols() {
   return m_numcols;
 }
-std::vector<uint8_t>& CBC_DefaultPlacement::getBits() {
+std::vector<uint8_t, FxAllocAllocator<uint8_t>>&
+CBC_DefaultPlacement::getBits() {
   return m_bits;
 }
 bool CBC_DefaultPlacement::getBit(int32_t col, int32_t row) {

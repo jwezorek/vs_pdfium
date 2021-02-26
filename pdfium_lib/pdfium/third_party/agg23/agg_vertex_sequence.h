@@ -22,6 +22,8 @@
 #include "agg_basics.h"
 #include "agg_array.h"
 #include "agg_math.h"
+namespace pdfium
+{
 namespace agg
 {
 template<class T, unsigned S = 6>
@@ -31,7 +33,7 @@ public:
     typedef pod_deque<T, S> base_type;
     void add(const T& val);
     void modify_last(const T& val);
-    void close(bool remove_flag);
+    void close(bool closed);
 };
 template<class T, unsigned S>
 void vertex_sequence<T, S>::add(const T& val)
@@ -97,4 +99,5 @@ struct vertex_dist_cmd : public vertex_dist {
     }
 };
 }
+}  // namespace pdfium
 #endif

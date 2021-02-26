@@ -7,8 +7,6 @@
 #ifndef CORE_FPDFAPI_FONT_CPDF_FONTENCODING_H_
 #define CORE_FPDFAPI_FONT_CPDF_FONTENCODING_H_
 
-#include <memory>
-
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/string_pool_template.h"
 #include "core/fxcrt/weak_ptr.h"
@@ -26,9 +24,6 @@
 uint32_t FT_CharCodeFromUnicode(int encoding, wchar_t unicode);
 wchar_t FT_UnicodeFromCharCode(int encoding, uint32_t charcode);
 
-wchar_t PDF_UnicodeFromAdobeName(const char* name);
-ByteString PDF_AdobeNameFromUnicode(wchar_t unicode);
-
 const uint16_t* PDF_UnicodesForPredefinedCharSet(int encoding);
 const char* PDF_CharNameFromPredefinedCharSet(int encoding, uint8_t charcode);
 
@@ -38,7 +33,6 @@ class CPDF_FontEncoding {
  public:
   static constexpr size_t kEncodingTableSize = 256;
 
-  CPDF_FontEncoding();
   explicit CPDF_FontEncoding(int PredefinedEncoding);
 
   bool IsIdentical(const CPDF_FontEncoding* pAnother) const;
@@ -52,7 +46,7 @@ class CPDF_FontEncoding {
     m_Unicodes[charcode] = unicode;
   }
 
-  std::unique_ptr<CPDF_Object> Realize(WeakPtr<ByteStringPool> pPool) const;
+  RetainPtr<CPDF_Object> Realize(WeakPtr<ByteStringPool> pPool) const;
 
  private:
   wchar_t m_Unicodes[kEncodingTableSize];

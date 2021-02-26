@@ -12,6 +12,7 @@
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_TextPage;
 
@@ -24,9 +25,9 @@ class CPDF_LinkExtract {
   size_t CountLinks() const { return m_LinkArray.size(); }
   WideString GetURL(size_t index) const;
   std::vector<CFX_FloatRect> GetRects(size_t index) const;
+  bool GetTextRange(size_t index, int* start_char_index, int* char_count) const;
 
  protected:
-  void ParseLink();
   bool CheckWebLink(WideString* str, int32_t* nStart, int32_t* nCount);
   bool CheckMailLink(WideString* str);
 
@@ -38,7 +39,6 @@ class CPDF_LinkExtract {
   };
 
   UnownedPtr<const CPDF_TextPage> const m_pTextPage;
-  WideString m_strPageText;
   std::vector<Link> m_LinkArray;
 };
 

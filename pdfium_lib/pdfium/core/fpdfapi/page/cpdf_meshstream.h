@@ -14,6 +14,7 @@
 #include "core/fpdfapi/page/cpdf_shadingpattern.h"
 #include "core/fxcrt/cfx_bitstream.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/retain_ptr.h"
 
 class CPDF_StreamAcc;
 
@@ -24,9 +25,9 @@ class CPDF_MeshVertex {
   ~CPDF_MeshVertex();
 
   CFX_PointF position;
-  float r;
-  float g;
-  float b;
+  float r = 0.0f;
+  float g = 0.0f;
+  float b = 0.0f;
 };
 
 class CFX_Matrix;
@@ -39,7 +40,7 @@ class CPDF_MeshStream {
   CPDF_MeshStream(ShadingType type,
                   const std::vector<std::unique_ptr<CPDF_Function>>& funcs,
                   const CPDF_Stream* pShadingStream,
-                  const CPDF_ColorSpace* pCS);
+                  const RetainPtr<CPDF_ColorSpace>& pCS);
   ~CPDF_MeshStream();
 
   bool Load();
@@ -63,26 +64,26 @@ class CPDF_MeshStream {
   uint32_t Components() const { return m_nComponents; }
 
  private:
-  static const uint32_t kMaxComponents = 8;
+  static constexpr uint32_t kMaxComponents = 8;
 
   const ShadingType m_type;
   const std::vector<std::unique_ptr<CPDF_Function>>& m_funcs;
-  UnownedPtr<const CPDF_Stream> const m_pShadingStream;
-  UnownedPtr<const CPDF_ColorSpace> const m_pCS;
-  uint32_t m_nCoordBits;
-  uint32_t m_nComponentBits;
-  uint32_t m_nFlagBits;
-  uint32_t m_nComponents;
-  uint32_t m_CoordMax;
-  uint32_t m_ComponentMax;
-  float m_xmin;
-  float m_xmax;
-  float m_ymin;
-  float m_ymax;
+  RetainPtr<const CPDF_Stream> const m_pShadingStream;
+  RetainPtr<CPDF_ColorSpace> const m_pCS;
+  uint32_t m_nCoordBits = 0;
+  uint32_t m_nComponentBits = 0;
+  uint32_t m_nFlagBits = 0;
+  uint32_t m_nComponents = 0;
+  uint32_t m_CoordMax = 0;
+  uint32_t m_ComponentMax = 0;
+  float m_xmin = 0.0f;
+  float m_xmax = 0.0f;
+  float m_ymin = 0.0f;
+  float m_ymax = 0.0f;
   RetainPtr<CPDF_StreamAcc> m_pStream;
   std::unique_ptr<CFX_BitStream> m_BitStream;
-  float m_ColorMin[kMaxComponents];
-  float m_ColorMax[kMaxComponents];
+  float m_ColorMin[kMaxComponents] = {};
+  float m_ColorMax[kMaxComponents] = {};
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_MESHSTREAM_H_

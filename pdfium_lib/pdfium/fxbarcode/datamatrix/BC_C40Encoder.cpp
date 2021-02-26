@@ -28,6 +28,8 @@
 #include "fxbarcode/datamatrix/BC_EncoderContext.h"
 #include "fxbarcode/datamatrix/BC_HighLevelEncoder.h"
 #include "fxbarcode/datamatrix/BC_SymbolInfo.h"
+#include "third_party/base/check.h"
+#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -39,7 +41,7 @@ WideString EncodeToC40Codewords(const WideString& sb) {
   wchar_t cw[2];
   cw[0] = static_cast<wchar_t>(v / 256);
   cw[1] = static_cast<wchar_t>(v % 256);
-  return WideString(cw, FX_ArraySize(cw));
+  return WideString(cw, pdfium::size(cw));
 }
 
 }  // namespace
@@ -67,7 +69,7 @@ bool CBC_C40Encoder::Encode(CBC_EncoderContext* context) {
       return false;
 
     int32_t available =
-        context->m_symbolInfo->dataCapacity() - curCodewordCount;
+        context->m_symbolInfo->data_capacity() - curCodewordCount;
     if (!context->hasMoreCharacters()) {
       if ((buffer.GetLength() % 3) == 2) {
         if (available < 2 || available > 2) {
@@ -112,7 +114,7 @@ bool CBC_C40Encoder::HandleEOD(CBC_EncoderContext* context,
   if (!context->UpdateSymbolInfo(curCodewordCount))
     return false;
 
-  int32_t available = context->m_symbolInfo->dataCapacity() - curCodewordCount;
+  int32_t available = context->m_symbolInfo->data_capacity() - curCodewordCount;
   if (rest == 2) {
     *buffer += (wchar_t)'\0';
     while (buffer->GetLength() >= 3)
@@ -149,7 +151,7 @@ int32_t CBC_C40Encoder::EncodeChar(wchar_t c, WideString* sb) {
     *sb += (wchar_t)(c - 48 + 4);
     return 1;
   }
-  if ((c >= 'A') && (c <= 'Z')) {
+  if (FXSYS_IsUpperASCII(c)) {
     *sb += (wchar_t)(c - 65 + 14);
     return 1;
   }
@@ -190,7 +192,7 @@ int32_t CBC_C40Encoder::EncodeChar(wchar_t c, WideString* sb) {
 int32_t CBC_C40Encoder::BacktrackOneCharacter(CBC_EncoderContext* context,
                                               WideString* buffer,
                                               int32_t lastCharSize) {
-  ASSERT(lastCharSize >= 0);
+  DCHECK(lastCharSize >= 0);
 
   if (context->m_pos < 1)
     return -1;

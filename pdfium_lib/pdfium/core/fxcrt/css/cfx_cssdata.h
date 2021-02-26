@@ -10,8 +10,8 @@
 #include "core/fxcrt/css/cfx_css.h"
 #include "core/fxcrt/css/cfx_cssnumbervalue.h"
 #include "core/fxcrt/css/cfx_cssvalue.h"
-#include "core/fxcrt/string_view_template.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxcrt/fx_string.h"
+#include "core/fxge/dib/fx_dib.h"
 
 class CFX_CSSData {
  public:

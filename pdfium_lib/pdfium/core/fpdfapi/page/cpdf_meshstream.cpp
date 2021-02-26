@@ -12,7 +12,7 @@
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_stream.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 #include "third_party/base/span.h"
 
 namespace {
@@ -98,32 +98,19 @@ CPDF_MeshStream::CPDF_MeshStream(
     ShadingType type,
     const std::vector<std::unique_ptr<CPDF_Function>>& funcs,
     const CPDF_Stream* pShadingStream,
-    const CPDF_ColorSpace* pCS)
+    const RetainPtr<CPDF_ColorSpace>& pCS)
     : m_type(type),
       m_funcs(funcs),
       m_pShadingStream(pShadingStream),
       m_pCS(pCS),
-      m_nCoordBits(0),
-      m_nComponentBits(0),
-      m_nFlagBits(0),
-      m_nComponents(0),
-      m_CoordMax(0),
-      m_ComponentMax(0),
-      m_xmin(0),
-      m_xmax(0),
-      m_ymin(0),
-      m_ymax(0),
       m_pStream(pdfium::MakeRetain<CPDF_StreamAcc>(pShadingStream)) {
-  memset(&m_ColorMin, 0, sizeof(m_ColorMin));
-  memset(&m_ColorMax, 0, sizeof(m_ColorMax));
 }
 
-CPDF_MeshStream::~CPDF_MeshStream() {}
+CPDF_MeshStream::~CPDF_MeshStream() = default;
 
 bool CPDF_MeshStream::Load() {
   m_pStream->LoadAllDataFiltered();
-  m_BitStream = pdfium::MakeUnique<CFX_BitStream>(
-      pdfium::make_span(m_pStream->GetData(), m_pStream->GetSize()));
+  m_BitStream = std::make_unique<CFX_BitStream>(m_pStream->GetSpan());
   const CPDF_Dictionary* pDict = m_pShadingStream->GetDict();
   m_nCoordBits = pDict->GetIntegerFor("BitsPerCoordinate");
   m_nComponentBits = pDict->GetIntegerFor("BitsPerComponent");
@@ -176,12 +163,12 @@ bool CPDF_MeshStream::CanReadColor() const {
 }
 
 uint32_t CPDF_MeshStream::ReadFlag() {
-  ASSERT(ShouldCheckBitsPerFlag(m_type));
+  DCHECK(ShouldCheckBitsPerFlag(m_type));
   return m_BitStream->GetBits(m_nFlagBits) & 0x03;
 }
 
 CFX_PointF CPDF_MeshStream::ReadCoords() {
-  ASSERT(ShouldCheckBPC(m_type));
+  DCHECK(ShouldCheckBPC(m_type));
 
   CFX_PointF pos;
   if (m_nCoordBits == 32) {
@@ -199,7 +186,7 @@ CFX_PointF CPDF_MeshStream::ReadCoords() {
 }
 
 std::tuple<float, float, float> CPDF_MeshStream::ReadColor() {
-  ASSERT(ShouldCheckBPC(m_type));
+  DCHECK(ShouldCheckBPC(m_type));
 
   float color_value[kMaxComponents];
   for (uint32_t i = 0; i < m_nComponents; ++i) {
@@ -216,8 +203,7 @@ std::tuple<float, float, float> CPDF_MeshStream::ReadColor() {
     return std::tuple<float, float, float>(r, g, b);
   }
 
-  float result[kMaxComponents];
-  memset(result, 0, sizeof(result));
+  float result[kMaxComponents] = {};
   int nResults;
   for (const auto& func : m_funcs) {
     if (func && func->CountOutputs() <= kMaxComponents)

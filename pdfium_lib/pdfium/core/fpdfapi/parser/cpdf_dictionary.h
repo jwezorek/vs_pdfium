@@ -16,25 +16,23 @@
 #include "core/fpdfapi/parser/cpdf_object.h"
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/string_pool_template.h"
 #include "core/fxcrt/weak_ptr.h"
-#include "third_party/base/logging.h"
-#include "third_party/base/ptr_util.h"
+#include "third_party/base/check.h"
 
 class CPDF_IndirectObjectHolder;
 
 class CPDF_Dictionary final : public CPDF_Object {
  public:
   using const_iterator =
-      std::map<ByteString, std::unique_ptr<CPDF_Object>>::const_iterator;
+      std::map<ByteString, RetainPtr<CPDF_Object>>::const_iterator;
 
-  CPDF_Dictionary();
-  explicit CPDF_Dictionary(const WeakPtr<ByteStringPool>& pPool);
-  ~CPDF_Dictionary() override;
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   // CPDF_Object:
   Type GetType() const override;
-  std::unique_ptr<CPDF_Object> Clone() const override;
+  RetainPtr<CPDF_Object> Clone() const override;
   CPDF_Dictionary* GetDict() override;
   const CPDF_Dictionary* GetDict() const override;
   bool IsDictionary() const override;
@@ -50,40 +48,46 @@ class CPDF_Dictionary final : public CPDF_Object {
   CPDF_Object* GetObjectFor(const ByteString& key);
   const CPDF_Object* GetDirectObjectFor(const ByteString& key) const;
   CPDF_Object* GetDirectObjectFor(const ByteString& key);
+
+  // These will return the string representation of the object specified by
+  // |key|, for any object type that has a string representation.
   ByteString GetStringFor(const ByteString& key) const;
   ByteString GetStringFor(const ByteString& key,
                           const ByteString& default_str) const;
   WideString GetUnicodeTextFor(const ByteString& key) const;
+
+  // This will only return the string representation of a name object specified
+  // by |key|. Useful when the PDF spec requires the value to be an object of
+  // type name. i.e. /Foo and not (Foo).
+  ByteString GetNameFor(const ByteString& key) const;
+
+  bool GetBooleanFor(const ByteString& key, bool bDefault) const;
   int GetIntegerFor(const ByteString& key) const;
   int GetIntegerFor(const ByteString& key, int default_int) const;
-  bool GetBooleanFor(const ByteString& key, bool bDefault) const;
   float GetNumberFor(const ByteString& key) const;
   const CPDF_Dictionary* GetDictFor(const ByteString& key) const;
   CPDF_Dictionary* GetDictFor(const ByteString& key);
-  const CPDF_Stream* GetStreamFor(const ByteString& key) const;
-  CPDF_Stream* GetStreamFor(const ByteString& key);
   const CPDF_Array* GetArrayFor(const ByteString& key) const;
   CPDF_Array* GetArrayFor(const ByteString& key);
+  const CPDF_Stream* GetStreamFor(const ByteString& key) const;
+  CPDF_Stream* GetStreamFor(const ByteString& key);
   CFX_FloatRect GetRectFor(const ByteString& key) const;
   CFX_Matrix GetMatrixFor(const ByteString& key) const;
-  float GetFloatFor(const ByteString& key) const { return GetNumberFor(key); }
 
   bool KeyExist(const ByteString& key) const;
   std::vector<ByteString> GetKeys() const;
 
-  // Set* functions invalidate iterators for the element with the key |key|.
-  // Takes ownership of |pObj|, returns an unowned pointer to it.
-  CPDF_Object* SetFor(const ByteString& key, std::unique_ptr<CPDF_Object> pObj);
-
   // Creates a new object owned by the dictionary and returns an unowned
-  // pointer to it.
+  // pointer to it. Prefer using these templates over calls to SetFor(),
+  // since by creating a new object with no previous references, they ensure
+  // cycles can not be introduced.
   template <typename T, typename... Args>
   typename std::enable_if<!CanInternStrings<T>::value, T*>::type SetNewFor(
       const ByteString& key,
       Args&&... args) {
     CHECK(!IsLocked());
     return static_cast<T*>(
-        SetFor(key, pdfium::MakeUnique<T>(std::forward<Args>(args)...)));
+        SetFor(key, pdfium::MakeRetain<T>(std::forward<Args>(args)...)));
   }
   template <typename T, typename... Args>
   typename std::enable_if<CanInternStrings<T>::value, T*>::type SetNewFor(
@@ -91,18 +95,22 @@ class CPDF_Dictionary final : public CPDF_Object {
       Args&&... args) {
     CHECK(!IsLocked());
     return static_cast<T*>(SetFor(
-        key, pdfium::MakeUnique<T>(m_pPool, std::forward<Args>(args)...)));
+        key, pdfium::MakeRetain<T>(m_pPool, std::forward<Args>(args)...)));
   }
 
   // Convenience functions to convert native objects to array form.
   void SetRectFor(const ByteString& key, const CFX_FloatRect& rect);
   void SetMatrixFor(const ByteString& key, const CFX_Matrix& matrix);
 
+  // Set* functions invalidate iterators for the element with the key |key|.
+  // Takes ownership of |pObj|, returns an unowned pointer to it.
+  CPDF_Object* SetFor(const ByteString& key, RetainPtr<CPDF_Object> pObj);
+
   void ConvertToIndirectObjectFor(const ByteString& key,
                                   CPDF_IndirectObjectHolder* pHolder);
 
   // Invalidates iterators for the element with the key |key|.
-  std::unique_ptr<CPDF_Object> RemoveFor(const ByteString& key);
+  RetainPtr<CPDF_Object> RemoveFor(const ByteString& key);
 
   // Invalidates iterators for the element with the key |oldkey|.
   void ReplaceKey(const ByteString& oldkey, const ByteString& newkey);
@@ -112,14 +120,18 @@ class CPDF_Dictionary final : public CPDF_Object {
  private:
   friend class CPDF_DictionaryLocker;
 
+  CPDF_Dictionary();
+  explicit CPDF_Dictionary(const WeakPtr<ByteStringPool>& pPool);
+  ~CPDF_Dictionary() override;
+
   ByteString MaybeIntern(const ByteString& str);
-  std::unique_ptr<CPDF_Object> CloneNonCyclic(
+  RetainPtr<CPDF_Object> CloneNonCyclic(
       bool bDirect,
       std::set<const CPDF_Object*>* visited) const override;
 
   mutable uint32_t m_LockCount = 0;
   WeakPtr<ByteStringPool> m_pPool;
-  std::map<ByteString, std::unique_ptr<CPDF_Object>> m_Map;
+  std::map<ByteString, RetainPtr<CPDF_Object>> m_Map;
 };
 
 class CPDF_DictionaryLocker {
@@ -139,7 +151,7 @@ class CPDF_DictionaryLocker {
   }
 
  private:
-  UnownedPtr<const CPDF_Dictionary> const m_pDictionary;
+  RetainPtr<const CPDF_Dictionary> const m_pDictionary;
 };
 
 inline CPDF_Dictionary* ToDictionary(CPDF_Object* obj) {
@@ -150,13 +162,8 @@ inline const CPDF_Dictionary* ToDictionary(const CPDF_Object* obj) {
   return obj ? obj->AsDictionary() : nullptr;
 }
 
-inline std::unique_ptr<CPDF_Dictionary> ToDictionary(
-    std::unique_ptr<CPDF_Object> obj) {
-  CPDF_Dictionary* pDict = ToDictionary(obj.get());
-  if (!pDict)
-    return nullptr;
-  obj.release();
-  return std::unique_ptr<CPDF_Dictionary>(pDict);
+inline RetainPtr<CPDF_Dictionary> ToDictionary(RetainPtr<CPDF_Object> obj) {
+  return RetainPtr<CPDF_Dictionary>(ToDictionary(obj.Get()));
 }
 
 #endif  // CORE_FPDFAPI_PARSER_CPDF_DICTIONARY_H_

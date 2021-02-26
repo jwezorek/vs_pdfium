@@ -15,7 +15,6 @@
 
 class CPDF_Dictionary;
 class CPDF_Document;
-class CPDF_Page;
 class CPDF_PageObject;
 class CPDF_PageObjectHolder;
 class CPDF_PageRenderCache;
@@ -36,8 +35,9 @@ class CPDF_RenderContext {
     CFX_Matrix m_Matrix;
   };
 
-  explicit CPDF_RenderContext(CPDF_Page* pPage);
-  CPDF_RenderContext(CPDF_Document* pDoc, CPDF_PageRenderCache* pPageCache);
+  CPDF_RenderContext(CPDF_Document* pDoc,
+                     CPDF_Dictionary* pPageResources,
+                     CPDF_PageRenderCache* pPageCache);
   ~CPDF_RenderContext();
 
   void AppendLayer(CPDF_PageObjectHolder* pObjectHolder,
@@ -45,17 +45,17 @@ class CPDF_RenderContext {
 
   void Render(CFX_RenderDevice* pDevice,
               const CPDF_RenderOptions* pOptions,
-              const CFX_Matrix* pFinalMatrix);
+              const CFX_Matrix* pLastMatrix);
 
   void Render(CFX_RenderDevice* pDevice,
               const CPDF_PageObject* pStopObj,
               const CPDF_RenderOptions* pOptions,
-              const CFX_Matrix* pFinalMatrix);
+              const CFX_Matrix* pLastMatrix);
 
   void GetBackground(const RetainPtr<CFX_DIBitmap>& pBuffer,
                      const CPDF_PageObject* pObj,
                      const CPDF_RenderOptions* pOptions,
-                     CFX_Matrix* pFinalMatrix);
+                     const CFX_Matrix& mtFinal);
 
   size_t CountLayers() const { return m_Layers.size(); }
   Layer* GetLayer(uint32_t index) { return &m_Layers[index]; }
@@ -66,8 +66,8 @@ class CPDF_RenderContext {
 
  protected:
   UnownedPtr<CPDF_Document> const m_pDocument;
-  UnownedPtr<CPDF_Dictionary> m_pPageResources;
-  UnownedPtr<CPDF_PageRenderCache> m_pPageCache;
+  RetainPtr<CPDF_Dictionary> const m_pPageResources;
+  UnownedPtr<CPDF_PageRenderCache> const m_pPageCache;
   std::vector<Layer> m_Layers;
 };
 

@@ -8,20 +8,15 @@
 
 #include <utility>
 
-#include "core/fxge/fx_freetype.h"
-#include "third_party/base/ptr_util.h"
+#include "core/fxge/cfx_fontmapper.h"
 #include "third_party/base/stl_util.h"
 
 namespace {
 
-constexpr uint32_t MakeTag(char c1, char c2, char c3, char c4) {
-  return static_cast<uint8_t>(c1) << 24 | static_cast<uint8_t>(c2) << 16 |
-         static_cast<uint8_t>(c3) << 8 | static_cast<uint8_t>(c4);
-}
-
 bool IsVerticalFeatureTag(uint32_t tag) {
   static constexpr uint32_t kTags[] = {
-      MakeTag('v', 'r', 't', '2'), MakeTag('v', 'e', 'r', 't'),
+      CFX_FontMapper::MakeTag('v', 'r', 't', '2'),
+      CFX_FontMapper::MakeTag('v', 'e', 'r', 't'),
   };
   return tag == kTags[0] || tag == kTags[1];
 }
@@ -204,7 +199,8 @@ void CFX_CTTGSUBTable::ParseLangSys(FT_Bytes raw, TLangSysRecord* rec) {
   FT_Bytes sp = raw;
   rec->LookupOrder = GetUInt16(sp);
   rec->ReqFeatureIndex = GetUInt16(sp);
-  rec->FeatureIndices = std::vector<uint16_t>(GetUInt16(sp));
+  rec->FeatureIndices =
+      std::vector<uint16_t, FxAllocAllocator<uint16_t>>(GetUInt16(sp));
   for (auto& element : rec->FeatureIndices)
     element = GetUInt16(sp);
 }
@@ -221,7 +217,8 @@ void CFX_CTTGSUBTable::ParseFeatureList(FT_Bytes raw) {
 void CFX_CTTGSUBTable::ParseFeature(FT_Bytes raw, TFeatureRecord* rec) {
   FT_Bytes sp = raw;
   rec->FeatureParams = GetUInt16(sp);
-  rec->LookupListIndices = std::vector<uint16_t>(GetUInt16(sp));
+  rec->LookupListIndices =
+      std::vector<uint16_t, FxAllocAllocator<uint16_t>>(GetUInt16(sp));
   for (auto& listIndex : rec->LookupListIndices)
     listIndex = GetUInt16(sp);
 }
@@ -242,127 +239,118 @@ void CFX_CTTGSUBTable::ParseLookup(FT_Bytes raw, TLookup* rec) {
     return;
 
   for (auto& subTable : rec->SubTables)
-    ParseSingleSubst(&raw[GetUInt16(sp)], &subTable);
+    subTable = ParseSingleSubst(&raw[GetUInt16(sp)]);
 }
 
 std::unique_ptr<CFX_CTTGSUBTable::TCoverageFormatBase>
 CFX_CTTGSUBTable::ParseCoverage(FT_Bytes raw) {
   FT_Bytes sp = raw;
   uint16_t format = GetUInt16(sp);
-  if (format == 1) {
-    auto rec = pdfium::MakeUnique<TCoverageFormat1>();
-    ParseCoverageFormat1(raw, rec.get());
-    return std::move(rec);
-  }
-  if (format == 2) {
-    auto rec = pdfium::MakeUnique<TCoverageFormat2>();
-    ParseCoverageFormat2(raw, rec.get());
-    return std::move(rec);
-  }
+  if (format == 1)
+    return ParseCoverageFormat1(raw);
+  if (format == 2)
+    return ParseCoverageFormat2(raw);
   return nullptr;
 }
 
-void CFX_CTTGSUBTable::ParseCoverageFormat1(FT_Bytes raw,
-                                            TCoverageFormat1* rec) {
+std::unique_ptr<CFX_CTTGSUBTable::TCoverageFormat1>
+CFX_CTTGSUBTable::ParseCoverageFormat1(FT_Bytes raw) {
   FT_Bytes sp = raw;
   (void)GetUInt16(sp);
-  rec->GlyphArray = std::vector<uint16_t>(GetUInt16(sp));
+  auto rec = std::make_unique<TCoverageFormat1>(GetUInt16(sp));
   for (auto& glyph : rec->GlyphArray)
     glyph = GetUInt16(sp);
+  return rec;
 }
 
-void CFX_CTTGSUBTable::ParseCoverageFormat2(FT_Bytes raw,
-                                            TCoverageFormat2* rec) {
+std::unique_ptr<CFX_CTTGSUBTable::TCoverageFormat2>
+CFX_CTTGSUBTable::ParseCoverageFormat2(FT_Bytes raw) {
   FT_Bytes sp = raw;
   (void)GetUInt16(sp);
-  rec->RangeRecords = std::vector<TRangeRecord>(GetUInt16(sp));
+  auto rec = std::make_unique<TCoverageFormat2>(GetUInt16(sp));
   for (auto& rangeRec : rec->RangeRecords) {
     rangeRec.Start = GetUInt16(sp);
     rangeRec.End = GetUInt16(sp);
     rangeRec.StartCoverageIndex = GetUInt16(sp);
   }
+  return rec;
 }
 
-void CFX_CTTGSUBTable::ParseSingleSubst(FT_Bytes raw,
-                                        std::unique_ptr<TSubTableBase>* rec) {
+std::unique_ptr<CFX_CTTGSUBTable::TSubTableBase>
+CFX_CTTGSUBTable::ParseSingleSubst(FT_Bytes raw) {
   FT_Bytes sp = raw;
-  uint16_t Format = GetUInt16(sp);
-  switch (Format) {
-    case 1:
-      *rec = pdfium::MakeUnique<TSubTable1>();
-      ParseSingleSubstFormat1(raw, static_cast<TSubTable1*>(rec->get()));
-      break;
-    case 2:
-      *rec = pdfium::MakeUnique<TSubTable2>();
-      ParseSingleSubstFormat2(raw, static_cast<TSubTable2*>(rec->get()));
-      break;
-  }
+  uint16_t format = GetUInt16(sp);
+  if (format == 1)
+    return ParseSingleSubstFormat1(raw);
+  if (format == 2)
+    return ParseSingleSubstFormat2(raw);
+  return nullptr;
 }
 
-void CFX_CTTGSUBTable::ParseSingleSubstFormat1(FT_Bytes raw, TSubTable1* rec) {
+std::unique_ptr<CFX_CTTGSUBTable::TSubTable1>
+CFX_CTTGSUBTable::ParseSingleSubstFormat1(FT_Bytes raw) {
   FT_Bytes sp = raw;
   GetUInt16(sp);
   uint16_t offset = GetUInt16(sp);
+  auto rec = std::make_unique<TSubTable1>();
   rec->Coverage = ParseCoverage(&raw[offset]);
   rec->DeltaGlyphID = GetInt16(sp);
+  return rec;
 }
 
-void CFX_CTTGSUBTable::ParseSingleSubstFormat2(FT_Bytes raw, TSubTable2* rec) {
+std::unique_ptr<CFX_CTTGSUBTable::TSubTable2>
+CFX_CTTGSUBTable::ParseSingleSubstFormat2(FT_Bytes raw) {
   FT_Bytes sp = raw;
   (void)GetUInt16(sp);
   uint16_t offset = GetUInt16(sp);
+  auto rec = std::make_unique<TSubTable2>();
   rec->Coverage = ParseCoverage(&raw[offset]);
-  rec->Substitutes = std::vector<uint16_t>(GetUInt16(sp));
+  rec->Substitutes =
+      std::vector<uint16_t, FxAllocAllocator<uint16_t>>(GetUInt16(sp));
   for (auto& substitute : rec->Substitutes)
     substitute = GetUInt16(sp);
+  return rec;
 }
 
-CFX_CTTGSUBTable::TLangSysRecord::TLangSysRecord()
-    : LangSysTag(0), LookupOrder(0), ReqFeatureIndex(0) {}
+CFX_CTTGSUBTable::TLangSysRecord::TLangSysRecord() = default;
 
-CFX_CTTGSUBTable::TLangSysRecord::~TLangSysRecord() {}
+CFX_CTTGSUBTable::TLangSysRecord::~TLangSysRecord() = default;
 
-CFX_CTTGSUBTable::TScriptRecord::TScriptRecord()
-    : ScriptTag(0), DefaultLangSys(0) {}
+CFX_CTTGSUBTable::TScriptRecord::TScriptRecord() = default;
 
-CFX_CTTGSUBTable::TScriptRecord::~TScriptRecord() {}
+CFX_CTTGSUBTable::TScriptRecord::~TScriptRecord() = default;
 
-CFX_CTTGSUBTable::TFeatureRecord::TFeatureRecord()
-    : FeatureTag(0), FeatureParams(0) {}
+CFX_CTTGSUBTable::TFeatureRecord::TFeatureRecord() = default;
 
-CFX_CTTGSUBTable::TFeatureRecord::~TFeatureRecord() {}
+CFX_CTTGSUBTable::TFeatureRecord::~TFeatureRecord() = default;
 
-CFX_CTTGSUBTable::TRangeRecord::TRangeRecord()
-    : Start(0), End(0), StartCoverageIndex(0) {}
+CFX_CTTGSUBTable::TRangeRecord::TRangeRecord() = default;
 
-CFX_CTTGSUBTable::TCoverageFormat1::TCoverageFormat1() {
-  CoverageFormat = 1;
-}
+CFX_CTTGSUBTable::TCoverageFormat1::TCoverageFormat1(size_t initial_size)
+    : TCoverageFormatBase(1), GlyphArray(initial_size) {}
 
-CFX_CTTGSUBTable::TCoverageFormat1::~TCoverageFormat1() {}
+CFX_CTTGSUBTable::TCoverageFormat1::~TCoverageFormat1() = default;
 
-CFX_CTTGSUBTable::TCoverageFormat2::TCoverageFormat2() {
-  CoverageFormat = 2;
-}
+CFX_CTTGSUBTable::TCoverageFormat2::TCoverageFormat2(size_t initial_size)
+    : TCoverageFormatBase(2), RangeRecords(initial_size) {}
 
-CFX_CTTGSUBTable::TCoverageFormat2::~TCoverageFormat2() {}
+CFX_CTTGSUBTable::TCoverageFormat2::~TCoverageFormat2() = default;
 
-CFX_CTTGSUBTable::TSubTableBase::TSubTableBase() {}
+CFX_CTTGSUBTable::TDevice::TDevice() = default;
 
-CFX_CTTGSUBTable::TSubTableBase::~TSubTableBase() {}
+CFX_CTTGSUBTable::TSubTableBase::TSubTableBase(uint16_t format)
+    : SubstFormat(format) {}
 
-CFX_CTTGSUBTable::TSubTable1::TSubTable1() {
-  SubstFormat = 1;
-}
+CFX_CTTGSUBTable::TSubTableBase::~TSubTableBase() = default;
 
-CFX_CTTGSUBTable::TSubTable1::~TSubTable1() {}
+CFX_CTTGSUBTable::TSubTable1::TSubTable1() : TSubTableBase(1) {}
 
-CFX_CTTGSUBTable::TSubTable2::TSubTable2() {
-  SubstFormat = 2;
-}
+CFX_CTTGSUBTable::TSubTable1::~TSubTable1() = default;
 
-CFX_CTTGSUBTable::TSubTable2::~TSubTable2() {}
+CFX_CTTGSUBTable::TSubTable2::TSubTable2() : TSubTableBase(2) {}
 
-CFX_CTTGSUBTable::TLookup::TLookup() : LookupType(0), LookupFlag(0) {}
+CFX_CTTGSUBTable::TSubTable2::~TSubTable2() = default;
 
-CFX_CTTGSUBTable::TLookup::~TLookup() {}
+CFX_CTTGSUBTable::TLookup::TLookup() = default;
+
+CFX_CTTGSUBTable::TLookup::~TLookup() = default;

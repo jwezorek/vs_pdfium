@@ -6,34 +6,32 @@
 
 #include "core/fpdfapi/font/cfx_stockfontarray.h"
 
-#include <memory>
-#include <utility>
-
 #include "core/fpdfapi/font/cpdf_font.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
-#include "core/fxcrt/fx_memory.h"
+#include "third_party/base/notreached.h"
+#include "third_party/base/stl_util.h"
 
 CFX_StockFontArray::CFX_StockFontArray() = default;
 
 CFX_StockFontArray::~CFX_StockFontArray() {
-  for (size_t i = 0; i < FX_ArraySize(m_StockFonts); ++i) {
+  for (size_t i = 0; i < pdfium::size(m_StockFonts); ++i) {
     if (m_StockFonts[i]) {
-      std::unique_ptr<CPDF_Dictionary> destroy(m_StockFonts[i]->GetFontDict());
+      RetainPtr<CPDF_Dictionary> destroy(m_StockFonts[i]->GetFontDict());
       m_StockFonts[i]->ClearFontDict();
     }
   }
 }
 
-CPDF_Font* CFX_StockFontArray::GetFont(uint32_t index) const {
-  if (index >= FX_ArraySize(m_StockFonts))
-    return nullptr;
-  return m_StockFonts[index].get();
+RetainPtr<CPDF_Font> CFX_StockFontArray::GetFont(
+    CFX_FontMapper::StandardFont index) const {
+  if (index < pdfium::size(m_StockFonts))
+    return m_StockFonts[index];
+  NOTREACHED();
+  return nullptr;
 }
 
-CPDF_Font* CFX_StockFontArray::SetFont(uint32_t index,
-                                       std::unique_ptr<CPDF_Font> pFont) {
-  CPDF_Font* result = pFont.get();
-  if (index < FX_ArraySize(m_StockFonts))
-    m_StockFonts[index] = std::move(pFont);
-  return result;
+void CFX_StockFontArray::SetFont(CFX_FontMapper::StandardFont index,
+                                 const RetainPtr<CPDF_Font>& pFont) {
+  if (index < pdfium::size(m_StockFonts))
+    m_StockFonts[index] = pFont;
 }

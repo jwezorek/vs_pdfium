@@ -6,35 +6,34 @@
 
 #include "core/fpdfapi/render/cpdf_imageloader.h"
 
+#include "core/fpdfapi/page/cpdf_dib.h"
 #include "core/fpdfapi/page/cpdf_image.h"
 #include "core/fpdfapi/page/cpdf_imageobject.h"
-#include "core/fpdfapi/render/cpdf_dibbase.h"
+#include "core/fpdfapi/page/cpdf_transferfunc.h"
 #include "core/fpdfapi/render/cpdf_imagecacheentry.h"
 #include "core/fpdfapi/render/cpdf_pagerendercache.h"
+#include "core/fpdfapi/render/cpdf_rendercontext.h"
 #include "core/fpdfapi/render/cpdf_renderstatus.h"
-#include "core/fpdfapi/render/cpdf_transferfunc.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
+#include "third_party/base/check.h"
 
 CPDF_ImageLoader::CPDF_ImageLoader() = default;
 
 CPDF_ImageLoader::~CPDF_ImageLoader() = default;
 
 bool CPDF_ImageLoader::Start(CPDF_ImageObject* pImage,
-                             CPDF_PageRenderCache* pCache,
-                             bool bStdCS,
-                             uint32_t GroupFamily,
-                             bool bLoadMask,
-                             CPDF_RenderStatus* pRenderStatus) {
-  m_pCache = pCache;
+                             const CPDF_RenderStatus* pRenderStatus,
+                             bool bStdCS) {
+  m_pCache = pRenderStatus->GetContext()->GetPageCache();
   m_pImageObject = pImage;
   bool ret;
-  if (pCache) {
-    ret = pCache->StartGetCachedBitmap(m_pImageObject->GetImage(), bStdCS,
-                                       GroupFamily, bLoadMask, pRenderStatus);
+  if (m_pCache) {
+    ret = m_pCache->StartGetCachedBitmap(m_pImageObject->GetImage(),
+                                         pRenderStatus, bStdCS);
   } else {
     ret = m_pImageObject->GetImage()->StartLoadDIBBase(
         pRenderStatus->GetFormResource(), pRenderStatus->GetPageResource(),
-        bStdCS, GroupFamily, bLoadMask);
+        bStdCS, pRenderStatus->GetGroupFamily(), pRenderStatus->GetLoadMask());
   }
   if (!ret)
     HandleFailure();
@@ -52,8 +51,8 @@ bool CPDF_ImageLoader::Continue(PauseIndicatorIface* pPause,
 
 RetainPtr<CFX_DIBBase> CPDF_ImageLoader::TranslateImage(
     const RetainPtr<CPDF_TransferFunc>& pTransferFunc) {
-  ASSERT(pTransferFunc);
-  ASSERT(!pTransferFunc->GetIdentity());
+  DCHECK(pTransferFunc);
+  DCHECK(!pTransferFunc->GetIdentity());
 
   m_pBitmap = pTransferFunc->TranslateImage(m_pBitmap);
   if (m_bCached && m_pMask)

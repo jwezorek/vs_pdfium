@@ -6,51 +6,73 @@
 
 #include "fpdfsdk/cpdfsdk_helpers.h"
 
+#include "build/build_config.h"
 #include "constants/form_fields.h"
 #include "constants/stream_dict_common.h"
-#include "core/fpdfapi/cpdf_modulemgr.h"
 #include "core/fpdfapi/page/cpdf_page.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
+#include "core/fpdfapi/render/cpdf_renderoptions.h"
 #include "core/fpdfdoc/cpdf_annot.h"
 #include "core/fpdfdoc/cpdf_interactiveform.h"
 #include "core/fpdfdoc/cpdf_metadata.h"
 #include "fpdfsdk/cpdfsdk_formfillenvironment.h"
-#include "public/fpdf_ext.h"
-
-#ifdef PDF_ENABLE_XFA
-#include "fpdfsdk/fpdfxfa/cpdfxfa_context.h"
-#endif
+#include "third_party/base/check.h"
 
 namespace {
 
 constexpr char kQuadPoints[] = "QuadPoints";
 
 // 0 bit: FPDF_POLICY_MACHINETIME_ACCESS
-static uint32_t g_sandbox_policy = 0xFFFFFFFF;
+uint32_t g_sandbox_policy = 0xFFFFFFFF;
 
-#ifndef _WIN32
-int g_last_error;
-#endif  // _WIN32
+UNSUPPORT_INFO* g_unsupport_info = nullptr;
 
 bool RaiseUnsupportedError(int nError) {
-  auto* pAdapter = CPDF_ModuleMgr::Get()->GetUnsupportInfoAdapter();
-  if (!pAdapter)
+  if (!g_unsupport_info)
     return false;
 
-  UNSUPPORT_INFO* info = static_cast<UNSUPPORT_INFO*>(pAdapter->info());
-  if (info && info->FSDK_UnSupport_Handler)
-    info->FSDK_UnSupport_Handler(info, nError);
+  if (g_unsupport_info->FSDK_UnSupport_Handler)
+    g_unsupport_info->FSDK_UnSupport_Handler(g_unsupport_info, nError);
   return true;
+}
+
+// Use the existence of the XFA array as a signal for XFA forms.
+bool DocHasXFA(const CPDF_Document* doc) {
+  const CPDF_Dictionary* root = doc->GetRoot();
+  if (!root)
+    return false;
+
+  const CPDF_Dictionary* form = root->GetDictFor("AcroForm");
+  return form && form->GetArrayFor("XFA");
+}
+
+unsigned long GetStreamMaybeCopyAndReturnLengthImpl(const CPDF_Stream* stream,
+                                                    void* buffer,
+                                                    unsigned long buflen,
+                                                    bool decode) {
+  DCHECK(stream);
+  auto stream_acc = pdfium::MakeRetain<CPDF_StreamAcc>(stream);
+
+  if (decode)
+    stream_acc->LoadAllDataFiltered();
+  else
+    stream_acc->LoadAllDataRaw();
+
+  const auto stream_data_size = stream_acc->GetSize();
+  if (!buffer || buflen < stream_data_size)
+    return stream_data_size;
+
+  memcpy(buffer, stream_acc->GetData(), stream_data_size);
+  return stream_data_size;
 }
 
 #ifdef PDF_ENABLE_XFA
 class FPDF_FileHandlerContext final : public IFX_SeekableStream {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   // IFX_SeekableStream:
   FX_FILESIZE GetSize() override;
@@ -218,8 +240,8 @@ bool IsValidQuadPointsIndex(const CPDF_Array* array, size_t index) {
 bool GetQuadPointsAtIndex(const CPDF_Array* array,
                           size_t quad_index,
                           FS_QUADPOINTSF* quad_points) {
-  ASSERT(quad_points);
-  ASSERT(array);
+  DCHECK(quad_points);
+  DCHECK(array);
 
   if (!IsValidQuadPointsIndex(array, quad_index))
     return false;
@@ -236,19 +258,33 @@ bool GetQuadPointsAtIndex(const CPDF_Array* array,
   return true;
 }
 
-CFX_FloatRect CFXFloatRectFromFSRECTF(const FS_RECTF& rect) {
+CFX_PointF CFXPointFFromFSPointF(const FS_POINTF& point) {
+  return CFX_PointF(point.x, point.y);
+}
+
+CFX_FloatRect CFXFloatRectFromFSRectF(const FS_RECTF& rect) {
   return CFX_FloatRect(rect.left, rect.bottom, rect.right, rect.top);
 }
 
-void FSRECTFFromCFXFloatRect(const CFX_FloatRect& rect, FS_RECTF* out_rect) {
-  out_rect->left = rect.left;
-  out_rect->top = rect.top;
-  out_rect->right = rect.right;
-  out_rect->bottom = rect.bottom;
+FS_RECTF FSRectFFromCFXFloatRect(const CFX_FloatRect& rect) {
+  return {rect.left, rect.top, rect.right, rect.bottom};
 }
 
 CFX_Matrix CFXMatrixFromFSMatrix(const FS_MATRIX& matrix) {
   return CFX_Matrix(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
+}
+
+FS_MATRIX FSMatrixFromCFXMatrix(const CFX_Matrix& matrix) {
+  return {matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f};
+}
+
+unsigned long NulTerminateMaybeCopyAndReturnLength(const ByteString& text,
+                                                   void* buffer,
+                                                   unsigned long buflen) {
+  unsigned long len = text.GetLength() + 1;
+  if (buffer && len <= buflen)
+    memcpy(buffer, text.c_str(), len);
+  return len;
 }
 
 unsigned long Utf16EncodeMaybeCopyAndReturnLength(const WideString& text,
@@ -261,83 +297,89 @@ unsigned long Utf16EncodeMaybeCopyAndReturnLength(const WideString& text,
   return len;
 }
 
+unsigned long GetRawStreamMaybeCopyAndReturnLength(const CPDF_Stream* stream,
+                                                   void* buffer,
+                                                   unsigned long buflen) {
+  return GetStreamMaybeCopyAndReturnLengthImpl(stream, buffer, buflen,
+                                               /*decode=*/false);
+}
+
 unsigned long DecodeStreamMaybeCopyAndReturnLength(const CPDF_Stream* stream,
                                                    void* buffer,
                                                    unsigned long buflen) {
-  ASSERT(stream);
-  auto stream_acc = pdfium::MakeRetain<CPDF_StreamAcc>(stream);
-  stream_acc->LoadAllDataFiltered();
-  const auto stream_data_size = stream_acc->GetSize();
-  if (!buffer || buflen < stream_data_size)
-    return stream_data_size;
-
-  memcpy(buffer, stream_acc->GetData(), stream_data_size);
-  return stream_data_size;
+  return GetStreamMaybeCopyAndReturnLengthImpl(stream, buffer, buflen,
+                                               /*decode=*/true);
 }
 
-void FSDK_SetSandBoxPolicy(FPDF_DWORD policy, FPDF_BOOL enable) {
+void SetPDFSandboxPolicy(FPDF_DWORD policy, FPDF_BOOL enable) {
   switch (policy) {
     case FPDF_POLICY_MACHINETIME_ACCESS: {
+      uint32_t mask = 1 << policy;
       if (enable)
-        g_sandbox_policy |= 0x01;
+        g_sandbox_policy |= mask;
       else
-        g_sandbox_policy &= 0xFFFFFFFE;
+        g_sandbox_policy &= ~mask;
     } break;
     default:
       break;
   }
 }
 
-FPDF_BOOL FSDK_IsSandBoxPolicyEnabled(FPDF_DWORD policy) {
+FPDF_BOOL IsPDFSandboxPolicyEnabled(FPDF_DWORD policy) {
   switch (policy) {
-    case FPDF_POLICY_MACHINETIME_ACCESS:
-      return !!(g_sandbox_policy & 0x01);
+    case FPDF_POLICY_MACHINETIME_ACCESS: {
+      uint32_t mask = 1 << policy;
+      return !!(g_sandbox_policy & mask);
+    }
     default:
       return false;
   }
 }
 
-void ReportUnsupportedFeatures(CPDF_Document* pDoc) {
+void SetPDFUnsupportInfo(UNSUPPORT_INFO* unsp_info) {
+  g_unsupport_info = unsp_info;
+}
+
+void ReportUnsupportedFeatures(const CPDF_Document* pDoc) {
   const CPDF_Dictionary* pRootDict = pDoc->GetRoot();
-  if (pRootDict) {
-    // Portfolios and Packages
-    if (pRootDict->KeyExist("Collection")) {
-      RaiseUnsupportedError(FPDF_UNSP_DOC_PORTABLECOLLECTION);
-      return;
-    }
-    if (pRootDict->KeyExist("Names")) {
-      const CPDF_Dictionary* pNameDict = pRootDict->GetDictFor("Names");
-      if (pNameDict && pNameDict->KeyExist("EmbeddedFiles")) {
-        RaiseUnsupportedError(FPDF_UNSP_DOC_ATTACHMENT);
-        return;
-      }
-      if (pNameDict && pNameDict->KeyExist("JavaScript")) {
-        const CPDF_Dictionary* pJSDict = pNameDict->GetDictFor("JavaScript");
-        const CPDF_Array* pArray =
-            pJSDict ? pJSDict->GetArrayFor("Names") : nullptr;
-        if (pArray) {
-          for (size_t i = 0; i < pArray->size(); i++) {
-            ByteString cbStr = pArray->GetStringAt(i);
-            if (cbStr.Compare("com.adobe.acrobat.SharedReview.Register") == 0) {
-              RaiseUnsupportedError(FPDF_UNSP_DOC_SHAREDREVIEW);
-              return;
-            }
+  if (!pRootDict)
+    return;
+
+  // Portfolios and Packages
+  if (pRootDict->KeyExist("Collection"))
+    RaiseUnsupportedError(FPDF_UNSP_DOC_PORTABLECOLLECTION);
+
+  const CPDF_Dictionary* pNameDict = pRootDict->GetDictFor("Names");
+  if (pNameDict) {
+    if (pNameDict->KeyExist("EmbeddedFiles"))
+      RaiseUnsupportedError(FPDF_UNSP_DOC_ATTACHMENT);
+
+    const CPDF_Dictionary* pJSDict = pNameDict->GetDictFor("JavaScript");
+    if (pJSDict) {
+      const CPDF_Array* pArray = pJSDict->GetArrayFor("Names");
+      if (pArray) {
+        for (size_t i = 0; i < pArray->size(); i++) {
+          ByteString cbStr = pArray->GetStringAt(i);
+          if (cbStr.Compare("com.adobe.acrobat.SharedReview.Register") == 0) {
+            RaiseUnsupportedError(FPDF_UNSP_DOC_SHAREDREVIEW);
+            break;
           }
         }
       }
     }
-
-    // SharedForm
-    const CPDF_Stream* pStream = pRootDict->GetStreamFor("Metadata");
-    if (pStream) {
-      CPDF_Metadata metaData(pStream);
-      for (const auto& err : metaData.CheckForSharedForm())
-        RaiseUnsupportedError(static_cast<int>(err));
-    }
   }
 
-  // XFA Forms
-  if (!pDoc->GetExtension() && CPDF_InteractiveForm(pDoc).HasXFAForm())
+  // SharedForm
+  const CPDF_Stream* pStream = pRootDict->GetStreamFor("Metadata");
+  if (pStream) {
+    CPDF_Metadata metadata(pStream);
+    for (const UnsupportedFeature& feature : metadata.CheckForSharedForm())
+      RaiseUnsupportedError(static_cast<int>(feature));
+  }
+}
+
+void ReportUnsupportedXFA(const CPDF_Document* pDoc) {
+  if (!pDoc->GetExtension() && DocHasXFA(pDoc))
     RaiseUnsupportedError(FPDF_UNSP_DOC_XFAFORM);
 }
 
@@ -377,16 +419,6 @@ void CheckForUnsupportedAnnot(const CPDF_Annot* pAnnot) {
   }
 }
 
-#ifndef _WIN32
-void SetLastError(int err) {
-  g_last_error = err;
-}
-
-int GetLastError() {
-  return g_last_error;
-}
-#endif  // _WIN32
-
 void ProcessParseError(CPDF_Parser::Error err) {
   uint32_t err_code = FPDF_ERR_SUCCESS;
   // Translate FPDFAPI error code to FPDFVIEW error code
@@ -407,5 +439,15 @@ void ProcessParseError(CPDF_Parser::Error err) {
       err_code = FPDF_ERR_SECURITY;
       break;
   }
-  SetLastError(err_code);
+  FXSYS_SetLastError(err_code);
+}
+
+void SetColorFromScheme(const FPDF_COLORSCHEME* pColorScheme,
+                        CPDF_RenderOptions* pRenderOptions) {
+  CPDF_RenderOptions::ColorScheme color_scheme;
+  color_scheme.path_fill_color = pColorScheme->path_fill_color;
+  color_scheme.path_stroke_color = pColorScheme->path_stroke_color;
+  color_scheme.text_fill_color = pColorScheme->text_fill_color;
+  color_scheme.text_stroke_color = pColorScheme->text_stroke_color;
+  pRenderOptions->SetColorScheme(color_scheme);
 }

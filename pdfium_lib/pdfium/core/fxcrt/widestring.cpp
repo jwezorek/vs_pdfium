@@ -16,6 +16,7 @@
 #include "core/fxcrt/fx_extension.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/string_pool_template.h"
+#include "third_party/base/check.h"
 #include "third_party/base/numerics/safe_math.h"
 #include "third_party/base/stl_util.h"
 
@@ -81,7 +82,7 @@ Optional<size_t> GuessSizeForVSWPrintf(const wchar_t* pFormat,
         ++pStr;
     }
     if (nWidth < 0 || nWidth > 128 * 1024)
-      return Optional<size_t>();
+      return pdfium::nullopt;
     int nPrecision = 0;
     if (*pStr == '.') {
       pStr++;
@@ -95,7 +96,7 @@ Optional<size_t> GuessSizeForVSWPrintf(const wchar_t* pFormat,
       }
     }
     if (nPrecision < 0 || nPrecision > 128 * 1024)
-      return Optional<size_t>();
+      return pdfium::nullopt;
     int nModifier = 0;
     if (*pStr == L'I' && *(pStr + 1) == L'6' && *(pStr + 2) == L'4') {
       pStr += 3;
@@ -244,7 +245,7 @@ Optional<size_t> GuessSizeForVSWPrintf(const wchar_t* pFormat,
     nMaxLen += nItemLen;
   }
   nMaxLen += 32;  // Fudge factor.
-  return Optional<size_t>(nMaxLen);
+  return nMaxLen;
 }
 
 // Returns string unless we ran out of space.
@@ -322,7 +323,7 @@ WideString WideString::Format(const wchar_t* pFormat, ...) {
   return ret;
 }
 
-WideString::WideString() {}
+WideString::WideString() = default;
 
 WideString::WideString(const WideString& other) : m_pData(other.m_pData) {}
 
@@ -383,60 +384,60 @@ WideString::WideString(const std::initializer_list<WideStringView>& list) {
   }
 }
 
-WideString::~WideString() {}
+WideString::~WideString() = default;
 
-const WideString& WideString::operator=(const wchar_t* pStr) {
-  if (!pStr || !pStr[0])
+WideString& WideString::operator=(const wchar_t* str) {
+  if (!str || !str[0])
     clear();
   else
-    AssignCopy(pStr, wcslen(pStr));
+    AssignCopy(str, wcslen(str));
 
   return *this;
 }
 
-const WideString& WideString::operator=(WideStringView stringSrc) {
-  if (stringSrc.IsEmpty())
+WideString& WideString::operator=(WideStringView str) {
+  if (str.IsEmpty())
     clear();
   else
-    AssignCopy(stringSrc.unterminated_c_str(), stringSrc.GetLength());
+    AssignCopy(str.unterminated_c_str(), str.GetLength());
 
   return *this;
 }
 
-const WideString& WideString::operator=(const WideString& that) {
+WideString& WideString::operator=(const WideString& that) {
   if (m_pData != that.m_pData)
     m_pData = that.m_pData;
 
   return *this;
 }
 
-const WideString& WideString::operator=(WideString&& that) {
+WideString& WideString::operator=(WideString&& that) noexcept {
   if (m_pData != that.m_pData)
     m_pData = std::move(that.m_pData);
 
   return *this;
 }
 
-const WideString& WideString::operator+=(const wchar_t* pStr) {
-  if (pStr)
-    Concat(pStr, wcslen(pStr));
+WideString& WideString::operator+=(const wchar_t* str) {
+  if (str)
+    Concat(str, wcslen(str));
 
   return *this;
 }
 
-const WideString& WideString::operator+=(wchar_t ch) {
+WideString& WideString::operator+=(wchar_t ch) {
   Concat(&ch, 1);
   return *this;
 }
 
-const WideString& WideString::operator+=(const WideString& str) {
+WideString& WideString::operator+=(const WideString& str) {
   if (str.m_pData)
     Concat(str.m_pData->m_String, str.m_pData->m_nDataLength);
 
   return *this;
 }
 
-const WideString& WideString::operator+=(WideStringView str) {
+WideString& WideString::operator+=(WideStringView str) {
   if (!str.IsEmpty())
     Concat(str.unterminated_c_str(), str.GetLength());
 
@@ -548,7 +549,7 @@ void WideString::ReleaseBuffer(size_t nNewLength) {
     return;
   }
 
-  ASSERT(m_pData->m_nRefs == 1);
+  DCHECK(m_pData->m_nRefs == 1);
   m_pData->m_nDataLength = nNewLength;
   m_pData->m_String[nNewLength] = 0;
   if (m_pData->m_nAllocLength - nNewLength >= 32) {
@@ -694,7 +695,17 @@ ByteString WideString::ToUTF16LE() const {
   return result;
 }
 
-WideString WideString::Mid(size_t first, size_t count) const {
+WideString WideString::EncodeEntities() const {
+  WideString ret = *this;
+  ret.Replace(L"&", L"&amp;");
+  ret.Replace(L"<", L"&lt;");
+  ret.Replace(L">", L"&gt;");
+  ret.Replace(L"\'", L"&apos;");
+  ret.Replace(L"\"", L"&quot;");
+  return ret;
+}
+
+WideString WideString::Substr(size_t first, size_t count) const {
   if (!m_pData)
     return WideString();
 
@@ -715,16 +726,16 @@ WideString WideString::Mid(size_t first, size_t count) const {
   return dest;
 }
 
-WideString WideString::Left(size_t count) const {
+WideString WideString::First(size_t count) const {
   if (count == 0 || !IsValidLength(count))
     return WideString();
-  return Mid(0, count);
+  return Substr(0, count);
 }
 
-WideString WideString::Right(size_t count) const {
+WideString WideString::Last(size_t count) const {
   if (count == 0 || !IsValidLength(count))
     return WideString();
-  return Mid(GetLength() - count, count);
+  return Substr(GetLength() - count, count);
 }
 
 void WideString::AllocCopy(WideString& dest,
@@ -738,45 +749,57 @@ void WideString::AllocCopy(WideString& dest,
   dest.m_pData.Swap(pNewData);
 }
 
-size_t WideString::Insert(size_t location, wchar_t ch) {
+size_t WideString::Insert(size_t index, wchar_t ch) {
   const size_t cur_length = GetLength();
-  if (!IsValidLength(location))
+  if (!IsValidLength(index))
     return cur_length;
 
   const size_t new_length = cur_length + 1;
   ReallocBeforeWrite(new_length);
-  wmemmove(m_pData->m_String + location + 1, m_pData->m_String + location,
-           new_length - location);
-  m_pData->m_String[location] = ch;
+  wmemmove(m_pData->m_String + index + 1, m_pData->m_String + index,
+           new_length - index);
+  m_pData->m_String[index] = ch;
   m_pData->m_nDataLength = new_length;
   return new_length;
 }
 
 Optional<size_t> WideString::Find(wchar_t ch, size_t start) const {
   if (!m_pData)
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   if (!IsValidIndex(start))
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   const wchar_t* pStr =
       wmemchr(m_pData->m_String + start, ch, m_pData->m_nDataLength - start);
   return pStr ? Optional<size_t>(static_cast<size_t>(pStr - m_pData->m_String))
-              : Optional<size_t>();
+              : pdfium::nullopt;
 }
 
 Optional<size_t> WideString::Find(WideStringView subStr, size_t start) const {
   if (!m_pData)
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   if (!IsValidIndex(start))
-    return Optional<size_t>();
+    return pdfium::nullopt;
 
   const wchar_t* pStr =
       FX_wcsstr(m_pData->m_String + start, m_pData->m_nDataLength - start,
                 subStr.unterminated_c_str(), subStr.GetLength());
   return pStr ? Optional<size_t>(static_cast<size_t>(pStr - m_pData->m_String))
-              : Optional<size_t>();
+              : pdfium::nullopt;
+}
+
+Optional<size_t> WideString::ReverseFind(wchar_t ch) const {
+  if (!m_pData)
+    return pdfium::nullopt;
+
+  size_t nLength = m_pData->m_nDataLength;
+  while (nLength--) {
+    if (m_pData->m_String[nLength] == ch)
+      return nLength;
+  }
+  return pdfium::nullopt;
 }
 
 void WideString::MakeLower() {
@@ -935,16 +958,34 @@ WideString WideString::FromUTF16LE(const unsigned short* wstr, size_t wlen) {
   return result;
 }
 
+WideString WideString::FromUTF16BE(const unsigned short* wstr, size_t wlen) {
+  if (!wstr || wlen == 0)
+    return WideString();
+
+  WideString result;
+  {
+    // Span's lifetime must end before ReleaseBuffer() below.
+    pdfium::span<wchar_t> buf = result.GetBuffer(wlen);
+    for (size_t i = 0; i < wlen; i++) {
+      auto wch = wstr[i];
+      wch = (wch >> 8) | (wch << 8);
+      buf[i] = wch;
+    }
+  }
+  result.ReleaseBuffer(wlen);
+  return result;
+}
+
 void WideString::SetAt(size_t index, wchar_t c) {
-  ASSERT(IsValidIndex(index));
+  DCHECK(IsValidIndex(index));
   ReallocBeforeWrite(m_pData->m_nDataLength);
   m_pData->m_String[index] = c;
 }
 
-int WideString::Compare(const wchar_t* lpsz) const {
+int WideString::Compare(const wchar_t* str) const {
   if (m_pData)
-    return lpsz ? wcscmp(m_pData->m_String, lpsz) : 1;
-  return (!lpsz || lpsz[0] == 0) ? 0 : -1;
+    return str ? wcscmp(m_pData->m_String, str) : 1;
+  return (!str || str[0] == 0) ? 0 : -1;
 }
 
 int WideString::Compare(const WideString& str) const {
@@ -964,10 +1005,10 @@ int WideString::Compare(const WideString& str) const {
   return this_len < that_len ? -1 : 1;
 }
 
-int WideString::CompareNoCase(const wchar_t* lpsz) const {
+int WideString::CompareNoCase(const wchar_t* str) const {
   if (m_pData)
-    return lpsz ? FXSYS_wcsicmp(m_pData->m_String, lpsz) : 1;
-  return (!lpsz || lpsz[0] == 0) ? 0 : -1;
+    return str ? FXSYS_wcsicmp(m_pData->m_String, str) : 1;
+  return (!str || str[0] == 0) ? 0 : -1;
 }
 
 size_t WideString::WStringLength(const unsigned short* str) {

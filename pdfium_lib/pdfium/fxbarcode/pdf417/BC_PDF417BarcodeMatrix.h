@@ -10,17 +10,19 @@
 #include <memory>
 #include <vector>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
+
 class CBC_BarcodeRow;
 
-class CBC_BarcodeMatrix {
+class CBC_BarcodeMatrix final {
  public:
   CBC_BarcodeMatrix(size_t width, size_t height);
-  virtual ~CBC_BarcodeMatrix();
+  ~CBC_BarcodeMatrix();
 
   CBC_BarcodeRow* getRow(size_t row) const { return m_matrix[row].get(); }
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
-  std::vector<uint8_t> toBitArray();
+  std::vector<uint8_t, FxAllocAllocator<uint8_t>> toBitArray();
 
  private:
   std::vector<std::unique_ptr<CBC_BarcodeRow>> m_matrix;

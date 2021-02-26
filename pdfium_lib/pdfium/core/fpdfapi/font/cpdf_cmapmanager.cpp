@@ -10,44 +10,37 @@
 
 #include "core/fpdfapi/font/cpdf_cid2unicodemap.h"
 #include "core/fpdfapi/font/cpdf_cmap.h"
-#include "third_party/base/ptr_util.h"
 
-CPDF_CMapManager::CPDF_CMapManager() {}
+namespace {
 
-CPDF_CMapManager::~CPDF_CMapManager() {}
+RetainPtr<const CPDF_CMap> LoadPredefinedCMap(ByteStringView name) {
+  if (!name.IsEmpty() && name[0] == '/')
+    name = name.Last(name.GetLength() - 1);
+  return pdfium::MakeRetain<CPDF_CMap>(name);
+}
 
-RetainPtr<CPDF_CMap> CPDF_CMapManager::GetPredefinedCMap(
+}  // namespace
+
+CPDF_CMapManager::CPDF_CMapManager() = default;
+
+CPDF_CMapManager::~CPDF_CMapManager() = default;
+
+RetainPtr<const CPDF_CMap> CPDF_CMapManager::GetPredefinedCMap(
     const ByteString& name) {
   auto it = m_CMaps.find(name);
   if (it != m_CMaps.end())
     return it->second;
 
-  RetainPtr<CPDF_CMap> pCMap = LoadPredefinedCMap(name);
+  RetainPtr<const CPDF_CMap> pCMap = LoadPredefinedCMap(name.AsStringView());
   if (!name.IsEmpty())
     m_CMaps[name] = pCMap;
 
   return pCMap;
 }
 
-RetainPtr<CPDF_CMap> CPDF_CMapManager::LoadPredefinedCMap(ByteString name) {
-  if (!name.IsEmpty() && name[0] == '/')
-    name = name.Right(name.GetLength() - 1);
-
-  auto pCMap = pdfium::MakeRetain<CPDF_CMap>();
-  pCMap->LoadPredefined(this, name);
-  return pCMap;
-}
-
 CPDF_CID2UnicodeMap* CPDF_CMapManager::GetCID2UnicodeMap(CIDSet charset) {
-  if (!m_CID2UnicodeMaps[charset])
-    m_CID2UnicodeMaps[charset] = LoadCID2UnicodeMap(charset);
-
+  if (!m_CID2UnicodeMaps[charset]) {
+    m_CID2UnicodeMaps[charset] = std::make_unique<CPDF_CID2UnicodeMap>(charset);
+  }
   return m_CID2UnicodeMaps[charset].get();
-}
-
-std::unique_ptr<CPDF_CID2UnicodeMap> CPDF_CMapManager::LoadCID2UnicodeMap(
-    CIDSet charset) {
-  auto pMap = pdfium::MakeUnique<CPDF_CID2UnicodeMap>();
-  pMap->Load(this, charset);
-  return pMap;
 }

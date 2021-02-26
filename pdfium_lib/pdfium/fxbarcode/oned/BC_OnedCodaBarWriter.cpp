@@ -22,6 +22,8 @@
 
 #include "fxbarcode/oned/BC_OnedCodaBarWriter.h"
 
+#include "core/fxcrt/fx_extension.h"
+#include "core/fxcrt/fx_memory.h"
 #include "fxbarcode/BC_Writer.h"
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
 #include "fxbarcode/oned/BC_OneDimWriter.h"
@@ -36,9 +38,9 @@ const char kOnedCodaAlphabet[] = {'0', '1', '2', '3', '4', '5', '6', '7',
 const int8_t kOnedCodaCharacterEncoding[] = {
     0x03, 0x06, 0x09, 0x60, 0x12, 0x42, 0x21, 0x24, 0x30, 0x48, 0x0c,
     0x18, 0x45, 0x51, 0x54, 0x15, 0x1A, 0x29, 0x0B, 0x0E, 0x1A, 0x29};
-static_assert(FX_ArraySize(kOnedCodaCharacterEncoding) == 22, "Wrong size");
-static_assert(FX_ArraySize(kOnedCodaCharacterEncoding) ==
-                  FX_ArraySize(kOnedCodaAlphabet),
+static_assert(pdfium::size(kOnedCodaCharacterEncoding) == 22, "Wrong size");
+static_assert(pdfium::size(kOnedCodaCharacterEncoding) ==
+                  pdfium::size(kOnedCodaAlphabet),
               "Wrong size");
 
 const char kStartEndChars[] = {'A', 'B', 'C', 'D', 'T', 'N', '*', 'E',
@@ -53,7 +55,7 @@ CBC_OnedCodaBarWriter::CBC_OnedCodaBarWriter() = default;
 CBC_OnedCodaBarWriter::~CBC_OnedCodaBarWriter() = default;
 
 bool CBC_OnedCodaBarWriter::SetStartChar(char start) {
-  if (!pdfium::ContainsValue(kStartEndChars, start))
+  if (!pdfium::Contains(kStartEndChars, start))
     return false;
 
   m_chStart = start;
@@ -61,7 +63,7 @@ bool CBC_OnedCodaBarWriter::SetStartChar(char start) {
 }
 
 bool CBC_OnedCodaBarWriter::SetEndChar(char end) {
-  if (!pdfium::ContainsValue(kStartEndChars, end))
+  if (!pdfium::Contains(kStartEndChars, end))
     return false;
 
   m_chEnd = end;
@@ -93,14 +95,15 @@ bool CBC_OnedCodaBarWriter::FindChar(wchar_t ch, bool isContent) {
     return false;
 
   char narrow_ch = static_cast<char>(ch);
-  return pdfium::ContainsValue(kCOntentChars, narrow_ch) ||
-         (isContent && pdfium::ContainsValue(kStartEndChars, narrow_ch));
+  return pdfium::Contains(kCOntentChars, narrow_ch) ||
+         (isContent && pdfium::Contains(kStartEndChars, narrow_ch));
 }
 
 bool CBC_OnedCodaBarWriter::CheckContentValidity(WideStringView contents) {
-  return std::all_of(
-      contents.begin(), contents.end(),
-      [this](const wchar_t& ch) { return this->FindChar(ch, false); });
+  return HasValidContentSize(contents) &&
+         std::all_of(
+             contents.begin(), contents.end(),
+             [this](const wchar_t& ch) { return this->FindChar(ch, false); });
 }
 
 WideString CBC_OnedCodaBarWriter::FilterContents(WideStringView contents) {
@@ -139,10 +142,7 @@ uint8_t* CBC_OnedCodaBarWriter::EncodeImpl(const ByteString& contents,
   char ch;
   int32_t position = 0;
   for (size_t index = 0; index < data.GetLength(); index++) {
-    ch = data[index];
-    if (((ch >= 'a') && (ch <= 'z'))) {
-      ch = ch - 32;
-    }
+    ch = FXSYS_ToUpperASCII(data[index]);
     switch (ch) {
       case 'T':
         ch = 'A';
@@ -160,7 +160,7 @@ uint8_t* CBC_OnedCodaBarWriter::EncodeImpl(const ByteString& contents,
         break;
     }
     int8_t code = 0;
-    for (size_t i = 0; i < FX_ArraySize(kOnedCodaAlphabet); i++) {
+    for (size_t i = 0; i < pdfium::size(kOnedCodaAlphabet); i++) {
       if (ch == kOnedCodaAlphabet[i]) {
         code = kOnedCodaCharacterEncoding[i];
         break;

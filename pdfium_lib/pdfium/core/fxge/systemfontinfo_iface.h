@@ -7,18 +7,14 @@
 #ifndef CORE_FXGE_SYSTEMFONTINFO_IFACE_H_
 #define CORE_FXGE_SYSTEMFONTINFO_IFACE_H_
 
-#include <memory>
-
 #include "core/fxge/cfx_fontmapper.h"
+#include "third_party/base/span.h"
 
-const uint32_t kTableNAME = FXDWORD_GET_MSBFIRST("name");
-const uint32_t kTableTTCF = FXDWORD_GET_MSBFIRST("ttcf");
+constexpr uint32_t kTableNAME = CFX_FontMapper::MakeTag('n', 'a', 'm', 'e');
+constexpr uint32_t kTableTTCF = CFX_FontMapper::MakeTag('t', 't', 'c', 'f');
 
 class SystemFontInfoIface {
  public:
-  static std::unique_ptr<SystemFontInfoIface> CreateDefault(
-      const char** pUserPaths);
-
   virtual ~SystemFontInfoIface() = default;
 
   virtual bool EnumFontList(CFX_FontMapper* pMapper) = 0;
@@ -27,22 +23,12 @@ class SystemFontInfoIface {
                         int charset,
                         int pitch_family,
                         const char* face) = 0;
-
-#ifdef PDF_ENABLE_XFA
-  virtual void* MapFontByUnicode(uint32_t dwUnicode,
-                                 int weight,
-                                 bool bItalic,
-                                 int pitch_family);
-#endif  // PDF_ENABLE_XFA
-
   virtual void* GetFont(const char* face) = 0;
   virtual uint32_t GetFontData(void* hFont,
                                uint32_t table,
-                               uint8_t* buffer,
-                               uint32_t size) = 0;
+                               pdfium::span<uint8_t> buffer) = 0;
   virtual bool GetFaceName(void* hFont, ByteString* name) = 0;
   virtual bool GetFontCharset(void* hFont, int* charset) = 0;
-  virtual int GetFaceIndex(void* hFont);
   virtual void DeleteFont(void* hFont) = 0;
 };
 

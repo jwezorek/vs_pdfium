@@ -7,85 +7,23 @@
 #include "core/fxge/win32/cfx_psrenderer.h"
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <sstream>
 #include <utility>
 
-#include "core/fxcodec/codec/ccodec_basicmodule.h"
-#include "core/fxcodec/codec/ccodec_faxmodule.h"
-#include "core/fxcodec/codec/ccodec_flatemodule.h"
-#include "core/fxcodec/codec/ccodec_jpegmodule.h"
-#include "core/fxcodec/fx_codec.h"
 #include "core/fxcrt/maybe_owned.h"
-#include "core/fxge/cfx_facecache.h"
+#include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/cfx_fontcache.h"
 #include "core/fxge/cfx_gemodule.h"
+#include "core/fxge/cfx_glyphcache.h"
 #include "core/fxge/cfx_pathdata.h"
 #include "core/fxge/cfx_renderdevice.h"
 #include "core/fxge/dib/cfx_dibextractor.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxge/dib/fx_dib.h"
+#include "core/fxge/text_char_pos.h"
 #include "core/fxge/win32/cpsoutput.h"
-#include "third_party/base/ptr_util.h"
-
-namespace {
-
-bool FaxCompressData(std::unique_ptr<uint8_t, FxFreeDeleter> src_buf,
-                     int width,
-                     int height,
-                     std::unique_ptr<uint8_t, FxFreeDeleter>* dest_buf,
-                     uint32_t* dest_size) {
-  if (width * height <= 128) {
-    *dest_buf = std::move(src_buf);
-    *dest_size = (width + 7) / 8 * height;
-    return false;
-  }
-
-  CCodec_FaxModule::FaxEncode(src_buf.get(), width, height, (width + 7) / 8,
-                              dest_buf, dest_size);
-  return true;
-}
-
-void PSCompressData(CCodec_ModuleMgr* pEncoders,
-                    int PSLevel,
-                    uint8_t* src_buf,
-                    uint32_t src_size,
-                    uint8_t** output_buf,
-                    uint32_t* output_size,
-                    const char** filter) {
-  *output_buf = src_buf;
-  *output_size = src_size;
-  *filter = "";
-  if (src_size < 1024)
-    return;
-
-  uint8_t* dest_buf = nullptr;
-  uint32_t dest_size = src_size;
-  if (PSLevel >= 3) {
-    std::unique_ptr<uint8_t, FxFreeDeleter> dest_buf_unique;
-    if (pEncoders->GetFlateModule()->Encode(src_buf, src_size, &dest_buf_unique,
-                                            &dest_size)) {
-      dest_buf = dest_buf_unique.release();
-      *filter = "/FlateDecode filter ";
-    }
-  } else {
-    std::unique_ptr<uint8_t, FxFreeDeleter> dest_buf_unique;
-    if (pEncoders->GetBasicModule()->RunLengthEncode(
-            {src_buf, src_size}, &dest_buf_unique, &dest_size)) {
-      dest_buf = dest_buf_unique.release();
-      *filter = "/RunLengthDecode filter ";
-    }
-  }
-  if (dest_size < src_size) {
-    *output_buf = dest_buf;
-    *output_size = dest_size;
-  } else {
-    *filter = nullptr;
-    FX_Free(dest_buf);
-  }
-}
-
-}  // namespace
 
 struct PSGlyph {
   UnownedPtr<CFX_Font> m_pFont;
@@ -100,23 +38,21 @@ class CPSFont {
   PSGlyph m_Glyphs[256];
 };
 
-CFX_PSRenderer::CFX_PSRenderer(CCodec_ModuleMgr* pModuleMgr)
-    : m_pModuleMgr(pModuleMgr) {}
+CFX_PSRenderer::CFX_PSRenderer(const EncoderIface* pEncoderIface)
+    : m_pEncoderIface(pEncoderIface) {}
 
 CFX_PSRenderer::~CFX_PSRenderer() = default;
 
 void CFX_PSRenderer::Init(const RetainPtr<IFX_RetainableWriteStream>& pStream,
                           int pslevel,
                           int width,
-                          int height,
-                          bool bCmykOutput) {
+                          int height) {
   m_PSLevel = pslevel;
   m_pStream = pStream;
   m_ClipBox.left = 0;
   m_ClipBox.top = 0;
   m_ClipBox.right = width;
   m_ClipBox.bottom = height;
-  m_bCmykOutput = bCmykOutput;
 }
 
 bool CFX_PSRenderer::StartRendering() {
@@ -214,9 +150,10 @@ void CFX_PSRenderer::OutputPath(const CFX_PathData* pPathData,
   WriteToStream(&buf);
 }
 
-void CFX_PSRenderer::SetClip_PathFill(const CFX_PathData* pPathData,
-                                      const CFX_Matrix* pObject2Device,
-                                      int fill_mode) {
+void CFX_PSRenderer::SetClip_PathFill(
+    const CFX_PathData* pPathData,
+    const CFX_Matrix* pObject2Device,
+    const CFX_FillRenderOptions& fill_options) {
   StartRendering();
   OutputPath(pPathData, pObject2Device);
   CFX_FloatRect rect = pPathData->GetBoundingBox();
@@ -229,7 +166,7 @@ void CFX_PSRenderer::SetClip_PathFill(const CFX_PathData* pPathData,
   m_ClipBox.bottom = static_cast<int>(rect.bottom);
 
   m_pStream->WriteString("W");
-  if ((fill_mode & 3) != FXFILL_WINDING)
+  if (fill_options.fill_type != CFX_FillRenderOptions::FillType::kWinding)
     m_pStream->WriteString("*");
   m_pStream->WriteString(" n\n");
 }
@@ -259,7 +196,7 @@ bool CFX_PSRenderer::DrawPath(const CFX_PathData* pPathData,
                               const CFX_GraphStateData* pGraphState,
                               uint32_t fill_color,
                               uint32_t stroke_color,
-                              int fill_mode) {
+                              const CFX_FillRenderOptions& fill_options) {
   StartRendering();
   int fill_alpha = FXARGB_A(fill_color);
   int stroke_alpha = FXARGB_A(stroke_color);
@@ -282,14 +219,16 @@ bool CFX_PSRenderer::DrawPath(const CFX_PathData* pPathData,
   }
 
   OutputPath(pPathData, stroke_alpha ? nullptr : pObject2Device);
-  if (fill_mode && fill_alpha) {
+  if (fill_options.fill_type != CFX_FillRenderOptions::FillType::kNoFill &&
+      fill_alpha) {
     SetColor(fill_color);
-    if ((fill_mode & 3) == FXFILL_WINDING) {
+    if (fill_options.fill_type == CFX_FillRenderOptions::FillType::kWinding) {
       if (stroke_alpha)
         m_pStream->WriteString("q f Q ");
       else
         m_pStream->WriteString("f");
-    } else if ((fill_mode & 3) == FXFILL_ALTERNATE) {
+    } else if (fill_options.fill_type ==
+               CFX_FillRenderOptions::FillType::kEvenOdd) {
       if (stroke_alpha)
         m_pStream->WriteString("q F Q ");
       else
@@ -312,7 +251,7 @@ void CFX_PSRenderer::SetGraphState(const CFX_GraphStateData* pGraphState) {
   std::ostringstream buf;
   if (!m_bGraphStateSet ||
       m_CurGraphState.m_LineCap != pGraphState->m_LineCap) {
-    buf << pGraphState->m_LineCap << " J\n";
+    buf << static_cast<int>(pGraphState->m_LineCap) << " J\n";
   }
   if (!m_bGraphStateSet ||
       m_CurGraphState.m_DashArray != pGraphState->m_DashArray) {
@@ -323,7 +262,7 @@ void CFX_PSRenderer::SetGraphState(const CFX_GraphStateData* pGraphState) {
   }
   if (!m_bGraphStateSet ||
       m_CurGraphState.m_LineJoin != pGraphState->m_LineJoin) {
-    buf << pGraphState->m_LineJoin << " j\n";
+    buf << static_cast<int>(pGraphState->m_LineJoin) << " j\n";
   }
   if (!m_bGraphStateSet ||
       m_CurGraphState.m_LineWidth != pGraphState->m_LineWidth) {
@@ -373,7 +312,7 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
     return false;
 
   int alpha = FXARGB_A(color);
-  if (pSource->IsAlphaMask() && (alpha < 255 || pSource->GetBPP() != 1))
+  if (pSource->IsMask() && (alpha < 255 || pSource->GetBPP() != 1))
     return false;
 
   m_pStream->WriteString("q\n");
@@ -386,7 +325,7 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
   int height = pSource->GetHeight();
   buf << width << " " << height;
 
-  if (pSource->GetBPP() == 1 && !pSource->GetPalette()) {
+  if (pSource->GetBPP() == 1 && !pSource->HasPalette()) {
     int pitch = (width + 7) / 8;
     uint32_t src_size = height * pitch;
     std::unique_ptr<uint8_t, FxFreeDeleter> src_buf(
@@ -400,7 +339,7 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
     uint32_t output_size;
     bool compressed = FaxCompressData(std::move(src_buf), width, height,
                                       &output_buf, &output_size);
-    if (pSource->IsAlphaMask()) {
+    if (pSource->IsMask()) {
       SetColor(color);
       m_bColorSet = false;
       buf << " true[";
@@ -414,7 +353,7 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
       buf << "<</K -1/EndOfBlock false/Columns " << width << "/Rows " << height
           << ">>/CCITTFaxDecode filter ";
     }
-    if (pSource->IsAlphaMask())
+    if (pSource->IsMask())
       buf << "iM\n";
     else
       buf << "false 1 colorimage\n";
@@ -427,22 +366,13 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
     if (!pConverted)
       return false;
     switch (pSource->GetFormat()) {
-      case FXDIB_1bppRgb:
-      case FXDIB_Rgb32:
-        pConverted = pConverted->CloneConvert(FXDIB_Rgb);
+      case FXDIB_Format::k1bppRgb:
+      case FXDIB_Format::kRgb32:
+        pConverted = pConverted->CloneConvert(FXDIB_Format::kRgb);
         break;
-      case FXDIB_8bppRgb:
-        if (pSource->GetPalette()) {
-          pConverted = pConverted->CloneConvert(FXDIB_Rgb);
-        }
-        break;
-      case FXDIB_1bppCmyk:
-        pConverted = pConverted->CloneConvert(FXDIB_Cmyk);
-        break;
-      case FXDIB_8bppCmyk:
-        if (pSource->GetPalette()) {
-          pConverted = pConverted->CloneConvert(FXDIB_Cmyk);
-        }
+      case FXDIB_Format::k8bppRgb:
+        if (pSource->HasPalette())
+          pConverted = pConverted->CloneConvert(FXDIB_Format::kRgb);
         break;
       default:
         break;
@@ -457,7 +387,8 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
     size_t output_size = 0;
     const char* filter = nullptr;
     if ((m_PSLevel == 2 || options.bLossy) &&
-        CCodec_JpegModule::JpegEncode(pConverted, &output_buf, &output_size)) {
+        m_pEncoderIface->pJpegEncodeFunc(pConverted, &output_buf,
+                                         &output_size)) {
       filter = "/DCTDecode filter ";
     }
     if (!filter) {
@@ -480,8 +411,8 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
       }
       uint8_t* compressed_buf;
       uint32_t compressed_size;
-      PSCompressData(m_pModuleMgr.Get(), m_PSLevel, output_buf, output_size,
-                     &compressed_buf, &compressed_size, &filter);
+      PSCompressData(output_buf, output_size, &compressed_buf, &compressed_size,
+                     &filter);
       if (output_buf != compressed_buf)
         FX_Free(output_buf);
 
@@ -506,27 +437,18 @@ bool CFX_PSRenderer::DrawDIBits(const RetainPtr<CFX_DIBBase>& pSource,
 }
 
 void CFX_PSRenderer::SetColor(uint32_t color) {
-  bool bCMYK = false;
-  if (bCMYK != m_bCmykOutput || !m_bColorSet || m_LastColor != color) {
-    std::ostringstream buf;
-    if (bCMYK) {
-      buf << FXSYS_GetCValue(color) / 255.0 << " "
-          << FXSYS_GetMValue(color) / 255.0 << " "
-          << FXSYS_GetYValue(color) / 255.0 << " "
-          << FXSYS_GetKValue(color) / 255.0 << " k\n";
-    } else {
-      buf << FXARGB_R(color) / 255.0 << " " << FXARGB_G(color) / 255.0 << " "
-          << FXARGB_B(color) / 255.0 << " rg\n";
-    }
-    if (bCMYK == m_bCmykOutput) {
-      m_bColorSet = true;
-      m_LastColor = color;
-    }
-    WriteToStream(&buf);
-  }
+  if (m_bColorSet && m_LastColor == color)
+    return;
+
+  std::ostringstream buf;
+  buf << FXARGB_R(color) / 255.0 << " " << FXARGB_G(color) / 255.0 << " "
+      << FXARGB_B(color) / 255.0 << " rg\n";
+  m_bColorSet = true;
+  m_LastColor = color;
+  WriteToStream(&buf);
 }
 
-void CFX_PSRenderer::FindPSFontGlyph(CFX_FaceCache* pFaceCache,
+void CFX_PSRenderer::FindPSFontGlyph(CFX_GlyphCache* pGlyphCache,
                                      CFX_Font* pFont,
                                      const TextCharPos& charpos,
                                      int* ps_fontnum,
@@ -555,7 +477,7 @@ void CFX_PSRenderer::FindPSFontGlyph(CFX_FaceCache* pFaceCache,
   }
 
   if (m_PSFontList.empty() || m_PSFontList.back()->m_nGlyphs == 256) {
-    m_PSFontList.push_back(pdfium::MakeUnique<CPSFont>());
+    m_PSFontList.push_back(std::make_unique<CPSFont>());
     m_PSFontList.back()->m_nGlyphs = 0;
     std::ostringstream buf;
     buf << "8 dict begin/FontType 3 def/FontMatrix[1 0 0 1 0 0]def\n"
@@ -594,7 +516,7 @@ void CFX_PSRenderer::FindPSFontGlyph(CFX_FaceCache* pFaceCache,
         CFX_Matrix(charpos.m_AdjustMatrix[0], charpos.m_AdjustMatrix[1],
                    charpos.m_AdjustMatrix[2], charpos.m_AdjustMatrix[3], 0, 0);
   }
-  const CFX_PathData* pPathData = pFaceCache->LoadGlyphPath(
+  const CFX_PathData* pPathData = pGlyphCache->LoadGlyphPath(
       pFont, charpos.m_GlyphIndex, charpos.m_FontCharWidth);
   if (!pPathData)
     return;
@@ -636,18 +558,18 @@ void CFX_PSRenderer::FindPSFontGlyph(CFX_FaceCache* pFaceCache,
 bool CFX_PSRenderer::DrawText(int nChars,
                               const TextCharPos* pCharPos,
                               CFX_Font* pFont,
-                              const CFX_Matrix* pObject2Device,
+                              const CFX_Matrix& mtObject2Device,
                               float font_size,
                               uint32_t color) {
   // Check object to device matrix first, since it can scale the font size.
-  if ((pObject2Device->a == 0 && pObject2Device->b == 0) ||
-      (pObject2Device->c == 0 && pObject2Device->d == 0)) {
+  if ((mtObject2Device.a == 0 && mtObject2Device.b == 0) ||
+      (mtObject2Device.c == 0 && mtObject2Device.d == 0)) {
     return true;
   }
 
   // Do not send near zero font sizes to printers. See crbug.com/767343.
   float scale =
-      std::min(pObject2Device->GetXUnit(), pObject2Device->GetYUnit());
+      std::min(mtObject2Device.GetXUnit(), mtObject2Device.GetYUnit());
   static constexpr float kEpsilon = 0.01f;
   if (std::fabs(font_size * scale) < kEpsilon)
     return true;
@@ -659,16 +581,16 @@ bool CFX_PSRenderer::DrawText(int nChars,
 
   SetColor(color);
   std::ostringstream buf;
-  buf << "q[" << pObject2Device->a << " " << pObject2Device->b << " "
-      << pObject2Device->c << " " << pObject2Device->d << " "
-      << pObject2Device->e << " " << pObject2Device->f << "]cm\n";
+  buf << "q[" << mtObject2Device.a << " " << mtObject2Device.b << " "
+      << mtObject2Device.c << " " << mtObject2Device.d << " "
+      << mtObject2Device.e << " " << mtObject2Device.f << "]cm\n";
 
   CFX_FontCache* pCache = CFX_GEModule::Get()->GetFontCache();
-  CFX_FaceCache* pFaceCache = pCache->GetCachedFace(pFont);
+  RetainPtr<CFX_GlyphCache> pGlyphCache = pCache->GetGlyphCache(pFont);
   int last_fontnum = -1;
   for (int i = 0; i < nChars; i++) {
     int ps_fontnum, ps_glyphindex;
-    FindPSFontGlyph(pFaceCache, pFont, pCharPos[i], &ps_fontnum,
+    FindPSFontGlyph(pGlyphCache.Get(), pFont, pCharPos[i], &ps_fontnum,
                     &ps_glyphindex);
     if (last_fontnum != ps_fontnum) {
       buf << "/X" << ps_fontnum << " Ff " << font_size << " Fs Sf ";
@@ -680,15 +602,68 @@ bool CFX_PSRenderer::DrawText(int nChars,
   }
   buf << "Q\n";
   WriteToStream(&buf);
-  pCache->ReleaseCachedFace(pFont);
   return true;
+}
+
+bool CFX_PSRenderer::FaxCompressData(
+    std::unique_ptr<uint8_t, FxFreeDeleter> src_buf,
+    int width,
+    int height,
+    std::unique_ptr<uint8_t, FxFreeDeleter>* dest_buf,
+    uint32_t* dest_size) const {
+  if (width * height <= 128) {
+    *dest_buf = std::move(src_buf);
+    *dest_size = (width + 7) / 8 * height;
+    return false;
+  }
+
+  m_pEncoderIface->pFaxEncodeFunc(src_buf.get(), width, height, (width + 7) / 8,
+                                  dest_buf, dest_size);
+  return true;
+}
+
+void CFX_PSRenderer::PSCompressData(uint8_t* src_buf,
+                                    uint32_t src_size,
+                                    uint8_t** output_buf,
+                                    uint32_t* output_size,
+                                    const char** filter) const {
+  *output_buf = src_buf;
+  *output_size = src_size;
+  *filter = "";
+  if (src_size < 1024)
+    return;
+
+  uint8_t* dest_buf = nullptr;
+  uint32_t dest_size = src_size;
+  if (m_PSLevel >= 3) {
+    std::unique_ptr<uint8_t, FxFreeDeleter> dest_buf_unique;
+    if (m_pEncoderIface->pFlateEncodeFunc(src_buf, src_size, &dest_buf_unique,
+                                          &dest_size)) {
+      dest_buf = dest_buf_unique.release();
+      *filter = "/FlateDecode filter ";
+    }
+  } else {
+    std::unique_ptr<uint8_t, FxFreeDeleter> dest_buf_unique;
+    if (m_pEncoderIface->pRunLengthEncodeFunc({src_buf, src_size},
+                                              &dest_buf_unique, &dest_size)) {
+      dest_buf = dest_buf_unique.release();
+      *filter = "/RunLengthDecode filter ";
+    }
+  }
+  if (dest_size < src_size) {
+    *output_buf = dest_buf;
+    *output_size = dest_size;
+  } else {
+    *filter = nullptr;
+    FX_Free(dest_buf);
+  }
 }
 
 void CFX_PSRenderer::WritePSBinary(const uint8_t* data, int len) {
   std::unique_ptr<uint8_t, FxFreeDeleter> dest_buf;
   uint32_t dest_size;
-  if (m_pModuleMgr->GetBasicModule()->A85Encode(
-          {data, static_cast<size_t>(len)}, &dest_buf, &dest_size)) {
+  if (m_pEncoderIface->pA85EncodeFunc({data, static_cast<size_t>(len)},
+                                      &dest_buf, &dest_size)) {
     m_pStream->WriteBlock(dest_buf.get(), dest_size);
   } else {
     m_pStream->WriteBlock(data, len);

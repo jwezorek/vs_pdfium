@@ -16,6 +16,7 @@
 #include "core/fpdfdoc/cpdf_formfield.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CFieldTree;
@@ -26,25 +27,32 @@ class CPDF_Font;
 class CPDF_FormControl;
 class CPDF_Object;
 class CPDF_Page;
-class IPDF_FormNotify;
-
-CPDF_Font* AddNativeInteractiveFormFont(CPDF_Dictionary*& pFormDict,
-                                        CPDF_Document* pDocument,
-                                        ByteString* csNameTag);
 
 class CPDF_InteractiveForm {
  public:
+  class NotifierIface {
+   public:
+    virtual ~NotifierIface() = default;
+
+    virtual bool BeforeValueChange(CPDF_FormField* pField,
+                                   const WideString& csValue) = 0;
+    virtual void AfterValueChange(CPDF_FormField* pField) = 0;
+    virtual bool BeforeSelectionChange(CPDF_FormField* pField,
+                                       const WideString& csValue) = 0;
+    virtual void AfterSelectionChange(CPDF_FormField* pField) = 0;
+    virtual void AfterCheckedStatusChange(CPDF_FormField* pField) = 0;
+    virtual void AfterFormReset(CPDF_InteractiveForm* pForm) = 0;
+  };
+
   explicit CPDF_InteractiveForm(CPDF_Document* pDocument);
   ~CPDF_InteractiveForm();
 
-  static void SetUpdateAP(bool bUpdateAP);
   static bool IsUpdateAPEnabled();
-  static CPDF_Font* AddStandardFont(CPDF_Document* pDocument,
-                                    ByteString csFontName);
-  static ByteString GetNativeFont(uint8_t iCharSet, void* pLogFont);
-  static uint8_t GetNativeCharSet();
-  static CPDF_Font* AddNativeFont(uint8_t iCharSet, CPDF_Document* pDocument);
-  static CPDF_Font* AddNativeFont(CPDF_Document* pDocument);
+  static void SetUpdateAP(bool bUpdateAP);
+  static RetainPtr<CPDF_Font> AddNativeInteractiveFormFont(
+      CPDF_Dictionary*& pFormDict,
+      CPDF_Document* pDocument,
+      ByteString* csNameTag);
 
   size_t CountFields(const WideString& csFieldName) const;
   CPDF_FormField* GetField(uint32_t index, const WideString& csFieldName) const;
@@ -60,7 +68,7 @@ class CPDF_InteractiveForm {
   CPDF_FormField* GetFieldInCalculationOrder(int index);
   int FindFieldInCalculationOrder(const CPDF_FormField* pField);
 
-  CPDF_Font* GetFormFont(ByteString csNameTag) const;
+  RetainPtr<CPDF_Font> GetFormFont(ByteString csNameTag) const;
   CPDF_DefaultAppearance GetDefaultAppearance() const;
   int GetFormAlignment() const;
 
@@ -83,11 +91,10 @@ class CPDF_InteractiveForm {
                  bool bIncludeOrExclude,
                  NotificationOption notify);
 
-  void SetFormNotify(IPDF_FormNotify* pNotify);
-  bool HasXFAForm() const;
+  void SetNotifierIface(NotifierIface* pNotify);
   void FixPageFields(CPDF_Page* pPage);
 
-  IPDF_FormNotify* GetFormNotify() const { return m_pFormNotify.Get(); }
+  NotifierIface* GetFormNotify() const { return m_pFormNotify.Get(); }
   CPDF_Document* GetDocument() const { return m_pDocument.Get(); }
   CPDF_Dictionary* GetFormDict() const { return m_pFormDict.Get(); }
 
@@ -104,14 +111,14 @@ class CPDF_InteractiveForm {
 
   ByteString m_bsEncoding;
   UnownedPtr<CPDF_Document> const m_pDocument;
-  UnownedPtr<CPDF_Dictionary> m_pFormDict;
+  RetainPtr<CPDF_Dictionary> m_pFormDict;
   std::unique_ptr<CFieldTree> m_pFieldTree;
   std::map<const CPDF_Dictionary*, std::unique_ptr<CPDF_FormControl>>
       m_ControlMap;
   // Points into |m_ControlMap|.
   std::map<const CPDF_FormField*, std::vector<UnownedPtr<CPDF_FormControl>>>
       m_ControlLists;
-  UnownedPtr<IPDF_FormNotify> m_pFormNotify;
+  UnownedPtr<NotifierIface> m_pFormNotify;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_INTERACTIVEFORM_H_

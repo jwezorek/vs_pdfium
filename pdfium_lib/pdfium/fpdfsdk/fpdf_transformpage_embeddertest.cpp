@@ -3,7 +3,26 @@
 // found in the LICENSE file.
 
 #include "public/fpdf_transformpage.h"
+
+#include "build/build_config.h"
 #include "testing/embedder_test.h"
+#include "testing/embedder_test_constants.h"
+
+#if defined(OS_LINUX) || defined(OS_CHROMEOS) || defined(OS_FUCHSIA)
+#include "third_party/base/test/scoped_locale.h"
+#endif
+
+using pdfium::kRectanglesChecksum;
+
+namespace {
+
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+constexpr char kShrunkMD5[] = "78c52d6029283090036e6db6683401e2";
+#else
+constexpr char kShrunkMD5[] = "f4136cc9209207ab60eb8381a3df2e69";
+#endif
+
+}  // namespace
 
 class FPDFTransformEmbedderTest : public EmbedderTest {};
 
@@ -189,9 +208,11 @@ TEST_F(FPDFTransformEmbedderTest, NoArtBox) {
 }
 
 TEST_F(FPDFTransformEmbedderTest, SetCropBox) {
-  const char kOriginalMD5[] = "0a90de37f52127619c3dfb642b5fa2fe";
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+  const char kCroppedMD5[] = "4b9d2d2246be61c583f454245fe3172f";
+#else
   const char kCroppedMD5[] = "9937883715d5144c079fb8f7e3d4f395";
-
+#endif
   {
     ASSERT_TRUE(OpenDocument("rectangles.pdf"));
     FPDF_PAGE page = LoadPage(0);
@@ -207,7 +228,7 @@ TEST_F(FPDFTransformEmbedderTest, SetCropBox) {
       EXPECT_EQ(200, page_width);
       EXPECT_EQ(300, page_height);
       ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
-      CompareBitmap(bitmap.get(), page_width, page_height, kOriginalMD5);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
     }
 
     FPDFPage_SetCropBox(page, 10, 20, 100, 150);
@@ -262,8 +283,11 @@ TEST_F(FPDFTransformEmbedderTest, SetCropBox) {
 }
 
 TEST_F(FPDFTransformEmbedderTest, SetMediaBox) {
-  const char kOriginalMD5[] = "0a90de37f52127619c3dfb642b5fa2fe";
-  const char kShrunkMD5[] = "eab5958f62f7ce65d7c32de98389fee1";
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+  const char kShrunkMD5SetMediaBox[] = "9f28f0610a7f789c24cfd5f9bd5dc3de";
+#else
+  const char kShrunkMD5SetMediaBox[] = "eab5958f62f7ce65d7c32de98389fee1";
+#endif
 
   {
     ASSERT_TRUE(OpenDocument("rectangles.pdf"));
@@ -280,7 +304,7 @@ TEST_F(FPDFTransformEmbedderTest, SetMediaBox) {
       EXPECT_EQ(200, page_width);
       EXPECT_EQ(300, page_height);
       ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
-      CompareBitmap(bitmap.get(), page_width, page_height, kOriginalMD5);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
     }
 
     FPDFPage_SetMediaBox(page, 20, 30, 100, 150);
@@ -301,7 +325,8 @@ TEST_F(FPDFTransformEmbedderTest, SetMediaBox) {
       EXPECT_EQ(80, page_width);
       EXPECT_EQ(120, page_height);
       ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
-      CompareBitmap(bitmap.get(), page_width, page_height, kShrunkMD5);
+      CompareBitmap(bitmap.get(), page_width, page_height,
+                    kShrunkMD5SetMediaBox);
     }
 
     UnloadPage(page);
@@ -328,7 +353,7 @@ TEST_F(FPDFTransformEmbedderTest, SetMediaBox) {
     EXPECT_EQ(80, page_width);
     EXPECT_EQ(120, page_height);
     ScopedFPDFBitmap bitmap = RenderSavedPage(saved_page);
-    CompareBitmap(bitmap.get(), page_width, page_height, kShrunkMD5);
+    CompareBitmap(bitmap.get(), page_width, page_height, kShrunkMD5SetMediaBox);
 
     CloseSavedPage(saved_page);
     CloseSavedDocument();
@@ -341,18 +366,19 @@ TEST_F(FPDFTransformEmbedderTest, ClipPath) {
   FPDF_PAGE page = LoadPage(0);
   ASSERT_TRUE(page);
 
-  FPDF_CLIPPATH clip = FPDF_CreateClipPath(10.0f, 10.0f, 90.0f, 90.0f);
-  EXPECT_TRUE(clip);
+  {
+    ScopedFPDFClipPath clip(FPDF_CreateClipPath(10.0f, 10.0f, 90.0f, 90.0f));
+    EXPECT_TRUE(clip);
 
-  // NULL arg call is a no-op.
-  FPDFPage_InsertClipPath(nullptr, clip);
+    // NULL arg call is a no-op.
+    FPDFPage_InsertClipPath(nullptr, clip.get());
 
-  // Do actual work.
-  FPDFPage_InsertClipPath(page, clip);
+    // Do actual work.
+    FPDFPage_InsertClipPath(page, clip.get());
 
-  // TODO(tsepez): test how inserting path affects page rendering.
+    // TODO(tsepez): test how inserting path affects page rendering.
+  }
 
-  FPDF_DestroyClipPath(clip);
   UnloadPage(page);
 }
 
@@ -392,3 +418,115 @@ TEST_F(FPDFTransformEmbedderTest, TransFormWithClipWithPatterns) {
 
   UnloadPage(page);
 }
+
+TEST_F(FPDFTransformEmbedderTest, TransFormWithClipAndSave) {
+  {
+    ASSERT_TRUE(OpenDocument("rectangles.pdf"));
+    FPDF_PAGE page = LoadPage(0);
+    ASSERT_TRUE(page);
+
+    {
+      // Render the page as is.
+      const int page_width = static_cast<int>(FPDF_GetPageWidth(page));
+      const int page_height = static_cast<int>(FPDF_GetPageHeight(page));
+      EXPECT_EQ(200, page_width);
+      EXPECT_EQ(300, page_height);
+      ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
+    }
+
+    {
+      // Render the page after transforming.
+      // Note that the change should affect the rendering, but does not.
+      // It should behaves just like the case below, rather than the case above.
+      // TODO(bug_1328): The checksum below should be |kShrunkMD5|.
+      const FS_MATRIX half_matrix{0.5, 0, 0, 0.5, 0, 0};
+      EXPECT_TRUE(FPDFPage_TransFormWithClip(page, &half_matrix, nullptr));
+      const int page_width = static_cast<int>(FPDF_GetPageWidth(page));
+      const int page_height = static_cast<int>(FPDF_GetPageHeight(page));
+      EXPECT_EQ(200, page_width);
+      EXPECT_EQ(300, page_height);
+      ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
+    }
+
+    UnloadPage(page);
+  }
+
+  {
+    // Save a copy, open the copy, and render it.
+    // Note that it renders the transform.
+    EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+    ASSERT_TRUE(OpenSavedDocument());
+    FPDF_PAGE saved_page = LoadSavedPage(0);
+    ASSERT_TRUE(saved_page);
+
+    const int page_width = static_cast<int>(FPDF_GetPageWidth(saved_page));
+    const int page_height = static_cast<int>(FPDF_GetPageHeight(saved_page));
+    EXPECT_EQ(200, page_width);
+    EXPECT_EQ(300, page_height);
+    ScopedFPDFBitmap bitmap = RenderSavedPage(saved_page);
+    CompareBitmap(bitmap.get(), page_width, page_height, kShrunkMD5);
+
+    CloseSavedPage(saved_page);
+    CloseSavedDocument();
+  }
+}
+
+#if defined(OS_LINUX) || defined(OS_CHROMEOS) || defined(OS_FUCHSIA)
+TEST_F(FPDFTransformEmbedderTest, TransFormWithClipAndSaveWithLocale) {
+  pdfium::base::ScopedLocale scoped_locale("da_DK.UTF-8");
+
+  {
+    ASSERT_TRUE(OpenDocument("rectangles.pdf"));
+    FPDF_PAGE page = LoadPage(0);
+    ASSERT_TRUE(page);
+
+    {
+      // Render the page as is.
+      const int page_width = static_cast<int>(FPDF_GetPageWidth(page));
+      const int page_height = static_cast<int>(FPDF_GetPageHeight(page));
+      EXPECT_EQ(200, page_width);
+      EXPECT_EQ(300, page_height);
+      ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
+    }
+
+    {
+      // Render the page after transforming.
+      // Note that the change should affect the rendering, but does not.
+      // It should behaves just like the case below, rather than the case above.
+      // TODO(bug_1328): The checksum below should be |kShrunkMD5|.
+      const FS_MATRIX half_matrix{0.5, 0, 0, 0.5, 0, 0};
+      EXPECT_TRUE(FPDFPage_TransFormWithClip(page, &half_matrix, nullptr));
+      const int page_width = static_cast<int>(FPDF_GetPageWidth(page));
+      const int page_height = static_cast<int>(FPDF_GetPageHeight(page));
+      EXPECT_EQ(200, page_width);
+      EXPECT_EQ(300, page_height);
+      ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+      CompareBitmap(bitmap.get(), page_width, page_height, kRectanglesChecksum);
+    }
+
+    UnloadPage(page);
+  }
+
+  {
+    // Save a copy, open the copy, and render it.
+    // Note that it renders the transform.
+    EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+    ASSERT_TRUE(OpenSavedDocument());
+    FPDF_PAGE saved_page = LoadSavedPage(0);
+    ASSERT_TRUE(saved_page);
+
+    const int page_width = static_cast<int>(FPDF_GetPageWidth(saved_page));
+    const int page_height = static_cast<int>(FPDF_GetPageHeight(saved_page));
+    EXPECT_EQ(200, page_width);
+    EXPECT_EQ(300, page_height);
+    ScopedFPDFBitmap bitmap = RenderSavedPage(saved_page);
+    CompareBitmap(bitmap.get(), page_width, page_height, kShrunkMD5);
+
+    CloseSavedPage(saved_page);
+    CloseSavedDocument();
+  }
+}
+#endif  // defined(OS_LINUX) || defined(OS_CHROMEOS) || defined(OS_FUCHSIA)

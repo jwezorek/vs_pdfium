@@ -138,98 +138,94 @@ void md5_process(CRYPT_md5_context* ctx, const uint8_t data[64]) {
 
 }  // namespace
 
-void CRYPT_ArcFourSetup(CRYPT_rc4_context* s,
-                        const uint8_t* key,
-                        uint32_t length) {
-  s->x = 0;
-  s->y = 0;
+void CRYPT_ArcFourSetup(CRYPT_rc4_context* context,
+                        pdfium::span<const uint8_t> key) {
+  context->x = 0;
+  context->y = 0;
   for (int i = 0; i < kRC4ContextPermutationLength; ++i)
-    s->m[i] = i;
+    context->m[i] = i;
 
   int j = 0;
   for (int i = 0; i < kRC4ContextPermutationLength; ++i) {
-    j = (j + s->m[i] + (length ? key[i % length] : 0)) & 0xFF;
-    std::swap(s->m[i], s->m[j]);
+    size_t size = key.size();
+    j = (j + context->m[i] + (size ? key[i % size] : 0)) & 0xFF;
+    std::swap(context->m[i], context->m[j]);
   }
 }
 
-void CRYPT_ArcFourCrypt(CRYPT_rc4_context* s, uint8_t* data, uint32_t length) {
-  for (uint32_t i = 0; i < length; ++i) {
-    s->x = (s->x + 1) & 0xFF;
-    s->y = (s->y + s->m[s->x]) & 0xFF;
-    std::swap(s->m[s->x], s->m[s->y]);
-    data[i] ^= s->m[(s->m[s->x] + s->m[s->y]) & 0xFF];
+void CRYPT_ArcFourCrypt(CRYPT_rc4_context* context,
+                        pdfium::span<uint8_t> data) {
+  for (auto& datum : data) {
+    context->x = (context->x + 1) & 0xFF;
+    context->y = (context->y + context->m[context->x]) & 0xFF;
+    std::swap(context->m[context->x], context->m[context->y]);
+    datum ^=
+        context->m[(context->m[context->x] + context->m[context->y]) & 0xFF];
   }
 }
 
-void CRYPT_ArcFourCryptBlock(uint8_t* pData,
-                             uint32_t size,
-                             const uint8_t* key,
-                             uint32_t keylen) {
+void CRYPT_ArcFourCryptBlock(pdfium::span<uint8_t> data,
+                             pdfium::span<const uint8_t> key) {
   CRYPT_rc4_context s;
-  CRYPT_ArcFourSetup(&s, key, keylen);
-  CRYPT_ArcFourCrypt(&s, pData, size);
+  CRYPT_ArcFourSetup(&s, key);
+  CRYPT_ArcFourCrypt(&s, data);
 }
 
-void CRYPT_MD5Start(CRYPT_md5_context* ctx) {
-  ctx->total[0] = 0;
-  ctx->total[1] = 0;
-  ctx->state[0] = 0x67452301;
-  ctx->state[1] = 0xEFCDAB89;
-  ctx->state[2] = 0x98BADCFE;
-  ctx->state[3] = 0x10325476;
+CRYPT_md5_context CRYPT_MD5Start() {
+  CRYPT_md5_context context;
+  context.total[0] = 0;
+  context.total[1] = 0;
+  context.state[0] = 0x67452301;
+  context.state[1] = 0xEFCDAB89;
+  context.state[2] = 0x98BADCFE;
+  context.state[3] = 0x10325476;
+  return context;
 }
 
-void CRYPT_MD5Update(CRYPT_md5_context* ctx,
-                     const uint8_t* input,
-                     uint32_t length) {
-  uint32_t left, fill;
-  if (!length) {
+void CRYPT_MD5Update(CRYPT_md5_context* context,
+                     pdfium::span<const uint8_t> data) {
+  if (data.empty())
     return;
-  }
-  left = (ctx->total[0] >> 3) & 0x3F;
-  fill = 64 - left;
-  ctx->total[0] += length << 3;
-  ctx->total[1] += length >> 29;
-  ctx->total[0] &= 0xFFFFFFFF;
-  ctx->total[1] += ctx->total[0] < length << 3;
-  if (left && length >= fill) {
-    memcpy(ctx->buffer + left, input, fill);
-    md5_process(ctx, ctx->buffer);
-    length -= fill;
-    input += fill;
+
+  uint32_t left = (context->total[0] >> 3) & 0x3F;
+  uint32_t fill = 64 - left;
+  context->total[0] += data.size() << 3;
+  context->total[1] += data.size() >> 29;
+  context->total[0] &= 0xFFFFFFFF;
+  context->total[1] += context->total[0] < data.size() << 3;
+  if (left && data.size() >= fill) {
+    auto next_data = data.subspan(fill);
+    memcpy(context->buffer + left, data.data(), fill);
+    md5_process(context, context->buffer);
     left = 0;
+    data = next_data;
   }
-  while (length >= 64) {
-    md5_process(ctx, input);
-    length -= 64;
-    input += 64;
+  while (data.size() >= 64) {
+    auto next_data = data.subspan(64);
+    md5_process(context, data.data());
+    data = next_data;
   }
-  if (length) {
-    memcpy(ctx->buffer + left, input, length);
-  }
+  size_t remaining = data.size();
+  if (remaining)
+    memcpy(context->buffer + left, data.data(), remaining);
 }
 
-void CRYPT_MD5Finish(CRYPT_md5_context* ctx, uint8_t digest[16]) {
-  uint32_t last, padn;
+void CRYPT_MD5Finish(CRYPT_md5_context* context, uint8_t digest[16]) {
   uint8_t msglen[8];
-  PUT_UINT32(ctx->total[0], msglen, 0);
-  PUT_UINT32(ctx->total[1], msglen, 4);
-  last = (ctx->total[0] >> 3) & 0x3F;
-  padn = (last < 56) ? (56 - last) : (120 - last);
-  CRYPT_MD5Update(ctx, md5_padding, padn);
-  CRYPT_MD5Update(ctx, msglen, 8);
-  PUT_UINT32(ctx->state[0], digest, 0);
-  PUT_UINT32(ctx->state[1], digest, 4);
-  PUT_UINT32(ctx->state[2], digest, 8);
-  PUT_UINT32(ctx->state[3], digest, 12);
+  PUT_UINT32(context->total[0], msglen, 0);
+  PUT_UINT32(context->total[1], msglen, 4);
+  uint32_t last = (context->total[0] >> 3) & 0x3F;
+  uint32_t padn = (last < 56) ? (56 - last) : (120 - last);
+  CRYPT_MD5Update(context, {md5_padding, padn});
+  CRYPT_MD5Update(context, msglen);
+  PUT_UINT32(context->state[0], digest, 0);
+  PUT_UINT32(context->state[1], digest, 4);
+  PUT_UINT32(context->state[2], digest, 8);
+  PUT_UINT32(context->state[3], digest, 12);
 }
 
-void CRYPT_MD5Generate(const uint8_t* input,
-                       uint32_t length,
-                       uint8_t digest[16]) {
-  CRYPT_md5_context ctx;
-  CRYPT_MD5Start(&ctx);
-  CRYPT_MD5Update(&ctx, input, length);
+void CRYPT_MD5Generate(pdfium::span<const uint8_t> data, uint8_t digest[16]) {
+  CRYPT_md5_context ctx = CRYPT_MD5Start();
+  CRYPT_MD5Update(&ctx, data);
   CRYPT_MD5Finish(&ctx, digest);
 }

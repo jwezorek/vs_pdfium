@@ -14,6 +14,7 @@
 #include "constants/annotation_flags.h"
 #include "constants/form_fields.h"
 #include "constants/form_flags.h"
+#include "core/fpdfapi/page/cpdf_occontext.h"
 #include "core/fpdfapi/page/cpdf_page.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
@@ -26,10 +27,8 @@
 #include "core/fpdfdoc/cpdf_annot.h"
 #include "core/fpdfdoc/cpdf_formfield.h"
 #include "core/fpdfdoc/cpdf_interactiveform.h"
-#include "core/fpdfdoc/cpdf_occontext.h"
 #include "core/fpdfdoc/cpvt_generateap.h"
 #include "core/fxge/cfx_renderdevice.h"
-#include "third_party/base/ptr_util.h"
 
 namespace {
 
@@ -49,6 +48,7 @@ bool PopupAppearsForAnnotType(CPDF_Annot::Subtype subtype) {
     case CPDF_Annot::Subtype::CARET:
     case CPDF_Annot::Subtype::INK:
     case CPDF_Annot::Subtype::FILEATTACHMENT:
+    case CPDF_Annot::Subtype::REDACT:
       return true;
     case CPDF_Annot::Subtype::UNKNOWN:
     case CPDF_Annot::Subtype::LINK:
@@ -117,7 +117,7 @@ std::unique_ptr<CPDF_Annot> CreatePopupAnnot(CPDF_Document* pDocument,
   pAnnotDict->SetNewFor<CPDF_Number>(pdfium::annotation::kF, 0);
 
   auto pPopupAnnot =
-      pdfium::MakeUnique<CPDF_Annot>(std::move(pAnnotDict), pDocument);
+      std::make_unique<CPDF_Annot>(std::move(pAnnotDict), pDocument);
   pAnnot->SetPopupAnnot(pPopupAnnot.get());
   return pPopupAnnot;
 }
@@ -129,7 +129,7 @@ void GenerateAP(CPDF_Document* pDoc, CPDF_Dictionary* pAnnotDict) {
   }
 
   CPDF_Object* pFieldTypeObj =
-      FPDF_GetFieldAttr(pAnnotDict, pdfium::form_fields::kFT);
+      CPDF_FormField::GetFieldAttr(pAnnotDict, pdfium::form_fields::kFT);
   if (!pFieldTypeObj)
     return;
 
@@ -141,7 +141,7 @@ void GenerateAP(CPDF_Document* pDoc, CPDF_Dictionary* pAnnotDict) {
   }
 
   CPDF_Object* pFieldFlagsObj =
-      FPDF_GetFieldAttr(pAnnotDict, pdfium::form_fields::kFf);
+      CPDF_FormField::GetFieldAttr(pAnnotDict, pdfium::form_fields::kFf);
   uint32_t flags = pFieldFlagsObj ? pFieldFlagsObj->GetInteger() : 0;
   if (field_type == pdfium::form_fields::kCh) {
     auto type = (flags & pdfium::form_flags::kChoiceCombo)
@@ -172,9 +172,6 @@ void GenerateAP(CPDF_Document* pDoc, CPDF_Dictionary* pAnnotDict) {
 
 CPDF_AnnotList::CPDF_AnnotList(CPDF_Page* pPage)
     : m_pDocument(pPage->GetDocument()) {
-  if (!pPage->GetDict())
-    return;
-
   CPDF_Array* pAnnots = pPage->GetDict()->GetArrayFor("Annots");
   if (!pAnnots)
     return;
@@ -196,7 +193,7 @@ CPDF_AnnotList::CPDF_AnnotList(CPDF_Page* pPage)
     }
     pAnnots->ConvertToIndirectObjectAt(i, m_pDocument.Get());
     m_AnnotList.push_back(
-        pdfium::MakeUnique<CPDF_Annot>(pDict, m_pDocument.Get()));
+        std::make_unique<CPDF_Annot>(pDict, m_pDocument.Get()));
     if (bRegenerateAP && subtype == "Widget" &&
         CPDF_InteractiveForm::IsUpdateAPEnabled() &&
         !pDict->GetDictFor(pdfium::annotation::kAP)) {
@@ -293,6 +290,7 @@ void CPDF_AnnotList::DisplayAnnots(CPDF_Page* pPage,
 }
 
 void CPDF_AnnotList::DisplayAnnots(CPDF_Page* pPage,
+                                   CFX_RenderDevice* device,
                                    CPDF_RenderContext* pContext,
                                    bool bPrinting,
                                    const CFX_Matrix* pMatrix,
@@ -301,6 +299,6 @@ void CPDF_AnnotList::DisplayAnnots(CPDF_Page* pPage,
   uint32_t dwAnnotFlags = bShowWidget ? pdfium::annotation_flags::kInvisible |
                                             pdfium::annotation_flags::kHidden
                                       : pdfium::annotation_flags::kInvisible;
-  DisplayAnnots(pPage, nullptr, pContext, bPrinting, pMatrix, dwAnnotFlags,
+  DisplayAnnots(pPage, device, pContext, bPrinting, pMatrix, dwAnnotFlags,
                 pOptions, nullptr);
 }

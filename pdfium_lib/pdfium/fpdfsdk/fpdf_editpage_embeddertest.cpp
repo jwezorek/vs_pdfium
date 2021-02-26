@@ -5,12 +5,16 @@
 #include "core/fxcrt/fx_system.h"
 #include "public/fpdf_edit.h"
 #include "testing/embedder_test.h"
+#include "testing/embedder_test_constants.h"
 
 class FPDFEditPageEmbedderTest : public EmbedderTest {};
 
 TEST_F(FPDFEditPageEmbedderTest, Rotation) {
-  const char kOriginalMD5[] = "0a90de37f52127619c3dfb642b5fa2fe";
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+  const char kRotatedMD5[] = "eded83f75f3d0332c584c416c571c0df";
+#else
   const char kRotatedMD5[] = "d599429574ff0dcad3bc898ea8b874ca";
+#endif
 
   {
     ASSERT_TRUE(OpenDocument("rectangles.pdf"));
@@ -25,7 +29,8 @@ TEST_F(FPDFEditPageEmbedderTest, Rotation) {
       EXPECT_EQ(200, page_width);
       EXPECT_EQ(300, page_height);
       ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
-      CompareBitmap(bitmap.get(), page_width, page_height, kOriginalMD5);
+      CompareBitmap(bitmap.get(), page_width, page_height,
+                    pdfium::kRectanglesChecksum);
     }
 
     FPDFPage_SetRotation(page, 1);
@@ -91,7 +96,7 @@ TEST_F(FPDFEditPageEmbedderTest, HasTransparencyInvalid) {
 
 TEST_F(FPDFEditPageEmbedderTest, HasTransparencyPath) {
   constexpr int kExpectedObjectCount = 8;
-  EXPECT_TRUE(OpenDocument("rectangles.pdf"));
+  ASSERT_TRUE(OpenDocument("rectangles.pdf"));
   FPDF_PAGE page = LoadPage(0);
   ASSERT_TRUE(page);
   ASSERT_EQ(kExpectedObjectCount, FPDFPage_CountObjects(page));
@@ -109,7 +114,7 @@ TEST_F(FPDFEditPageEmbedderTest, HasTransparencyPath) {
 
 TEST_F(FPDFEditPageEmbedderTest, HasTransparencyText) {
   constexpr int kExpectedObjectCount = 2;
-  EXPECT_TRUE(OpenDocument("text_render_mode.pdf"));
+  ASSERT_TRUE(OpenDocument("text_render_mode.pdf"));
   FPDF_PAGE page = LoadPage(0);
   ASSERT_TRUE(page);
   ASSERT_EQ(kExpectedObjectCount, FPDFPage_CountObjects(page));
@@ -120,6 +125,31 @@ TEST_F(FPDFEditPageEmbedderTest, HasTransparencyText) {
 
     FPDFPageObj_SetBlendMode(obj, "Lighten");
     EXPECT_TRUE(FPDFPageObj_HasTransparency(obj));
+  }
+
+  UnloadPage(page);
+}
+
+TEST_F(FPDFEditPageEmbedderTest, GetFillAndStrokeForImage) {
+  constexpr int kExpectedObjectCount = 39;
+  constexpr int kImageObjectsStartIndex = 33;
+  ASSERT_TRUE(OpenDocument("embedded_images.pdf"));
+  FPDF_PAGE page = LoadPage(0);
+  ASSERT_TRUE(page);
+
+  ASSERT_EQ(kExpectedObjectCount, FPDFPage_CountObjects(page));
+
+  for (int i = kImageObjectsStartIndex; i < kExpectedObjectCount; ++i) {
+    FPDF_PAGEOBJECT image = FPDFPage_GetObject(page, i);
+    ASSERT_TRUE(image);
+    EXPECT_EQ(FPDF_PAGEOBJ_IMAGE, FPDFPageObj_GetType(image));
+
+    unsigned int r;
+    unsigned int g;
+    unsigned int b;
+    unsigned int a;
+    EXPECT_FALSE(FPDFPageObj_GetFillColor(image, &r, &g, &b, &a));
+    EXPECT_FALSE(FPDFPageObj_GetStrokeColor(image, &r, &g, &b, &a));
   }
 
   UnloadPage(page);

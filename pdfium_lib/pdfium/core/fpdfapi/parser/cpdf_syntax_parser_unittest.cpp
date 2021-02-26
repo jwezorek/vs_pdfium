@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <limits>
-#include <string>
 
 #include "core/fpdfapi/parser/cpdf_object.h"
 #include "core/fpdfapi/parser/cpdf_parser.h"
@@ -150,7 +149,7 @@ TEST(cpdf_syntax_parser, GetInvalidReference) {
   static const uint8_t data[] = "4294967295 0 R";
   CPDF_SyntaxParser parser(pdfium::MakeRetain<CFX_ReadOnlyMemoryStream>(
       pdfium::make_span(data, 14)));
-  std::unique_ptr<CPDF_Object> ref = parser.GetObjectBody(nullptr);
+  RetainPtr<CPDF_Object> ref = parser.GetObjectBody(nullptr);
   EXPECT_FALSE(ref);
 }
 

@@ -5,18 +5,20 @@
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
 #include "fpdfsdk/formfiller/cffl_textobject.h"
-#include "third_party/base/ptr_util.h"
 
-CPWL_Wnd* CFFL_TextObject::ResetPDFWindow(CPDFSDK_PageView* pPageView,
+#include "core/fpdfapi/page/cpdf_page.h"
+#include "core/fpdfdoc/cba_fontmap.h"
+
+CPWL_Wnd* CFFL_TextObject::ResetPWLWindow(CPDFSDK_PageView* pPageView,
                                           bool bRestoreValue) {
   if (bRestoreValue)
     SaveState(pPageView);
 
-  DestroyPDFWindow(pPageView);
+  DestroyPWLWindow(pPageView);
   if (bRestoreValue)
     RestoreState(pPageView);
 
-  CPWL_Wnd::ObservedPtr pRet(GetPDFWindow(pPageView, !bRestoreValue));
+  ObservedPtr<CPWL_Wnd> pRet(GetPWLWindow(pPageView, !bRestoreValue));
   m_pWidget->UpdateField();  // May invoke JS, invalidating |pRet|.
   return pRet.Get();
 }
@@ -34,7 +36,8 @@ CFFL_TextObject::~CFFL_TextObject() {
 CBA_FontMap* CFFL_TextObject::MaybeCreateFontMap() {
   if (!m_pFontMap) {
     m_pFontMap =
-        pdfium::MakeUnique<CBA_FontMap>(m_pWidget.Get(), GetSystemHandler());
+        std::make_unique<CBA_FontMap>(m_pWidget->GetPDFPage()->GetDocument(),
+                                      m_pWidget->GetPDFAnnot()->GetAnnotDict());
   }
   return m_pFontMap.get();
 }

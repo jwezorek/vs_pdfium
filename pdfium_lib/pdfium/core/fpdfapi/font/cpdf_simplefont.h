@@ -16,22 +16,23 @@
 
 class CPDF_SimpleFont : public CPDF_Font {
  public:
-  CPDF_SimpleFont(CPDF_Document* pDocument, CPDF_Dictionary* pFontDict);
   ~CPDF_SimpleFont() override;
 
   // CPDF_Font
-  uint32_t GetCharWidthF(uint32_t charcode) override;
+  int GetCharWidthF(uint32_t charcode) override;
   FX_RECT GetCharBBox(uint32_t charcode) override;
   int GlyphFromCharCode(uint32_t charcode, bool* pVertGlyph) override;
   bool IsUnicodeCompatible() const override;
   WideString UnicodeFromCharCode(uint32_t charcode) const override;
   uint32_t CharCodeFromUnicode(wchar_t Unicode) const override;
 
-  CPDF_FontEncoding* GetEncoding() { return &m_Encoding; }
+  const CPDF_FontEncoding* GetEncoding() const { return &m_Encoding; }
 
   bool HasFontWidths() const override;
 
  protected:
+  CPDF_SimpleFont(CPDF_Document* pDocument, CPDF_Dictionary* pFontDict);
+
   virtual void LoadGlyphMap() = 0;
 
   bool LoadCommon();
@@ -39,7 +40,7 @@ class CPDF_SimpleFont : public CPDF_Font {
   void LoadCharMetrics(int charcode);
   void LoadPDFEncoding(bool bEmbedded, bool bTrueType);
 
-  CPDF_FontEncoding m_Encoding;
+  CPDF_FontEncoding m_Encoding{PDFFONT_ENCODING_BUILTIN};
   int m_BaseEncoding = PDFFONT_ENCODING_BUILTIN;
   bool m_bUseFontWidth;
   std::vector<ByteString> m_CharNames;

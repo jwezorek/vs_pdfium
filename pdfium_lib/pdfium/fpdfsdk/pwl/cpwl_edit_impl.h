@@ -9,12 +9,13 @@
 
 #include <deque>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "core/fpdfdoc/cpdf_variabletext.h"
 #include "core/fpdfdoc/cpvt_wordrange.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "core/fxge/fx_dib.h"
+#include "core/fxge/dib/fx_dib.h"
 
 #define FX_EDIT_ISLATINWORD(u)                  \
   (u == 0x2D || (u <= 0x005A && u >= 0x0041) || \
@@ -25,9 +26,9 @@ class CPWL_EditImpl;
 class CPWL_EditImpl_Iterator;
 class CPWL_EditImpl_Provider;
 class CFX_RenderDevice;
-class CFX_SystemHandler;
 class CPWL_Edit;
 class CPWL_EditCtrl;
+class IPWL_SystemHandler;
 class IFX_Edit_UndoItem;
 
 struct CPWL_EditImpl_LineRect {
@@ -98,8 +99,16 @@ class IFX_Edit_UndoItem {
  public:
   virtual ~IFX_Edit_UndoItem() = default;
 
-  virtual void Undo() = 0;
-  virtual void Redo() = 0;
+  // Undo/Redo the current undo item and returns the number of additional items
+  // to be processed in |m_UndoItemStack| to fully undo/redo the action. (An
+  // example is CFXEU_ReplaceSelection::Undo(), if CFXEU_ReplaceSelection marks
+  // the end of a replace action, CFXEU_ReplaceSelection::Undo() returns 3
+  // because 3 more undo items need to be processed to revert the replace
+  // action: insert text, clear selection and the CFXEU_ReplaceSelection which
+  // marks the beginning of replace action.) Implementations should return 0 by
+  // default.
+  virtual int Undo() = 0;
+  virtual int Redo() = 0;
 };
 
 class CFXEU_InsertWord final : public IFX_Edit_UndoItem {
@@ -112,8 +121,8 @@ class CFXEU_InsertWord final : public IFX_Edit_UndoItem {
   ~CFXEU_InsertWord() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
@@ -132,14 +141,30 @@ class CFXEU_InsertReturn final : public IFX_Edit_UndoItem {
   ~CFXEU_InsertReturn() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
 
   CPVT_WordPlace m_wpOld;
   CPVT_WordPlace m_wpNew;
+};
+
+class CFXEU_ReplaceSelection final : public IFX_Edit_UndoItem {
+ public:
+  CFXEU_ReplaceSelection(CPWL_EditImpl* pEdit, bool bIsEnd);
+  ~CFXEU_ReplaceSelection() override;
+
+  // IFX_Edit_UndoItem:
+  int Redo() override;
+  int Undo() override;
+
+ private:
+  bool IsEnd() const { return m_bEnd; }
+
+  UnownedPtr<CPWL_EditImpl> m_pEdit;
+  const bool m_bEnd;  // indicate whether this is the end of replace action
 };
 
 class CFXEU_Backspace final : public IFX_Edit_UndoItem {
@@ -152,8 +177,8 @@ class CFXEU_Backspace final : public IFX_Edit_UndoItem {
   ~CFXEU_Backspace() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
@@ -175,8 +200,8 @@ class CFXEU_Delete final : public IFX_Edit_UndoItem {
   ~CFXEU_Delete() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
@@ -196,8 +221,8 @@ class CFXEU_Clear final : public IFX_Edit_UndoItem {
   ~CFXEU_Clear() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
@@ -216,8 +241,8 @@ class CFXEU_InsertText final : public IFX_Edit_UndoItem {
   ~CFXEU_InsertText() override;
 
   // IFX_Edit_UndoItem:
-  void Redo() override;
-  void Undo() override;
+  int Redo() override;
+  int Undo() override;
 
  private:
   UnownedPtr<CPWL_EditImpl> m_pEdit;
@@ -237,7 +262,7 @@ class CPWL_EditImpl {
                        const CFX_FloatRect& rcClip,
                        const CFX_PointF& ptOffset,
                        const CPVT_WordRange* pRange,
-                       CFX_SystemHandler* pSystemHandler,
+                       IPWL_SystemHandler* pSystemHandler,
                        CFFL_FormFiller* pFFLData);
 
   CPWL_EditImpl();
@@ -289,6 +314,7 @@ class CPWL_EditImpl {
   bool Delete();
   bool ClearSelection();
   bool InsertText(const WideString& sText, int32_t charset);
+  void ReplaceSelection(const WideString& text);
   bool Redo();
   bool Undo();
   CPVT_WordPlace WordIndexToWordPlace(int32_t index) const;
@@ -305,7 +331,7 @@ class CPWL_EditImpl {
   WideString GetRangeText(const CPVT_WordRange& range) const;
   float GetCharSpace() const;
   void SetSelection(int32_t nStartChar, int32_t nEndChar);
-  void GetSelection(int32_t& nStartChar, int32_t& nEndChar) const;
+  std::pair<int32_t, int32_t> GetSelection() const;
   void SelectAll();
   void SelectNone();
   bool IsSelected() const;
@@ -321,7 +347,7 @@ class CPWL_EditImpl {
   bool CanRedo() const;
   CPVT_WordRange GetVisibleWordRange() const;
 
-  bool Empty();
+  bool Clear();
 
   CPVT_WordPlace DoInsertText(const CPVT_WordPlace& place,
                               const WideString& sText,
@@ -422,7 +448,7 @@ class CPWL_EditImpl_Provider final : public CPDF_VariableText::Provider {
   IPVT_FontMap* GetFontMap() const;
 
   // CPDF_VariableText::Provider:
-  uint32_t GetCharWidth(int32_t nFontIndex, uint16_t word) override;
+  int GetCharWidth(int32_t nFontIndex, uint16_t word) override;
   int32_t GetTypeAscent(int32_t nFontIndex) override;
   int32_t GetTypeDescent(int32_t nFontIndex) override;
   int32_t GetWordFontIndex(uint16_t word,

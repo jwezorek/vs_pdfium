@@ -7,10 +7,7 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_IMAGE_H_
 #define CORE_FPDFAPI_PAGE_CPDF_IMAGE_H_
 
-#include <memory>
-
 #include "core/fxcrt/fx_system.h"
-#include "core/fxcrt/maybe_owned.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "third_party/base/span.h"
@@ -26,8 +23,7 @@ class IFX_SeekableReadStream;
 
 class CPDF_Image final : public Retainable {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   static bool IsValidJpegComponent(int32_t comps);
   static bool IsValidJpegBitsPerComponent(int32_t bpc);
@@ -48,7 +44,7 @@ class CPDF_Image final : public Retainable {
 
   RetainPtr<CFX_DIBBase> LoadDIBBase() const;
 
-  void SetImage(const RetainPtr<CFX_DIBitmap>& pDIBitmap);
+  void SetImage(const RetainPtr<CFX_DIBitmap>& pBitmap);
   void SetJpegImage(const RetainPtr<IFX_SeekableReadStream>& pFile);
   void SetJpegImageInline(const RetainPtr<IFX_SeekableReadStream>& pFile);
 
@@ -56,7 +52,7 @@ class CPDF_Image final : public Retainable {
 
   // Returns whether to Continue() or not.
   bool StartLoadDIBBase(const CPDF_Dictionary* pFormResource,
-                        CPDF_Dictionary* pPageResource,
+                        const CPDF_Dictionary* pPageResource,
                         bool bStdCS,
                         uint32_t GroupFamily,
                         bool bLoadMask);
@@ -73,12 +69,14 @@ class CPDF_Image final : public Retainable {
 
  private:
   explicit CPDF_Image(CPDF_Document* pDoc);
-  CPDF_Image(CPDF_Document* pDoc, std::unique_ptr<CPDF_Stream> pStream);
+  CPDF_Image(CPDF_Document* pDoc, RetainPtr<CPDF_Stream> pStream);
   CPDF_Image(CPDF_Document* pDoc, uint32_t dwStreamObjNum);
   ~CPDF_Image() override;
 
   void FinishInitialization(CPDF_Dictionary* pStreamDict);
-  std::unique_ptr<CPDF_Dictionary> InitJPEG(pdfium::span<uint8_t> src_span);
+  RetainPtr<CPDF_Dictionary> InitJPEG(pdfium::span<uint8_t> src_span);
+
+  RetainPtr<CPDF_Dictionary> CreateXObjectImageDict(int width, int height);
 
   int32_t m_Height = 0;
   int32_t m_Width = 0;
@@ -86,8 +84,8 @@ class CPDF_Image final : public Retainable {
   bool m_bIsMask = false;
   bool m_bInterpolate = false;
   UnownedPtr<CPDF_Document> const m_pDocument;
-  MaybeOwned<CPDF_Stream> m_pStream;
-  UnownedPtr<const CPDF_Dictionary> m_pOC;
+  RetainPtr<CPDF_Stream> m_pStream;
+  RetainPtr<const CPDF_Dictionary> m_pOC;
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_IMAGE_H_

@@ -6,19 +6,17 @@
 
 #include "core/fpdfapi/render/cpdf_type3cache.h"
 
-#include <map>
 #include <memory>
 #include <utility>
 
 #include "core/fpdfapi/font/cpdf_type3char.h"
 #include "core/fpdfapi/font/cpdf_type3font.h"
-#include "core/fpdfapi/render/cpdf_type3glyphs.h"
+#include "core/fpdfapi/render/cpdf_type3glyphmap.h"
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxge/cfx_glyphbitmap.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
-#include "core/fxge/fx_dib.h"
-#include "third_party/base/ptr_util.h"
+#include "core/fxge/dib/fx_dib.h"
 
 namespace {
 
@@ -85,37 +83,37 @@ int DetectFirstLastScan(const RetainPtr<CFX_DIBitmap>& pBitmap, bool bFirst) {
 
 CPDF_Type3Cache::CPDF_Type3Cache(CPDF_Type3Font* pFont) : m_pFont(pFont) {}
 
-CPDF_Type3Cache::~CPDF_Type3Cache() {}
+CPDF_Type3Cache::~CPDF_Type3Cache() = default;
 
-CFX_GlyphBitmap* CPDF_Type3Cache::LoadGlyph(uint32_t charcode,
-                                            const CFX_Matrix* pMatrix) {
+const CFX_GlyphBitmap* CPDF_Type3Cache::LoadGlyph(uint32_t charcode,
+                                                  const CFX_Matrix* pMatrix) {
   CPDF_UniqueKeyGen keygen;
   keygen.Generate(
-      4, FXSYS_round(pMatrix->a * 10000), FXSYS_round(pMatrix->b * 10000),
-      FXSYS_round(pMatrix->c * 10000), FXSYS_round(pMatrix->d * 10000));
+      4, FXSYS_roundf(pMatrix->a * 10000), FXSYS_roundf(pMatrix->b * 10000),
+      FXSYS_roundf(pMatrix->c * 10000), FXSYS_roundf(pMatrix->d * 10000));
   ByteString FaceGlyphsKey(keygen.m_Key, keygen.m_KeyLen);
-  CPDF_Type3Glyphs* pSizeCache;
+  CPDF_Type3GlyphMap* pSizeCache;
   auto it = m_SizeMap.find(FaceGlyphsKey);
   if (it == m_SizeMap.end()) {
-    auto pNew = pdfium::MakeUnique<CPDF_Type3Glyphs>();
+    auto pNew = std::make_unique<CPDF_Type3GlyphMap>();
     pSizeCache = pNew.get();
     m_SizeMap[FaceGlyphsKey] = std::move(pNew);
   } else {
     pSizeCache = it->second.get();
   }
-  auto it2 = pSizeCache->m_GlyphMap.find(charcode);
-  if (it2 != pSizeCache->m_GlyphMap.end())
-    return it2->second.get();
+  const CFX_GlyphBitmap* pExisting = pSizeCache->GetBitmap(charcode);
+  if (pExisting)
+    return pExisting;
 
   std::unique_ptr<CFX_GlyphBitmap> pNewBitmap =
       RenderGlyph(pSizeCache, charcode, pMatrix);
   CFX_GlyphBitmap* pGlyphBitmap = pNewBitmap.get();
-  pSizeCache->m_GlyphMap[charcode] = std::move(pNewBitmap);
+  pSizeCache->SetBitmap(charcode, std::move(pNewBitmap));
   return pGlyphBitmap;
 }
 
 std::unique_ptr<CFX_GlyphBitmap> CPDF_Type3Cache::RenderGlyph(
-    CPDF_Type3Glyphs* pSize,
+    CPDF_Type3GlyphMap* pSize,
     uint32_t charcode,
     const CFX_Matrix* pMatrix) {
   const CPDF_Type3Char* pChar = m_pFont->LoadChar(charcode);
@@ -150,9 +148,9 @@ std::unique_ptr<CFX_GlyphBitmap> CPDF_Type3Cache::RenderGlyph(
                                       FXDIB_ResampleOptions(), nullptr);
       top = top_line;
       if (image_matrix.a < 0)
-        left = FXSYS_round(image_matrix.e + image_matrix.a);
+        left = FXSYS_roundf(image_matrix.e + image_matrix.a);
       else
-        left = FXSYS_round(image_matrix.e);
+        left = FXSYS_roundf(image_matrix.e);
     }
   }
   if (!pResBitmap)
@@ -160,7 +158,7 @@ std::unique_ptr<CFX_GlyphBitmap> CPDF_Type3Cache::RenderGlyph(
   if (!pResBitmap)
     return nullptr;
 
-  auto pGlyph = pdfium::MakeUnique<CFX_GlyphBitmap>(left, -top);
+  auto pGlyph = std::make_unique<CFX_GlyphBitmap>(left, -top);
   pGlyph->GetBitmap()->TakeOver(std::move(pResBitmap));
   return pGlyph;
 }

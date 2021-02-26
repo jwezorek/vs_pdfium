@@ -6,37 +6,39 @@
 
 #include <utility>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
+#include "core/fpdfapi/page/cpdf_docpagedata.h"
+#include "core/fpdfapi/page/cpdf_pagemodule.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_name.h"
+#include "core/fpdfapi/render/cpdf_docrenderdata.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 class CPDF_CIDFontTest : public testing::Test {
  protected:
-  void SetUp() override { CPDF_ModuleMgr::Get()->Init(); }
-
-  void TearDown() override { CPDF_ModuleMgr::Destroy(); }
+  void SetUp() override { CPDF_PageModule::Create(); }
+  void TearDown() override { CPDF_PageModule::Destroy(); }
 };
 
 TEST_F(CPDF_CIDFontTest, BUG_920636) {
-  CPDF_Document doc;
-  CPDF_Dictionary font_dict;
-  font_dict.SetNewFor<CPDF_Name>("Encoding", "Identity−H");
+  CPDF_Document doc(std::make_unique<CPDF_DocRenderData>(),
+                    std::make_unique<CPDF_DocPageData>());
+  auto font_dict = pdfium::MakeRetain<CPDF_Dictionary>();
+  font_dict->SetNewFor<CPDF_Name>("Encoding", "Identity−H");
 
   {
-    auto descendant_fonts = pdfium::MakeUnique<CPDF_Array>();
+    auto descendant_fonts = pdfium::MakeRetain<CPDF_Array>();
     {
-      auto descendant_font = pdfium::MakeUnique<CPDF_Dictionary>();
+      auto descendant_font = pdfium::MakeRetain<CPDF_Dictionary>();
       descendant_font->SetNewFor<CPDF_Name>("BaseFont", "CourierStd");
-      descendant_fonts->Add(std::move(descendant_font));
+      descendant_fonts->Append(std::move(descendant_font));
     }
-    font_dict.SetFor("DescendantFonts", std::move(descendant_fonts));
+    font_dict->SetFor("DescendantFonts", std::move(descendant_fonts));
   }
 
-  CPDF_CIDFont font(&doc, &font_dict);
-  ASSERT_TRUE(font.Load());
+  auto font = pdfium::MakeRetain<CPDF_CIDFont>(&doc, font_dict.Get());
+  ASSERT_TRUE(font->Load());
 
   // It would be nice if we can test more values here. However, the glyph
   // indices are sometimes machine dependent.
@@ -51,6 +53,6 @@ TEST_F(CPDF_CIDFontTest, BUG_920636) {
 
   for (const auto& test_case : kTestCases) {
     EXPECT_EQ(test_case.glyph,
-              font.GlyphFromCharCode(test_case.charcode, nullptr));
+              font->GlyphFromCharCode(test_case.charcode, nullptr));
   }
 }

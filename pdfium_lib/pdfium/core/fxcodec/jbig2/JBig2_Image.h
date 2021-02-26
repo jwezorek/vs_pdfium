@@ -10,7 +10,7 @@
 #include <memory>
 
 #include "core/fxcodec/jbig2/JBig2_Define.h"
-#include "core/fxcrt/fx_memory.h"
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "core/fxcrt/maybe_owned.h"
 
 struct FX_RECT;
@@ -27,7 +27,7 @@ class CJBig2_Image {
  public:
   CJBig2_Image(int32_t w, int32_t h);
   CJBig2_Image(int32_t w, int32_t h, int32_t stride, uint8_t* pBuf);
-  CJBig2_Image(const CJBig2_Image& im);
+  CJBig2_Image(const CJBig2_Image& other);
   ~CJBig2_Image();
 
   static bool IsValidImageSize(int32_t w, int32_t h);
@@ -39,7 +39,7 @@ class CJBig2_Image {
   uint8_t* data() const { return m_pData.Get(); }
 
   int GetPixel(int32_t x, int32_t y) const;
-  void SetPixel(int32_t x, int32_t y, int bVal);
+  void SetPixel(int32_t x, int32_t y, int v);
 
   uint8_t* GetLineUnsafe(int32_t y) const { return data() + y * m_nStride; }
   uint8_t* GetLine(int32_t y) const {

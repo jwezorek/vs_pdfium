@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <vector>
+
 #include "core/fxcrt/bytestring.h"
 #include "core/fxcrt/widestring.h"
 
@@ -22,5 +24,28 @@ WideString FX_UTF8Decode(ByteStringView bsStr);
 float StringToFloat(ByteStringView str);
 float StringToFloat(WideStringView wsStr);
 size_t FloatToString(float f, char* buf);
+
+double StringToDouble(ByteStringView str);
+double StringToDouble(WideStringView wsStr);
+size_t DoubleToString(double d, char* buf);
+
+namespace fxcrt {
+
+template <typename StrType>
+std::vector<StrType> Split(const StrType& that, typename StrType::CharType ch) {
+  std::vector<StrType> result;
+  StringViewTemplate<typename StrType::CharType> remaining(that.span());
+  while (1) {
+    Optional<size_t> index = remaining.Find(ch);
+    if (!index.has_value())
+      break;
+    result.emplace_back(remaining.First(index.value()));
+    remaining = remaining.Last(remaining.GetLength() - index.value() - 1);
+  }
+  result.emplace_back(remaining);
+  return result;
+}
+
+}  // namespace fxcrt
 
 #endif  // CORE_FXCRT_FX_STRING_H_

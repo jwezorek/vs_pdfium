@@ -5,7 +5,6 @@
 #include <memory>
 #include <string>
 
-#include "fpdfsdk/cpdfsdk_helpers.h"
 #include "public/cpp/fpdf_scopers.h"
 #include "public/fpdf_edit.h"
 #include "public/fpdf_ppo.h"
@@ -27,7 +26,7 @@ int FakeBlockWriter(FPDF_FILEWRITE* pThis,
 }  // namespace
 
 TEST_F(FPDFPPOEmbedderTest, NoViewerPreferences) {
-  EXPECT_TRUE(OpenDocument("hello_world.pdf"));
+  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
 
   FPDF_DOCUMENT output_doc = FPDF_CreateNewDocument();
   EXPECT_TRUE(output_doc);
@@ -36,7 +35,7 @@ TEST_F(FPDFPPOEmbedderTest, NoViewerPreferences) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, ViewerPreferences) {
-  EXPECT_TRUE(OpenDocument("viewer_ref.pdf"));
+  ASSERT_TRUE(OpenDocument("viewer_ref.pdf"));
 
   FPDF_DOCUMENT output_doc = FPDF_CreateNewDocument();
   EXPECT_TRUE(output_doc);
@@ -103,8 +102,13 @@ TEST_F(FPDFPPOEmbedderTest, BadNupParams) {
 TEST_F(FPDFPPOEmbedderTest, NupRenderImage) {
   ASSERT_TRUE(OpenDocument("rectangles_multi_pages.pdf"));
   const int kPageCount = 2;
-  constexpr const char* kExpectedMD5s[kPageCount] = {
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+  static constexpr const char* kExpectedMD5s[kPageCount] = {
+      "bf8fa88dc85a9897931273168e8e1a30", "4fa6a7507e9f3ef4f28719a7d656c3a5"};
+#else
+  static constexpr const char* kExpectedMD5s[kPageCount] = {
       "4d225b961da0f1bced7c83273e64c9b6", "fb18142190d770cfbc329d2b071aee4d"};
+#endif
   ScopedFPDFDocument output_doc_3up(
       FPDF_ImportNPagesToOne(document(), 792, 612, 3, 1));
   ASSERT_TRUE(output_doc_3up);
@@ -157,7 +161,7 @@ TEST_F(FPDFPPOEmbedderTest, BadCircularViewerPref) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, BadRanges) {
-  EXPECT_TRUE(OpenDocument("hello_world.pdf"));
+  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
 
   FPDF_PAGE page = LoadPage(0);
   EXPECT_TRUE(page);
@@ -180,7 +184,7 @@ TEST_F(FPDFPPOEmbedderTest, BadRanges) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, GoodRanges) {
-  EXPECT_TRUE(OpenDocument("viewer_ref.pdf"));
+  ASSERT_TRUE(OpenDocument("viewer_ref.pdf"));
 
   FPDF_PAGE page = LoadPage(0);
   EXPECT_TRUE(page);
@@ -202,7 +206,7 @@ TEST_F(FPDFPPOEmbedderTest, GoodRanges) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, BUG_664284) {
-  EXPECT_TRUE(OpenDocument("bug_664284.pdf"));
+  ASSERT_TRUE(OpenDocument("bug_664284.pdf"));
 
   FPDF_PAGE page = LoadPage(0);
   ASSERT_NE(nullptr, page);
@@ -216,9 +220,15 @@ TEST_F(FPDFPPOEmbedderTest, BUG_664284) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, BUG_750568) {
+#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+  const char* const kHashes[] = {
+      "eaa139e944eafb43d31e8742a0e158de", "226485e9d4fa6a67dfe0a88723f12060",
+      "c5601a3492ae5dcc5dd25140fc463bfe", "1f60055b54de4fac8a59c65e90da156e"};
+#else
   const char* const kHashes[] = {
       "64ad08132a1c5a166768298c8a578f57", "83b83e2f6bc80707d0a917c7634140b9",
       "913cd3723a451e4e46fbc2c05702d1ee", "81fb7cfd4860f855eb468f73dfeb6d60"};
+#endif
 
   ASSERT_TRUE(OpenDocument("bug_750568.pdf"));
   ASSERT_EQ(4, FPDF_GetPageCount(document()));
@@ -256,7 +266,7 @@ TEST_F(FPDFPPOEmbedderTest, BUG_750568) {
 }
 
 TEST_F(FPDFPPOEmbedderTest, ImportWithZeroLengthStream) {
-  EXPECT_TRUE(OpenDocument("zero_length_stream.pdf"));
+  ASSERT_TRUE(OpenDocument("zero_length_stream.pdf"));
   FPDF_PAGE page = LoadPage(0);
   ASSERT_TRUE(page);
 

@@ -7,11 +7,16 @@
 #ifndef CORE_FPDFDOC_CPDF_ACTION_H_
 #define CORE_FPDFDOC_CPDF_ACTION_H_
 
+#include <vector>
+
 #include "core/fpdfdoc/cpdf_dest.h"
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "third_party/base/optional.h"
 
 class CPDF_Dictionary;
 class CPDF_Document;
+class CPDF_Object;
 
 class CPDF_Action {
  public:
@@ -42,6 +47,7 @@ class CPDF_Action {
   ~CPDF_Action();
 
   const CPDF_Dictionary* GetDict() const { return m_pDict.Get(); }
+
   ActionType GetType() const;
   CPDF_Dest GetDest(CPDF_Document* pDoc) const;
   WideString GetFilePath() const;
@@ -49,12 +55,22 @@ class CPDF_Action {
   bool GetHideStatus() const;
   ByteString GetNamedAction() const;
   uint32_t GetFlags() const;
+
+  std::vector<const CPDF_Object*> GetAllFields() const;
+
+  // Differentiates between empty JS entry and no JS entry.
+  Optional<WideString> MaybeGetJavaScript() const;
+
+  // Returns empty string for empty JS entry and no JS entry.
   WideString GetJavaScript() const;
+
   size_t GetSubActionsCount() const;
   CPDF_Action GetSubAction(size_t iIndex) const;
 
  private:
-  UnownedPtr<const CPDF_Dictionary> const m_pDict;
+  const CPDF_Object* GetJavaScriptObject() const;
+
+  RetainPtr<const CPDF_Dictionary> const m_pDict;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_ACTION_H_

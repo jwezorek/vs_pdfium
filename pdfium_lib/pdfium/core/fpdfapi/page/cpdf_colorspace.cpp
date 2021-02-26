@@ -9,10 +9,10 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include "core/fpdfapi/cpdf_modulemgr.h"
 #include "core/fpdfapi/page/cpdf_devicecs.h"
 #include "core/fpdfapi/page/cpdf_docpagedata.h"
 #include "core/fpdfapi/page/cpdf_function.h"
@@ -28,11 +28,13 @@
 #include "core/fpdfapi/parser/cpdf_stream.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
 #include "core/fpdfapi/parser/cpdf_string.h"
-#include "core/fpdfdoc/cpdf_action.h"
-#include "core/fxcodec/codec/ccodec_iccmodule.h"
+#include "core/fpdfapi/parser/fpdf_parser_utility.h"
 #include "core/fxcodec/fx_codec.h"
-#include "core/fxcrt/fx_memory.h"
+#include "core/fxcodec/icc/iccmodule.h"
+#include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/maybe_owned.h"
+#include "third_party/base/check.h"
+#include "third_party/base/notreached.h"
 #include "third_party/base/stl_util.h"
 
 namespace {
@@ -107,14 +109,17 @@ bool GetWhitePoint(const CPDF_Dictionary* pDict, float* pPoints) {
 
 class CPDF_CalGray final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_CalGray(CPDF_Document* pDoc);
-  ~CPDF_CalGray() override {}
+  CONSTRUCT_VIA_MAKE_RETAIN;
+  ~CPDF_CalGray() override;
 
   // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   uint32_t v_Load(CPDF_Document* pDoc,
                   const CPDF_Array* pArray,
                   std::set<const CPDF_Object*>* pVisited) override;
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
   void TranslateImageLine(uint8_t* pDestBuf,
                           const uint8_t* pSrcBuf,
                           int pixels,
@@ -125,6 +130,8 @@ class CPDF_CalGray final : public CPDF_ColorSpace {
  private:
   static constexpr float kDefaultGamma = 1.0f;
 
+  explicit CPDF_CalGray(CPDF_Document* pDoc);
+
   float m_Gamma = kDefaultGamma;
   float m_WhitePoint[kBlackWhitePointCount];
   float m_BlackPoint[kBlackWhitePointCount];
@@ -132,58 +139,66 @@ class CPDF_CalGray final : public CPDF_ColorSpace {
 
 class CPDF_CalRGB final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_CalRGB(CPDF_Document* pDoc);
-  ~CPDF_CalRGB() override {}
+  CONSTRUCT_VIA_MAKE_RETAIN;
+  ~CPDF_CalRGB() override;
 
-  uint32_t v_Load(CPDF_Document* pDoc,
-                  const CPDF_Array* pArray,
-                  std::set<const CPDF_Object*>* pVisited) override;
-
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
-
+  // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   void TranslateImageLine(uint8_t* pDestBuf,
                           const uint8_t* pSrcBuf,
                           int pixels,
                           int image_width,
                           int image_height,
                           bool bTransMask) const override;
+  uint32_t v_Load(CPDF_Document* pDoc,
+                  const CPDF_Array* pArray,
+                  std::set<const CPDF_Object*>* pVisited) override;
 
  private:
   static constexpr size_t kGammaCount = 3;
   static constexpr size_t kMatrixCount = 9;
 
+  explicit CPDF_CalRGB(CPDF_Document* pDoc);
+
   float m_WhitePoint[kBlackWhitePointCount];
   float m_BlackPoint[kBlackWhitePointCount];
   float m_Gamma[kGammaCount];
   float m_Matrix[kMatrixCount];
-  bool m_bGamma = false;
-  bool m_bMatrix = false;
+  bool m_bHasGamma = false;
+  bool m_bHasMatrix = false;
 };
 
 class CPDF_LabCS final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_LabCS(CPDF_Document* pDoc);
-  ~CPDF_LabCS() override {}
+  CONSTRUCT_VIA_MAKE_RETAIN;
+  ~CPDF_LabCS() override;
 
-  uint32_t v_Load(CPDF_Document* pDoc,
-                  const CPDF_Array* pArray,
-                  std::set<const CPDF_Object*>* pVisited) override;
-
+  // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   void GetDefaultValue(int iComponent,
                        float* value,
                        float* min,
                        float* max) const override;
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
-
   void TranslateImageLine(uint8_t* pDestBuf,
                           const uint8_t* pSrcBuf,
                           int pixels,
                           int image_width,
                           int image_height,
                           bool bTransMask) const override;
+  uint32_t v_Load(CPDF_Document* pDoc,
+                  const CPDF_Array* pArray,
+                  std::set<const CPDF_Object*>* pVisited) override;
 
  private:
   static constexpr size_t kRangesCount = 4;
+
+  explicit CPDF_LabCS(CPDF_Document* pDoc);
 
   float m_WhitePoint[kBlackWhitePointCount];
   float m_BlackPoint[kBlackWhitePointCount];
@@ -192,14 +207,14 @@ class CPDF_LabCS final : public CPDF_ColorSpace {
 
 class CPDF_ICCBasedCS final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_ICCBasedCS(CPDF_Document* pDoc);
+  CONSTRUCT_VIA_MAKE_RETAIN;
   ~CPDF_ICCBasedCS() override;
 
   // CPDF_ColorSpace:
-  uint32_t v_Load(CPDF_Document* pDoc,
-                  const CPDF_Array* pArray,
-                  std::set<const CPDF_Object*>* pVisited) override;
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   void EnableStdConversion(bool bEnabled) override;
   void TranslateImageLine(uint8_t* pDestBuf,
                           const uint8_t* pSrcBuf,
@@ -208,40 +223,48 @@ class CPDF_ICCBasedCS final : public CPDF_ColorSpace {
                           int image_height,
                           bool bTransMask) const override;
   bool IsNormal() const override;
+  uint32_t v_Load(CPDF_Document* pDoc,
+                  const CPDF_Array* pArray,
+                  std::set<const CPDF_Object*>* pVisited) override;
 
  private:
+  explicit CPDF_ICCBasedCS(CPDF_Document* pDoc);
+
   // If no valid ICC profile or using sRGB, try looking for an alternate.
   bool FindAlternateProfile(CPDF_Document* pDoc,
                             const CPDF_Dictionary* pDict,
                             std::set<const CPDF_Object*>* pVisited,
                             uint32_t nExpectedComponents);
-  static CPDF_ColorSpace* GetStockAlternateProfile(uint32_t nComponents);
-  static bool IsValidComponents(int32_t nComps);
+  static RetainPtr<CPDF_ColorSpace> GetStockAlternateProfile(
+      uint32_t nComponents);
   static std::vector<float> GetRanges(const CPDF_Dictionary* pDict,
                                       uint32_t nComponents);
 
-  MaybeOwned<CPDF_ColorSpace> m_pAlterCS;
+  RetainPtr<CPDF_ColorSpace> m_pAlterCS;
   RetainPtr<CPDF_IccProfile> m_pProfile;
-  mutable std::vector<uint8_t> m_pCache;
+  mutable std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_pCache;
   std::vector<float> m_pRanges;
 };
 
 class CPDF_IndexedCS final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_IndexedCS(CPDF_Document* pDoc);
+  CONSTRUCT_VIA_MAKE_RETAIN;
   ~CPDF_IndexedCS() override;
 
+  // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
+  void EnableStdConversion(bool bEnabled) override;
   uint32_t v_Load(CPDF_Document* pDoc,
                   const CPDF_Array* pArray,
                   std::set<const CPDF_Object*>* pVisited) override;
 
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
-
-  void EnableStdConversion(bool bEnabled) override;
-
  private:
-  CPDF_ColorSpace* m_pBaseCS = nullptr;
-  UnownedPtr<const CPDF_CountedColorSpace> m_pCountedBaseCS;
+  explicit CPDF_IndexedCS(CPDF_Document* pDoc);
+
+  RetainPtr<CPDF_ColorSpace> m_pBaseCS;
   uint32_t m_nBaseComponents = 0;
   int m_MaxIndex = 0;
   ByteString m_Table;
@@ -250,44 +273,55 @@ class CPDF_IndexedCS final : public CPDF_ColorSpace {
 
 class CPDF_SeparationCS final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_SeparationCS(CPDF_Document* pDoc);
+  CONSTRUCT_VIA_MAKE_RETAIN;
   ~CPDF_SeparationCS() override;
 
   // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   void GetDefaultValue(int iComponent,
                        float* value,
                        float* min,
                        float* max) const override;
+  void EnableStdConversion(bool bEnabled) override;
   uint32_t v_Load(CPDF_Document* pDoc,
                   const CPDF_Array* pArray,
                   std::set<const CPDF_Object*>* pVisited) override;
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
-  void EnableStdConversion(bool bEnabled) override;
 
  private:
-  std::unique_ptr<CPDF_ColorSpace> m_pAltCS;
-  std::unique_ptr<const CPDF_Function> m_pFunc;
   enum { None, All, Colorant } m_Type;
+
+  explicit CPDF_SeparationCS(CPDF_Document* pDoc);
+
+  RetainPtr<CPDF_ColorSpace> m_pAltCS;
+  std::unique_ptr<const CPDF_Function> m_pFunc;
 };
 
 class CPDF_DeviceNCS final : public CPDF_ColorSpace {
  public:
-  explicit CPDF_DeviceNCS(CPDF_Document* pDoc);
+  CONSTRUCT_VIA_MAKE_RETAIN;
   ~CPDF_DeviceNCS() override;
 
   // CPDF_ColorSpace:
+  bool GetRGB(pdfium::span<const float> pBuf,
+              float* R,
+              float* G,
+              float* B) const override;
   void GetDefaultValue(int iComponent,
                        float* value,
                        float* min,
                        float* max) const override;
+  void EnableStdConversion(bool bEnabled) override;
   uint32_t v_Load(CPDF_Document* pDoc,
                   const CPDF_Array* pArray,
                   std::set<const CPDF_Object*>* pVisited) override;
-  bool GetRGB(const float* pBuf, float* R, float* G, float* B) const override;
-  void EnableStdConversion(bool bEnabled) override;
 
  private:
-  std::unique_ptr<CPDF_ColorSpace> m_pAltCS;
+  explicit CPDF_DeviceNCS(CPDF_Document* pDoc);
+
+  RetainPtr<CPDF_ColorSpace> m_pAltCS;
   std::unique_ptr<const CPDF_Function> m_pFunc;
 };
 
@@ -415,8 +449,22 @@ void XYZ_to_sRGB_WhitePoint(float X,
 
 }  // namespace
 
+PatternValue::PatternValue() {
+  std::fill(std::begin(m_Comps), std::end(m_Comps), 0.0f);
+}
+
+PatternValue::PatternValue(const PatternValue& that) = default;
+
+PatternValue::~PatternValue() = default;
+
+void PatternValue::SetComps(pdfium::span<const float> comps) {
+  CHECK(comps.size() <= m_Comps.size());
+  std::copy(std::begin(comps), std::end(comps), std::begin(m_Comps));
+}
+
 // static
-CPDF_ColorSpace* CPDF_ColorSpace::ColorspaceFromName(const ByteString& name) {
+RetainPtr<CPDF_ColorSpace> CPDF_ColorSpace::ColorspaceFromName(
+    const ByteString& name) {
   if (name == "DeviceRGB" || name == "RGB")
     return CPDF_ColorSpace::GetStockCS(PDFCS_DEVICERGB);
   if (name == "DeviceGray" || name == "G")
@@ -429,32 +477,32 @@ CPDF_ColorSpace* CPDF_ColorSpace::ColorspaceFromName(const ByteString& name) {
 }
 
 // static
-CPDF_ColorSpace* CPDF_ColorSpace::GetStockCS(int family) {
-  return CPDF_ModuleMgr::Get()->GetPageModule()->GetStockCS(family);
+RetainPtr<CPDF_ColorSpace> CPDF_ColorSpace::GetStockCS(int family) {
+  return CPDF_PageModule::GetInstance()->GetStockCS(family);
 }
 
 // static
-std::unique_ptr<CPDF_ColorSpace> CPDF_ColorSpace::Load(CPDF_Document* pDoc,
-                                                       CPDF_Object* pObj) {
+RetainPtr<CPDF_ColorSpace> CPDF_ColorSpace::Load(CPDF_Document* pDoc,
+                                                 CPDF_Object* pObj) {
   std::set<const CPDF_Object*> visited;
   return Load(pDoc, pObj, &visited);
 }
 
 // static
-std::unique_ptr<CPDF_ColorSpace> CPDF_ColorSpace::Load(
+RetainPtr<CPDF_ColorSpace> CPDF_ColorSpace::Load(
     CPDF_Document* pDoc,
     const CPDF_Object* pObj,
     std::set<const CPDF_Object*>* pVisited) {
   if (!pObj)
     return nullptr;
 
-  if (pdfium::ContainsKey(*pVisited, pObj))
+  if (pdfium::Contains(*pVisited, pObj))
     return nullptr;
 
   pdfium::ScopedSetInsertion<const CPDF_Object*> insertion(pVisited, pObj);
 
   if (pObj->IsName())
-    return pdfium::WrapUnique(ColorspaceFromName(pObj->GetString()));
+    return ColorspaceFromName(pObj->GetString());
 
   if (const CPDF_Stream* pStream = pObj->AsStream()) {
     const CPDF_Dictionary* pDict = pStream->GetDict();
@@ -463,12 +511,13 @@ std::unique_ptr<CPDF_ColorSpace> CPDF_ColorSpace::Load(
 
     CPDF_DictionaryLocker locker(pDict);
     for (const auto& it : locker) {
-      std::unique_ptr<CPDF_ColorSpace> pRet;
-      CPDF_Object* pValue = it.second.get();
-      if (ToName(pValue))
-        pRet.reset(ColorspaceFromName(pValue->GetString()));
-      if (pRet)
-        return pRet;
+      CPDF_Name* pValue = ToName(it.second.Get());
+      if (pValue) {
+        RetainPtr<CPDF_ColorSpace> pRet =
+            ColorspaceFromName(pValue->GetString());
+        if (pRet)
+          return pRet;
+      }
     }
     return nullptr;
   }
@@ -483,39 +532,39 @@ std::unique_ptr<CPDF_ColorSpace> CPDF_ColorSpace::Load(
 
   ByteString familyname = pFamilyObj->GetString();
   if (pArray->size() == 1)
-    return pdfium::WrapUnique(ColorspaceFromName(familyname));
+    return ColorspaceFromName(familyname);
 
-  std::unique_ptr<CPDF_ColorSpace> pCS;
+  RetainPtr<CPDF_ColorSpace> pCS;
   switch (familyname.GetID()) {
     case FXBSTR_ID('C', 'a', 'l', 'G'):
-      pCS.reset(new CPDF_CalGray(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_CalGray>(pDoc);
       break;
     case FXBSTR_ID('C', 'a', 'l', 'R'):
-      pCS.reset(new CPDF_CalRGB(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_CalRGB>(pDoc);
       break;
     case FXBSTR_ID('L', 'a', 'b', 0):
-      pCS.reset(new CPDF_LabCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_LabCS>(pDoc);
       break;
     case FXBSTR_ID('I', 'C', 'C', 'B'):
-      pCS.reset(new CPDF_ICCBasedCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_ICCBasedCS>(pDoc);
       break;
     case FXBSTR_ID('I', 'n', 'd', 'e'):
     case FXBSTR_ID('I', 0, 0, 0):
-      pCS.reset(new CPDF_IndexedCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_IndexedCS>(pDoc);
       break;
     case FXBSTR_ID('S', 'e', 'p', 'a'):
-      pCS.reset(new CPDF_SeparationCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_SeparationCS>(pDoc);
       break;
     case FXBSTR_ID('D', 'e', 'v', 'i'):
-      pCS.reset(new CPDF_DeviceNCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_DeviceNCS>(pDoc);
       break;
     case FXBSTR_ID('P', 'a', 't', 't'):
-      pCS.reset(new CPDF_PatternCS(pDoc));
+      pCS = pdfium::MakeRetain<CPDF_PatternCS>(pDoc);
       break;
     default:
       return nullptr;
   }
-  pCS->m_pArray = pArray;
+  pCS->m_pArray.Reset(pArray);
   pCS->m_nComponents = pCS->v_Load(pDoc, pArray, pVisited);
   if (pCS->m_nComponents == 0)
     return nullptr;
@@ -523,34 +572,35 @@ std::unique_ptr<CPDF_ColorSpace> CPDF_ColorSpace::Load(
   return pCS;
 }
 
-void CPDF_ColorSpace::Release() {
-  if (this == GetStockCS(PDFCS_DEVICERGB) ||
-      this == GetStockCS(PDFCS_DEVICEGRAY) ||
-      this == GetStockCS(PDFCS_DEVICECMYK) ||
-      this == GetStockCS(PDFCS_PATTERN)) {
-    return;
+// static
+uint32_t CPDF_ColorSpace::ComponentsForFamily(int family) {
+  switch (family) {
+    case PDFCS_DEVICEGRAY:
+      return 1;
+    case PDFCS_DEVICERGB:
+      return 3;
+    case PDFCS_DEVICECMYK:
+      return 4;
+    default:
+      NOTREACHED();
+      return 4;
   }
-  delete this;
 }
 
-size_t CPDF_ColorSpace::GetBufSize() const {
-  if (m_Family == PDFCS_PATTERN)
-    return sizeof(PatternValue);
-  return m_nComponents * sizeof(float);
+// static
+bool CPDF_ColorSpace::IsValidIccComponents(int components) {
+  return components == 1 || components == 3 || components == 4;
 }
 
-float* CPDF_ColorSpace::CreateBuf() const {
-  return reinterpret_cast<float*>(FX_Alloc(uint8_t, GetBufSize()));
-}
+std::vector<float> CPDF_ColorSpace::CreateBufAndSetDefaultColor() const {
+  DCHECK(m_Family != PDFCS_PATTERN);
 
-float* CPDF_ColorSpace::CreateBufAndSetDefaultColor() const {
-  ASSERT(m_Family != PDFCS_PATTERN);
-
-  float* buf = CreateBuf();
   float min;
   float max;
+  std::vector<float> buf(m_nComponents);
   for (uint32_t i = 0; i < m_nComponents; i++)
     GetDefaultValue(i, &buf[i], &min, &max);
+
   return buf;
 }
 
@@ -581,7 +631,7 @@ void CPDF_ColorSpace::TranslateImageLine(uint8_t* dest_buf,
   for (int i = 0; i < pixels; i++) {
     for (uint32_t j = 0; j < m_nComponents; j++)
       src[j] = static_cast<float>(*src_buf++) / divisor;
-    GetRGB(src.data(), &R, &G, &B);
+    GetRGB(src, &R, &G, &B);
     *dest_buf++ = static_cast<int32_t>(B * 255);
     *dest_buf++ = static_cast<int32_t>(G * 255);
     *dest_buf++ = static_cast<int32_t>(R * 255);
@@ -622,15 +672,17 @@ bool CPDF_ColorSpace::GetPatternRGB(const PatternValue& value,
 CPDF_ColorSpace::CPDF_ColorSpace(CPDF_Document* pDoc, int family)
     : m_pDocument(pDoc), m_Family(family) {}
 
-CPDF_ColorSpace::~CPDF_ColorSpace() {}
+CPDF_ColorSpace::~CPDF_ColorSpace() = default;
 
 void CPDF_ColorSpace::SetComponentsForStockCS(uint32_t nComponents) {
-  ASSERT(!m_pDocument);  // Stock colorspace is not associated with a document.
+  DCHECK(!m_pDocument);  // Stock colorspace is not associated with a document.
   m_nComponents = nComponents;
 }
 
 CPDF_CalGray::CPDF_CalGray(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_CALGRAY) {}
+
+CPDF_CalGray::~CPDF_CalGray() = default;
 
 uint32_t CPDF_CalGray::v_Load(CPDF_Document* pDoc,
                               const CPDF_Array* pArray,
@@ -650,13 +702,13 @@ uint32_t CPDF_CalGray::v_Load(CPDF_Document* pDoc,
   return 1;
 }
 
-bool CPDF_CalGray::GetRGB(const float* pBuf,
+bool CPDF_CalGray::GetRGB(pdfium::span<const float> pBuf,
                           float* R,
                           float* G,
                           float* B) const {
-  *R = *pBuf;
-  *G = *pBuf;
-  *B = *pBuf;
+  *R = pBuf[0];
+  *G = pBuf[0];
+  *B = pBuf[0];
   return true;
 }
 
@@ -676,6 +728,8 @@ void CPDF_CalGray::TranslateImageLine(uint8_t* pDestBuf,
 CPDF_CalRGB::CPDF_CalRGB(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_CALRGB) {}
 
+CPDF_CalRGB::~CPDF_CalRGB() = default;
+
 uint32_t CPDF_CalRGB::v_Load(CPDF_Document* pDoc,
                              const CPDF_Array* pArray,
                              std::set<const CPDF_Object*>* pVisited) {
@@ -690,28 +744,28 @@ uint32_t CPDF_CalRGB::v_Load(CPDF_Document* pDoc,
 
   const CPDF_Array* pParam = pDict->GetArrayFor("Gamma");
   if (pParam) {
-    m_bGamma = true;
-    for (size_t i = 0; i < FX_ArraySize(m_Gamma); ++i)
+    m_bHasGamma = true;
+    for (size_t i = 0; i < pdfium::size(m_Gamma); ++i)
       m_Gamma[i] = pParam->GetNumberAt(i);
   }
 
   pParam = pDict->GetArrayFor("Matrix");
   if (pParam) {
-    m_bMatrix = true;
-    for (size_t i = 0; i < FX_ArraySize(m_Matrix); ++i)
+    m_bHasMatrix = true;
+    for (size_t i = 0; i < pdfium::size(m_Matrix); ++i)
       m_Matrix[i] = pParam->GetNumberAt(i);
   }
   return 3;
 }
 
-bool CPDF_CalRGB::GetRGB(const float* pBuf,
+bool CPDF_CalRGB::GetRGB(pdfium::span<const float> pBuf,
                          float* R,
                          float* G,
                          float* B) const {
   float A_ = pBuf[0];
   float B_ = pBuf[1];
   float C_ = pBuf[2];
-  if (m_bGamma) {
+  if (m_bHasGamma) {
     A_ = FXSYS_pow(A_, m_Gamma[0]);
     B_ = FXSYS_pow(B_, m_Gamma[1]);
     C_ = FXSYS_pow(C_, m_Gamma[2]);
@@ -720,7 +774,7 @@ bool CPDF_CalRGB::GetRGB(const float* pBuf,
   float X;
   float Y;
   float Z;
-  if (m_bMatrix) {
+  if (m_bHasMatrix) {
     X = m_Matrix[0] * A_ + m_Matrix[3] * B_ + m_Matrix[6] * C_;
     Y = m_Matrix[1] * A_ + m_Matrix[4] * B_ + m_Matrix[7] * C_;
     Z = m_Matrix[2] * A_ + m_Matrix[5] * B_ + m_Matrix[8] * C_;
@@ -750,24 +804,26 @@ void CPDF_CalRGB::TranslateImageLine(uint8_t* pDestBuf,
       Cal[1] = static_cast<float>(pSrcBuf[1]) / 255;
       Cal[2] = static_cast<float>(pSrcBuf[0]) / 255;
       GetRGB(Cal, &R, &G, &B);
-      pDestBuf[0] = FXSYS_round(B * 255);
-      pDestBuf[1] = FXSYS_round(G * 255);
-      pDestBuf[2] = FXSYS_round(R * 255);
+      pDestBuf[0] = FXSYS_roundf(B * 255);
+      pDestBuf[1] = FXSYS_roundf(G * 255);
+      pDestBuf[2] = FXSYS_roundf(R * 255);
       pSrcBuf += 3;
       pDestBuf += 3;
     }
   }
-  ReverseRGB(pDestBuf, pSrcBuf, pixels);
+  fxcodec::ReverseRGB(pDestBuf, pSrcBuf, pixels);
 }
 
 CPDF_LabCS::CPDF_LabCS(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_LAB) {}
 
+CPDF_LabCS::~CPDF_LabCS() = default;
+
 void CPDF_LabCS::GetDefaultValue(int iComponent,
                                  float* value,
                                  float* min,
                                  float* max) const {
-  ASSERT(iComponent < 3);
+  DCHECK(iComponent < 3);
   if (iComponent == 0) {
     *min = 0.0f;
     *max = 100 * 1.0f;
@@ -795,14 +851,18 @@ uint32_t CPDF_LabCS::v_Load(CPDF_Document* pDoc,
   const CPDF_Array* pParam = pDict->GetArrayFor("Range");
   static constexpr float kDefaultRanges[kRangesCount] = {-100.0f, 100.0f,
                                                          -100.0f, 100.0f};
-  static_assert(FX_ArraySize(kDefaultRanges) == FX_ArraySize(m_Ranges),
-                "Range size mismatch");
-  for (size_t i = 0; i < FX_ArraySize(kDefaultRanges); ++i)
+  static_assert(
+      pdfium::size(kDefaultRanges) == std::extent<decltype(m_Ranges)>(),
+      "Range size mismatch");
+  for (size_t i = 0; i < pdfium::size(kDefaultRanges); ++i)
     m_Ranges[i] = pParam ? pParam->GetNumberAt(i) : kDefaultRanges[i];
   return 3;
 }
 
-bool CPDF_LabCS::GetRGB(const float* pBuf, float* R, float* G, float* B) const {
+bool CPDF_LabCS::GetRGB(pdfium::span<const float> pBuf,
+                        float* R,
+                        float* G,
+                        float* B) const {
   float Lstar = pBuf[0];
   float astar = pBuf[1];
   float bstar = pBuf[2];
@@ -858,15 +918,7 @@ void CPDF_LabCS::TranslateImageLine(uint8_t* pDestBuf,
 CPDF_ICCBasedCS::CPDF_ICCBasedCS(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_ICCBASED) {}
 
-CPDF_ICCBasedCS::~CPDF_ICCBasedCS() {
-  if (m_pProfile && m_pDocument) {
-    const CPDF_Stream* pStream = m_pProfile->GetStream();
-    m_pProfile.Reset();  // Give up our reference first.
-    auto* pPageData = m_pDocument->GetPageData();
-    if (pPageData)
-      pPageData->MaybePurgeIccProfile(pStream);
-  }
-}
+CPDF_ICCBasedCS::~CPDF_ICCBasedCS() = default;
 
 uint32_t CPDF_ICCBasedCS::v_Load(CPDF_Document* pDoc,
                                  const CPDF_Array* pArray,
@@ -880,11 +932,11 @@ uint32_t CPDF_ICCBasedCS::v_Load(CPDF_Document* pDoc,
   // with Acrobat and reject bad values.
   const CPDF_Dictionary* pDict = pStream->GetDict();
   int32_t nDictComponents = pDict ? pDict->GetIntegerFor("N") : 0;
-  if (!IsValidComponents(nDictComponents))
+  if (!IsValidIccComponents(nDictComponents))
     return 0;
 
   uint32_t nComponents = static_cast<uint32_t>(nDictComponents);
-  m_pProfile = pDoc->LoadIccProfile(pStream);
+  m_pProfile = CPDF_DocPageData::FromDocument(pDoc)->GetIccProfile(pStream);
   if (!m_pProfile)
     return 0;
 
@@ -902,7 +954,7 @@ uint32_t CPDF_ICCBasedCS::v_Load(CPDF_Document* pDoc,
       !FindAlternateProfile(pDoc, pDict, pVisited, nComponents)) {
     // If there is no alternate profile, use a stock profile as mentioned in
     // the PDF 1.7 spec in table 4.16 in the "Alternate" key description.
-    ASSERT(!m_pAlterCS);
+    DCHECK(!m_pAlterCS);
     m_pAlterCS = GetStockAlternateProfile(nComponents);
   }
 
@@ -910,11 +962,11 @@ uint32_t CPDF_ICCBasedCS::v_Load(CPDF_Document* pDoc,
   return nComponents;
 }
 
-bool CPDF_ICCBasedCS::GetRGB(const float* pBuf,
+bool CPDF_ICCBasedCS::GetRGB(pdfium::span<const float> pBuf,
                              float* R,
                              float* G,
                              float* B) const {
-  ASSERT(m_pProfile);
+  DCHECK(m_pProfile);
   if (m_pProfile->IsSRGB()) {
     *R = pBuf[0];
     *G = pBuf[1];
@@ -923,9 +975,8 @@ bool CPDF_ICCBasedCS::GetRGB(const float* pBuf,
   }
   if (m_pProfile->transform()) {
     float rgb[3];
-    CCodec_IccModule* pIccModule = CPDF_ModuleMgr::Get()->GetIccModule();
-    pIccModule->SetComponents(CountComponents());
-    pIccModule->Translate(m_pProfile->transform(), pBuf, rgb);
+    IccModule::Translate(m_pProfile->transform(), CountComponents(),
+                         pBuf.data(), rgb);
     *R = rgb[0];
     *G = rgb[1];
     *B = rgb[2];
@@ -954,7 +1005,7 @@ void CPDF_ICCBasedCS::TranslateImageLine(uint8_t* pDestBuf,
                                          int image_height,
                                          bool bTransMask) const {
   if (m_pProfile->IsSRGB()) {
-    ReverseRGB(pDestBuf, pSrcBuf, pixels);
+    fxcodec::ReverseRGB(pDestBuf, pSrcBuf, pixels);
     return;
   }
   if (!m_pProfile->transform()) {
@@ -967,7 +1018,7 @@ void CPDF_ICCBasedCS::TranslateImageLine(uint8_t* pDestBuf,
 
   // |nMaxColors| will not overflow since |nComponents| is limited in size.
   const uint32_t nComponents = CountComponents();
-  ASSERT(IsValidComponents(nComponents));
+  DCHECK(IsValidIccComponents(nComponents));
   int nMaxColors = 1;
   for (uint32_t i = 0; i < nComponents; i++)
     nMaxColors *= 52;
@@ -980,14 +1031,16 @@ void CPDF_ICCBasedCS::TranslateImageLine(uint8_t* pDestBuf,
       bTranslate = nPixelCount.ValueOrDie() < nMaxColors * 3 / 2;
   }
   if (bTranslate) {
-    CPDF_ModuleMgr::Get()->GetIccModule()->TranslateScanline(
-        m_pProfile->transform(), pDestBuf, pSrcBuf, pixels);
+    IccModule::TranslateScanline(m_pProfile->transform(), pDestBuf, pSrcBuf,
+                                 pixels);
     return;
   }
 
   if (m_pCache.empty()) {
-    m_pCache = pdfium::Vector2D<uint8_t>(nMaxColors, 3);
-    auto temp_src = pdfium::Vector2D<uint8_t>(nMaxColors, nComponents);
+    m_pCache =
+        pdfium::Vector2D<uint8_t, FxAllocAllocator<uint8_t>>(nMaxColors, 3);
+    auto temp_src = pdfium::Vector2D<uint8_t, FxAllocAllocator<uint8_t>>(
+        nMaxColors, nComponents);
     size_t src_index = 0;
     for (int i = 0; i < nMaxColors; i++) {
       uint32_t color = i;
@@ -998,8 +1051,8 @@ void CPDF_ICCBasedCS::TranslateImageLine(uint8_t* pDestBuf,
         order /= 52;
       }
     }
-    CPDF_ModuleMgr::Get()->GetIccModule()->TranslateScanline(
-        m_pProfile->transform(), m_pCache.data(), temp_src.data(), nMaxColors);
+    IccModule::TranslateScanline(m_pProfile->transform(), m_pCache.data(),
+                                 temp_src.data(), nMaxColors);
   }
   for (int i = 0; i < pixels; i++) {
     int index = 0;
@@ -1048,7 +1101,7 @@ bool CPDF_ICCBasedCS::FindAlternateProfile(
 }
 
 // static
-CPDF_ColorSpace* CPDF_ICCBasedCS::GetStockAlternateProfile(
+RetainPtr<CPDF_ColorSpace> CPDF_ICCBasedCS::GetStockAlternateProfile(
     uint32_t nComponents) {
   if (nComponents == 1)
     return GetStockCS(PDFCS_DEVICEGRAY);
@@ -1061,23 +1114,16 @@ CPDF_ColorSpace* CPDF_ICCBasedCS::GetStockAlternateProfile(
 }
 
 // static
-bool CPDF_ICCBasedCS::IsValidComponents(int32_t nComps) {
-  return nComps == 1 || nComps == 3 || nComps == 4;
-}
-
-// static
 std::vector<float> CPDF_ICCBasedCS::GetRanges(const CPDF_Dictionary* pDict,
                                               uint32_t nComponents) {
-  ASSERT(IsValidComponents(nComponents));
+  DCHECK(IsValidIccComponents(nComponents));
 
   std::vector<float> ranges;
-  ranges.reserve(nComponents * 2);
   const CPDF_Array* pRanges = pDict->GetArrayFor("Range");
   if (pRanges) {
-    for (uint32_t i = 0; i < nComponents * 2; i++) {
-      ranges.push_back(pRanges->GetNumberAt(i));
-    }
+    ranges = ReadArrayElementsToVector(pRanges, nComponents * 2);
   } else {
+    ranges.reserve(nComponents * 2);
     for (uint32_t i = 0; i < nComponents; i++) {
       ranges.push_back(0.0f);
       ranges.push_back(1.0f);
@@ -1089,15 +1135,7 @@ std::vector<float> CPDF_ICCBasedCS::GetRanges(const CPDF_Dictionary* pDict,
 CPDF_IndexedCS::CPDF_IndexedCS(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_INDEXED) {}
 
-CPDF_IndexedCS::~CPDF_IndexedCS() {
-  const CPDF_ColorSpace* pCS =
-      m_pCountedBaseCS ? m_pCountedBaseCS->get() : nullptr;
-  if (pCS && m_pDocument) {
-    auto* pPageData = m_pDocument->GetPageData();
-    if (pPageData)
-      pPageData->ReleaseColorSpace(pCS->GetArray());
-  }
-}
+CPDF_IndexedCS::~CPDF_IndexedCS() = default;
 
 uint32_t CPDF_IndexedCS::v_Load(CPDF_Document* pDoc,
                                 const CPDF_Array* pArray,
@@ -1109,7 +1147,7 @@ uint32_t CPDF_IndexedCS::v_Load(CPDF_Document* pDoc,
   if (pBaseObj == m_pArray)
     return 0;
 
-  CPDF_DocPageData* pDocPageData = pDoc->GetPageData();
+  auto* pDocPageData = CPDF_DocPageData::FromDocument(pDoc);
   m_pBaseCS = pDocPageData->GetColorSpaceGuarded(pBaseObj, nullptr, pVisited);
   if (!m_pBaseCS)
     return 0;
@@ -1120,7 +1158,6 @@ uint32_t CPDF_IndexedCS::v_Load(CPDF_Document* pDoc,
   if (family == PDFCS_INDEXED || family == PDFCS_PATTERN)
     return 0;
 
-  m_pCountedBaseCS = pDocPageData->FindColorSpacePtr(m_pBaseCS->GetArray());
   m_nBaseComponents = m_pBaseCS->CountComponents();
   m_pCompMinMax = pdfium::Vector2D<float>(m_nBaseComponents, 2);
   float defvalue;
@@ -1140,16 +1177,16 @@ uint32_t CPDF_IndexedCS::v_Load(CPDF_Document* pDoc,
   } else if (const CPDF_Stream* pStream = pTableObj->AsStream()) {
     auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream);
     pAcc->LoadAllDataFiltered();
-    m_Table = ByteStringView(pAcc->GetData(), pAcc->GetSize());
+    m_Table = ByteStringView(pAcc->GetSpan());
   }
   return 1;
 }
 
-bool CPDF_IndexedCS::GetRGB(const float* pBuf,
+bool CPDF_IndexedCS::GetRGB(pdfium::span<const float> pBuf,
                             float* R,
                             float* G,
                             float* B) const {
-  int32_t index = static_cast<int32_t>(*pBuf);
+  int32_t index = static_cast<int32_t>(pBuf[0]);
   if (index < 0 || index > m_MaxIndex)
     return false;
 
@@ -1171,8 +1208,8 @@ bool CPDF_IndexedCS::GetRGB(const float* pBuf,
         m_pCompMinMax[i * 2] +
         m_pCompMinMax[i * 2 + 1] * pTable[index * m_nBaseComponents + i] / 255;
   }
-  ASSERT(m_nBaseComponents == m_pBaseCS->CountComponents());
-  return m_pBaseCS->GetRGB(comps.data(), R, G, B);
+  DCHECK(m_nBaseComponents == m_pBaseCS->CountComponents());
+  return m_pBaseCS->GetRGB(comps, R, G, B);
 }
 
 void CPDF_IndexedCS::EnableStdConversion(bool bEnabled) {
@@ -1184,7 +1221,7 @@ void CPDF_IndexedCS::EnableStdConversion(bool bEnabled) {
 CPDF_SeparationCS::CPDF_SeparationCS(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_SEPARATION) {}
 
-CPDF_SeparationCS::~CPDF_SeparationCS() {}
+CPDF_SeparationCS::~CPDF_SeparationCS() = default;
 
 void CPDF_SeparationCS::GetDefaultValue(int iComponent,
                                         float* value,
@@ -1225,7 +1262,7 @@ uint32_t CPDF_SeparationCS::v_Load(CPDF_Document* pDoc,
   return 1;
 }
 
-bool CPDF_SeparationCS::GetRGB(const float* pBuf,
+bool CPDF_SeparationCS::GetRGB(pdfium::span<const float> pBuf,
                                float* R,
                                float* G,
                                float* B) const {
@@ -1239,18 +1276,19 @@ bool CPDF_SeparationCS::GetRGB(const float* pBuf,
     int nComps = m_pAltCS->CountComponents();
     std::vector<float> results(nComps);
     for (int i = 0; i < nComps; i++)
-      results[i] = *pBuf;
-    return m_pAltCS->GetRGB(results.data(), R, G, B);
+      results[i] = pBuf[0];
+    return m_pAltCS->GetRGB(results, R, G, B);
   }
 
   // Using at least 16 elements due to the call m_pAltCS->GetRGB() below.
   std::vector<float> results(std::max(m_pFunc->CountOutputs(), 16u));
   int nresults = 0;
-  if (!m_pFunc->Call(pBuf, 1, results.data(), &nresults) || nresults == 0)
+  if (!m_pFunc->Call(pBuf.data(), 1, results.data(), &nresults) ||
+      nresults == 0)
     return false;
 
   if (m_pAltCS)
-    return m_pAltCS->GetRGB(results.data(), R, G, B);
+    return m_pAltCS->GetRGB(results, R, G, B);
 
   R = 0;
   G = 0;
@@ -1267,7 +1305,7 @@ void CPDF_SeparationCS::EnableStdConversion(bool bEnabled) {
 CPDF_DeviceNCS::CPDF_DeviceNCS(CPDF_Document* pDoc)
     : CPDF_ColorSpace(pDoc, PDFCS_DEVICEN) {}
 
-CPDF_DeviceNCS::~CPDF_DeviceNCS() {}
+CPDF_DeviceNCS::~CPDF_DeviceNCS() = default;
 
 void CPDF_DeviceNCS::GetDefaultValue(int iComponent,
                                      float* value,
@@ -1303,7 +1341,7 @@ uint32_t CPDF_DeviceNCS::v_Load(CPDF_Document* pDoc,
   return pObj->size();
 }
 
-bool CPDF_DeviceNCS::GetRGB(const float* pBuf,
+bool CPDF_DeviceNCS::GetRGB(pdfium::span<const float> pBuf,
                             float* R,
                             float* G,
                             float* B) const {
@@ -1313,12 +1351,13 @@ bool CPDF_DeviceNCS::GetRGB(const float* pBuf,
   // Using at least 16 elements due to the call m_pAltCS->GetRGB() below.
   std::vector<float> results(std::max(m_pFunc->CountOutputs(), 16u));
   int nresults = 0;
-  if (!m_pFunc->Call(pBuf, CountComponents(), results.data(), &nresults) ||
+  if (!m_pFunc->Call(pBuf.data(), CountComponents(), results.data(),
+                     &nresults) ||
       nresults == 0) {
     return false;
   }
 
-  return m_pAltCS->GetRGB(results.data(), R, G, B);
+  return m_pAltCS->GetRGB(results, R, G, B);
 }
 
 void CPDF_DeviceNCS::EnableStdConversion(bool bEnabled) {

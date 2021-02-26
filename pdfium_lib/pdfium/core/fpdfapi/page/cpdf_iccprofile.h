@@ -9,23 +9,25 @@
 
 #include <memory>
 
+#include "core/fxcrt/observed_ptr.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "core/fxcrt/unowned_ptr.h"
 #include "third_party/base/span.h"
 
-class CLcmsCmm;
 class CPDF_Stream;
 
-class CPDF_IccProfile final : public Retainable {
+namespace fxcodec {
+class CLcmsCmm;
+}  // namespace fxcodec
+
+class CPDF_IccProfile final : public Retainable, public Observable {
  public:
-  template <typename T, typename... Args>
-  friend RetainPtr<T> pdfium::MakeRetain(Args&&... args);
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   const CPDF_Stream* GetStream() const { return m_pStream.Get(); }
   bool IsValid() const { return IsSRGB() || IsSupported(); }
   bool IsSRGB() const { return m_bsRGB; }
   bool IsSupported() const { return !!m_Transform; }
-  CLcmsCmm* transform() { return m_Transform.get(); }
+  fxcodec::CLcmsCmm* transform() { return m_Transform.get(); }
   uint32_t GetComponents() const { return m_nSrcComponents; }
 
  private:
@@ -33,9 +35,9 @@ class CPDF_IccProfile final : public Retainable {
   ~CPDF_IccProfile() override;
 
   const bool m_bsRGB;
-  UnownedPtr<const CPDF_Stream> const m_pStream;
-  std::unique_ptr<CLcmsCmm> m_Transform;
   uint32_t m_nSrcComponents = 0;
+  RetainPtr<const CPDF_Stream> const m_pStream;
+  std::unique_ptr<fxcodec::CLcmsCmm> m_Transform;
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_ICCPROFILE_H_

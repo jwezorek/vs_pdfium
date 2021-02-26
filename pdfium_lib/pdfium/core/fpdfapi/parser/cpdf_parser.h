@@ -53,7 +53,7 @@ class CPDF_Parser {
   // are non-consecutive.
   static constexpr uint32_t kMaxObjectNumber = 4 * 1024 * 1024;
 
-  static const size_t kInvalidPos = std::numeric_limits<size_t>::max();
+  static constexpr size_t kInvalidPos = std::numeric_limits<size_t>::max();
 
   explicit CPDF_Parser(ParsedObjectsHolder* holder);
   CPDF_Parser();
@@ -67,11 +67,16 @@ class CPDF_Parser {
   void SetPassword(const char* password) { m_Password = password; }
   ByteString GetPassword() const { return m_Password; }
 
+  // Take the GetPassword() value and encode it, if necessary, based on the
+  // password encoding conversion.
+  ByteString GetEncodedPassword() const;
+
   const CPDF_Dictionary* GetTrailer() const;
+  CPDF_Dictionary* GetMutableTrailerForTesting();
 
   // Returns a new trailer which combines the last read trailer with the /Root
   // and /Info from previous ones.
-  std::unique_ptr<CPDF_Dictionary> GetCombinedTrailer() const;
+  RetainPtr<CPDF_Dictionary> GetCombinedTrailer() const;
 
   FX_FILESIZE GetLastXRefOffset() const { return m_LastXRefOffset; }
 
@@ -83,24 +88,22 @@ class CPDF_Parser {
 
   const CPDF_Dictionary* GetEncryptDict() const;
 
-  std::unique_ptr<CPDF_Object> ParseIndirectObject(uint32_t objnum);
+  RetainPtr<CPDF_Object> ParseIndirectObject(uint32_t objnum);
 
   uint32_t GetLastObjNum() const;
   bool IsValidObjectNumber(uint32_t objnum) const;
   FX_FILESIZE GetObjectPositionOrZero(uint32_t objnum) const;
-  uint16_t GetObjectGenNum(uint32_t objnum) const;
   bool IsObjectFreeOrNull(uint32_t objnum) const;
-  CPDF_SecurityHandler* GetSecurityHandler() const {
-    return m_pSecurityHandler.get();
+  const RetainPtr<CPDF_SecurityHandler>& GetSecurityHandler() const {
+    return m_pSecurityHandler;
   }
   bool IsObjectFree(uint32_t objnum) const;
 
   int GetFileVersion() const { return m_FileVersion; }
   bool IsXRefStream() const { return m_bXRefStream; }
 
-  std::unique_ptr<CPDF_Object> ParseIndirectObjectAt(
-      FX_FILESIZE pos,
-      uint32_t objnum);
+  RetainPtr<CPDF_Object> ParseIndirectObjectAt(FX_FILESIZE pos,
+                                               uint32_t objnum);
 
   uint32_t GetFirstPageNo() const;
   const CPDF_LinearizedHeader* GetLinearizedHeader() const {
@@ -115,7 +118,8 @@ class CPDF_Parser {
 
   CPDF_SyntaxParser* GetSyntax() const { return m_pSyntax.get(); }
 
-  void SetLinearizedHeader(std::unique_ptr<CPDF_LinearizedHeader> pLinearized);
+  void SetLinearizedHeaderForTesting(
+      std::unique_ptr<CPDF_LinearizedHeader> pLinearized);
 
  protected:
   using ObjectType = CPDF_CrossRefTable::ObjectType;
@@ -140,14 +144,14 @@ class CPDF_Parser {
 
   Error StartParseInternal();
   FX_FILESIZE ParseStartXRef();
-  bool LoadAllCrossRefV4(FX_FILESIZE pos);
-  bool LoadAllCrossRefV5(FX_FILESIZE pos);
+  bool LoadAllCrossRefV4(FX_FILESIZE xref_offset);
+  bool LoadAllCrossRefV5(FX_FILESIZE xref_offset);
   bool LoadCrossRefV5(FX_FILESIZE* pos, bool bMainXRef);
-  std::unique_ptr<CPDF_Dictionary> LoadTrailerV4();
+  RetainPtr<CPDF_Dictionary> LoadTrailerV4();
   Error SetEncryptHandler();
   void ReleaseEncryptHandler();
-  bool LoadLinearizedAllCrossRefV4(FX_FILESIZE pos);
-  bool LoadLinearizedAllCrossRefV5(FX_FILESIZE pos);
+  bool LoadLinearizedAllCrossRefV4(FX_FILESIZE main_xref_offset);
+  bool LoadLinearizedAllCrossRefV5(FX_FILESIZE main_xref_offset);
   Error LoadLinearizedMainXRefTable();
   const CPDF_ObjectStream* GetObjectStream(uint32_t object_number);
   std::unique_ptr<CPDF_LinearizedHeader> ParseLinearizedHeader();
@@ -183,7 +187,7 @@ class CPDF_Parser {
   // ownership of the ID array data.
   std::unique_ptr<CPDF_CrossRefTable> m_CrossRefTable;
   FX_FILESIZE m_LastXRefOffset;
-  std::unique_ptr<CPDF_SecurityHandler> m_pSecurityHandler;
+  RetainPtr<CPDF_SecurityHandler> m_pSecurityHandler;
   ByteString m_Password;
   std::unique_ptr<CPDF_LinearizedHeader> m_pLinearized;
 

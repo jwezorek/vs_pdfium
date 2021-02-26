@@ -64,13 +64,13 @@ FPDFDoc_DeleteAttachment(FPDF_DOCUMENT document, int index);
 // and the returned length is 0.
 //
 //   attachment - handle to an attachment.
-//   buffer     - buffer for holding the file name, encoded in UTF16-LE.
-//   buflen     - length of the buffer.
+//   buffer     - buffer for holding the file name, encoded in UTF-16LE.
+//   buflen     - length of the buffer in bytes.
 //
-// Returns the length of the file name.
+// Returns the length of the file name in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFAttachment_GetName(FPDF_ATTACHMENT attachment,
-                       void* buffer,
+                       FPDF_WCHAR* buffer,
                        unsigned long buflen);
 
 // Experimental API.
@@ -101,7 +101,7 @@ FPDFAttachment_GetValueType(FPDF_ATTACHMENT attachment, FPDF_BYTESTRING key);
 //
 //   attachment - handle to an attachment.
 //   key        - the key to the dictionary entry, encoded in UTF-8.
-//   value      - the string value to be set, encoded in UTF16-LE.
+//   value      - the string value to be set, encoded in UTF-16LE.
 //
 // Returns true if successful.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
@@ -121,14 +121,14 @@ FPDFAttachment_SetStringValue(FPDF_ATTACHMENT attachment,
 //
 //   attachment - handle to an attachment.
 //   key        - the key to the requested string value, encoded in UTF-8.
-//   buffer     - buffer for holding the string value encoded in UTF16-LE.
-//   buflen     - length of the buffer.
+//   buffer     - buffer for holding the string value encoded in UTF-16LE.
+//   buflen     - length of the buffer in bytes.
 //
-// Returns the length of the dictionary value string.
+// Returns the length of the dictionary value string in bytes.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFAttachment_GetStringValue(FPDF_ATTACHMENT attachment,
                               FPDF_BYTESTRING key,
-                              void* buffer,
+                              FPDF_WCHAR* buffer,
                               unsigned long buflen);
 
 // Experimental API.
@@ -138,30 +138,39 @@ FPDFAttachment_GetStringValue(FPDF_ATTACHMENT attachment,
 // INT_MAX is supported.
 //
 //   attachment - handle to an attachment.
-//   contents   - buffer holding the file data to be written in raw bytes.
-//   len        - length of file data.
+//   contents   - buffer holding the file data to write to |attachment|.
+//   len        - length of file data in bytes.
 //
 // Returns true if successful.
 FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFAttachment_SetFile(FPDF_ATTACHMENT attachment,
                        FPDF_DOCUMENT document,
                        const void* contents,
-                       const unsigned long len);
+                       unsigned long len);
 
 // Experimental API.
-// Get the file data of |attachment|. |buffer| is only modified if |buflen| is
-// longer than the length of the file. On errors, |buffer| is unmodified and the
-// returned length is 0.
+// Get the file data of |attachment|.
+// When the attachment file data is readable, true is returned, and |out_buflen|
+// is updated to indicate the file data size. |buffer| is only modified if
+// |buflen| is non-null and long enough to contain the entire file data. Callers
+// must check both the return value and the input |buflen| is no less than the
+// returned |out_buflen| before using the data.
+//
+// Otherwise, when the attachment file data is unreadable or when |out_buflen|
+// is null, false is returned and |buffer| and |out_buflen| remain unmodified.
 //
 //   attachment - handle to an attachment.
-//   buffer     - buffer for holding the file data in raw bytes.
-//   buflen     - length of the buffer.
+//   buffer     - buffer for holding the file data from |attachment|.
+//   buflen     - length of the buffer in bytes.
+//   out_buflen - pointer to the variable that will receive the minimum buffer
+//                size to contain the file data of |attachment|.
 //
-// Returns the length of the file.
-FPDF_EXPORT unsigned long FPDF_CALLCONV
+// Returns true on success, false otherwise.
+FPDF_EXPORT FPDF_BOOL FPDF_CALLCONV
 FPDFAttachment_GetFile(FPDF_ATTACHMENT attachment,
                        void* buffer,
-                       unsigned long buflen);
+                       unsigned long buflen,
+                       unsigned long* out_buflen);
 
 #ifdef __cplusplus
 }  // extern "C"

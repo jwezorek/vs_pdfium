@@ -16,7 +16,6 @@
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxge/cfx_color.h"
 #include "fpdfsdk/cpdfsdk_baannot.h"
-#include "fpdfsdk/cpdfsdk_fieldaction.h"
 #include "third_party/base/optional.h"
 
 class CFX_RenderDevice;
@@ -28,35 +27,33 @@ class CPDF_RenderOptions;
 class CPDF_Stream;
 class CPDFSDK_InteractiveForm;
 class CPDFSDK_PageView;
+struct CPDFSDK_FieldAction;
 
 #ifdef PDF_ENABLE_XFA
 class CXFA_FFWidget;
 class CXFA_FFWidgetHandler;
+
+enum PDFSDK_XFAAActionType {
+  PDFSDK_XFA_Click = 0,
+  PDFSDK_XFA_Full,
+  PDFSDK_XFA_PreOpen,
+  PDFSDK_XFA_PostOpen
+};
 #endif  // PDF_ENABLE_XFA
 
 class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
  public:
-#ifdef PDF_ENABLE_XFA
-  CXFA_FFWidget* GetMixXFAWidget() const;
-  CXFA_FFWidgetHandler* GetXFAWidgetHandler() const;
-
-  bool HasXFAAAction(PDFSDK_XFAAActionType eXFAAAT) const;
-  bool OnXFAAAction(PDFSDK_XFAAActionType eXFAAAT,
-                    CPDFSDK_FieldAction* data,
-                    CPDFSDK_PageView* pPageView);
-
-  void Synchronize(bool bSynchronizeElse);
-#endif  // PDF_ENABLE_XFA
-
   CPDFSDK_Widget(CPDF_Annot* pAnnot,
                  CPDFSDK_PageView* pPageView,
                  CPDFSDK_InteractiveForm* pInteractiveForm);
   ~CPDFSDK_Widget() override;
 
+  // CPDFSDK_BAAnnot:
   bool IsSignatureWidget() const override;
   CPDF_Action GetAAction(CPDF_AAction::AActionType eAAT) override;
   bool IsAppearanceValid() override;
 
+  // CPDFSDK_Annot:
   int GetLayoutOrder() const override;
 
   FormFieldType GetFieldType() const;
@@ -71,6 +68,7 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   int GetSelectedIndex(int nIndex) const;
   WideString GetValue() const;
   WideString GetDefaultValue() const;
+  WideString GetExportValue() const;
   WideString GetOptionLabel(int nIndex) const;
   int CountOptions() const;
   bool IsOptionSelected(int nIndex) const;
@@ -78,7 +76,6 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   bool IsChecked() const;
   int GetAlignment() const;
   int GetMaxLen() const;
-  WideString GetAlternateName() const;
 
   void SetCheck(bool bChecked, NotificationOption notify);
   void SetValue(const WideString& sValue, NotificationOption notify);
@@ -87,10 +84,18 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   void SetTopVisibleIndex(int index);
 
 #ifdef PDF_ENABLE_XFA
-  void ResetAppearance(bool bValueChanged);
+  CXFA_FFWidget* GetMixXFAWidget() const;
+  bool HasXFAAAction(PDFSDK_XFAAActionType eXFAAAT) const;
+  bool OnXFAAAction(PDFSDK_XFAAActionType eXFAAAT,
+                    CPDFSDK_FieldAction* data,
+                    CPDFSDK_PageView* pPageView);
+  void Synchronize(bool bSynchronizeElse);
+  // TODO(thestig): Figure out if the parameter should be used or removed.
+  void ResetXFAAppearance(bool bValueChanged);
 #endif  // PDF_ENABLE_XFA
+
   void ResetAppearance(Optional<WideString> sValue, bool bValueChanged);
-  void ResetFieldAppearance(bool bValueChanged);
+  void ResetFieldAppearance();
   void UpdateField();
   Optional<WideString> OnFormat();
 
@@ -128,6 +133,7 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
 
  private:
 #ifdef PDF_ENABLE_XFA
+  CXFA_FFWidgetHandler* GetXFAWidgetHandler() const;
   CXFA_FFWidget* GetGroupMixXFAWidget() const;
   WideString GetName() const;
 #endif  // PDF_ENABLE_XFA
@@ -136,10 +142,6 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   bool m_bAppModified = false;
   uint32_t m_nAppearanceAge = 0;
   uint32_t m_nValueAge = 0;
-
-#ifdef PDF_ENABLE_XFA
-  mutable UnownedPtr<CXFA_FFWidgetHandler> m_pWidgetHandler;
-#endif  // PDF_ENABLE_XFA
 };
 
 inline CPDFSDK_Widget* ToCPDFSDKWidget(CPDFSDK_Annot* pAnnot) {
