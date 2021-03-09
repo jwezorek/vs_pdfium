@@ -1,5 +1,5 @@
 # pdfium_lib
-Google's pdfium codebase set up, by hand, as a vanilla Visual Studio solution that compiles to a static library on Windows under Visual Studio 2017.
+Google's pdfium codebase set up, by hand, as a vanilla Visual Studio solution that compiles to a static library on Windows under Visual Studio 2019.
 
 Notes:
 * ~~I pulled this code on 4/25/2019.~~ It is whatever version of pdfium that implies. **updated: currently using Pdfium code pulled on 2/25/2021.**
