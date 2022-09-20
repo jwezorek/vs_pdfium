@@ -62,7 +62,7 @@ U_NAMESPACE_END
     // Suppress the warning that the explicit instantiation after explicit specialization has no effect.
     #pragma clang diagnostic ignored "-Winstantiation-after-specialization"
   #endif
-template <> struct U_COMMON_API std::atomic<int32_t>;
+//template <> struct U_COMMON_API std::atomic<int32_t>;
 #endif
 
 U_NAMESPACE_BEGIN
