@@ -1063,9 +1063,6 @@
     <ClCompile Include="pdfium\core\fxge\text_glyph_pos.cpp">
       <Filter>pdfium\core\fxge</Filter>
     </ClCompile>
-    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftbase.c">
-      <Filter>pdfium\third_party\freetype</Filter>
-    </ClCompile>
     <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftbitmap.c">
       <Filter>pdfium\third_party\freetype</Filter>
     </ClCompile>
@@ -2761,6 +2758,294 @@
     <ClCompile Include="pdfium\core\fxcrt\widetext_buffer.cpp">
       <Filter>pdfium\core\fxcrt</Filter>
     </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\calculate_pitch.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_defaultrenderdevice.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\cfx_path.cpp">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\annotation_common.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\appearance.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\font_encodings.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\form_fields.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\page_object.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\stream_dict_common.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\constants\transparency.cpp">
+      <Filter>pdfium\constants</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\icc\icc_transform.cpp">
+      <Filter>pdfium\core\fxcodec\icc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_basedcs.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_imageloader.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_indexedcs.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\page\cpdf_pageimagecache.cpp">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcodec\data_and_bytes_consumed.cpp">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\win32\cfx_psfonttracker.cpp">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\parser\cpdf_seekablemultistream.cpp">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\parser\cpdf_test_document.cpp">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfapi\parser\object_tree_traversal_util.cpp">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_bafontmap.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_generateap.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpvt_section.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fpdfdoc\cpvt_variabletext.cpp">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\debug\alias.cc">
+      <Filter>pdfium\core\fxcrt\debug</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxcrt\win\win_util.cc">
+      <Filter>pdfium\core\fxcrt\win</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\core\fxge\dib\blend.cpp">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_fieldaction.cpp">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_formfield.cpp">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_perwindowdata.cpp">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftadvanc.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftbdf.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftcalc.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftcid.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftcolor.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftdbgmem.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftfntfmt.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftfstype.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftgasp.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftgloadr.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftgxval.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\fthash.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftlcdfil.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftmac.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftobjs.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftotval.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftoutln.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftpatent.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftpfr.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftpsprop.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftrfork.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftsnames.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftstream.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftstroke.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftsynth.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\fttrigon.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\fttype1.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftutil.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftwinfnt.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\freetype\src\src\base\md5.c">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\bio.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\cio.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\dwt.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\event.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\function_list.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\ht_dec.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\image.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\invert.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\j2k.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\jp2.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\mct.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\mqc.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\openjpeg.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\opj_clock.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\opj_malloc.cc">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\pi.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\sparse_array.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\t1.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\t1_generate_luts.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\t2.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\tcd.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\tgt.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\libopenjpeg\thread.c">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_sbbutton.cpp">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\emojiprops.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\localebuilder.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\localematcher.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\localeprioritylist.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\locdistance.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\loclikelysubtags.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\lsr.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\lstmbe.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\mlbe.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\restrace.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\ulocale.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
+    <ClCompile Include="pdfium\third_party\icu\source\common\ulocbuilder.cpp">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="pdfium">
@@ -2921,6 +3206,15 @@
     </Filter>
     <Filter Include="pdfium\core\fxcodec\jpx">
       <UniqueIdentifier>{1425571d-bd0b-4e0f-b5b2-baf0ee8c7373}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcrt\debug">
+      <UniqueIdentifier>{cd4fb369-f025-4f14-a9c7-f98da2134832}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\core\fxcrt\win">
+      <UniqueIdentifier>{7f9e804b-79e3-401a-97c9-bb9ae22ced8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pdfium\third_party\libopenjpeg">
+      <UniqueIdentifier>{9191d1d1-0c43-466b-8292-0cd6acdfac8f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -5900,15 +6194,257 @@
     <ClInclude Include="pdfium\core\fxcrt\zip.h">
       <Filter>pdfium\core\fxcrt</Filter>
     </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\calculate_pitch.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\cfx_path.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\fx_fontencoding.h">
+      <Filter>pdfium\core\fxge</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\constants\access_permissions.h">
+      <Filter>pdfium\constants</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\constants\appearance.h">
+      <Filter>pdfium\constants</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\constants\ascii.h">
+      <Filter>pdfium\constants</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\constants\font_encodings.h">
+      <Filter>pdfium\constants</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\icc\icc_transform.h">
+      <Filter>pdfium\core\fxcodec\icc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_basedcs.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_imageloader.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_indexedcs.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\page\cpdf_pageimagecache.h">
+      <Filter>pdfium\core\fpdfapi\page</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcodec\data_and_bytes_consumed.h">
+      <Filter>pdfium\core\fxcodec</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\win32\cfx_psfonttracker.h">
+      <Filter>pdfium\core\fxge\win32</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\parser\cpdf_seekablemultistream.h">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\parser\cpdf_test_document.h">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfapi\parser\object_tree_traversal_util.h">
+      <Filter>pdfium\core\fpdfapi\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_bafontmap.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_generateap.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpvt_section.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fpdfdoc\cpvt_variabletext.h">
+      <Filter>pdfium\core\fpdfdoc</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\debug\alias.h">
+      <Filter>pdfium\core\fxcrt\debug</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\win\scoped_select_object.h">
+      <Filter>pdfium\core\fxcrt\win</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxcrt\win\win_util.h">
+      <Filter>pdfium\core\fxcrt\win</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\core\fxge\dib\blend.h">
+      <Filter>pdfium\core\fxge\dib</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_fieldaction.h">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_formfield.h">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_perwindowdata.h">
+      <Filter>pdfium\fpdfsdk\formfiller</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\freetype\src\src\base\md5.h">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\bio.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\cio.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\dwt.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\event.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\function_list.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\image.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\invert.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\j2k.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\jp2.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\mct.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\mqc.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\mqc_inl.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\openjpeg.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_clock.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_codec.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_common.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_config.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_config_private.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_includes.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_intmath.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_inttypes.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_malloc.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\opj_stdint.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\pi.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\sparse_array.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\t1.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\t1_ht_luts.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\t1_luts.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\t2.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\tcd.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\tgt.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\thread.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\libopenjpeg\tls_keys.h">
+      <Filter>pdfium\third_party\libopenjpeg</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_sbbutton.h">
+      <Filter>pdfium\fpdfsdk\pwl</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\capi_helper.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\charstrmap.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\emojiprops.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\localefallback_data.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\localeprioritylist.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\locdistance.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\loclikelysubtags.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\lsr.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\lstmbe.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\mlbe.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\restrace.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\ulayout_props.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
+    <ClInclude Include="pdfium\third_party\icu\source\common\uniquecharstr.h">
+      <Filter>pdfium\third_party\icu</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="pdfium\core\fxcrt\fx_ucddata.inc">
       <Filter>pdfium\core\fxcrt</Filter>
+    </None>
+    <None Include="pdfium\third_party\freetype\src\src\base\Jamfile">
+      <Filter>pdfium\third_party\freetype</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="pdfium\third_party\icu\source\common\common.rc">
       <Filter>pdfium\third_party\icu</Filter>
     </ResourceCompile>
+    <ResourceCompile Include="pdfium\third_party\freetype\src\src\base\ftver.rc">
+      <Filter>pdfium\third_party\freetype</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="pdfium\third_party\icu\source\common\rbbirpt.txt">
+      <Filter>pdfium\third_party\icu</Filter>
+    </Text>
+    <Text Include="pdfium\third_party\icu\source\common\sources.txt">
+      <Filter>pdfium\third_party\icu</Filter>
+    </Text>
   </ItemGroup>
 </Project>

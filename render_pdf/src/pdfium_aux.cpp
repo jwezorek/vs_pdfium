@@ -37,7 +37,9 @@ ScopedFPDFBitmap RenderPage(FPDF_PAGE page, float scale)
 	FPDF_DWORD fill_color = alpha ? 0x00000000 : 0xFFFFFFFF;
 	FPDFBitmap_FillRect(bitmap.get(), 0, 0, width, height, fill_color);
 
-	FPDF_RenderPageBitmap(bitmap.get(), page, 0, 0, width, height, 0, FPDF_ANNOT);
+	FPDF_RenderPageBitmap(
+		bitmap.get(), page, 0, 0, width, height, 0, FPDF_ANNOT | FPDF_REVERSE_BYTE_ORDER
+	);
 	return bitmap;
 }
 
