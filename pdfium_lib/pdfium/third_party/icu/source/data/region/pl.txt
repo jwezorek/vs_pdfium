@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 pl{
     Countries{
         001{"świat"}
@@ -110,7 +111,7 @@ pl{
         EZ{"strefa euro"}
         FI{"Finlandia"}
         FJ{"Fidżi"}
-        FK{"Falklandy (Malwiny)"}
+        FK{"Falklandy"}
         FM{"Mikronezja"}
         FO{"Wyspy Owcze"}
         FR{"Francja"}
@@ -133,7 +134,7 @@ pl{
         GU{"Guam"}
         GW{"Gwinea Bissau"}
         GY{"Gujana"}
-        HK{"Hongkong"}
+        HK{"SRA Hongkong (Chiny)"}
         HM{"Wyspy Heard i McDonalda"}
         HN{"Honduras"}
         HR{"Chorwacja"}
@@ -183,11 +184,11 @@ pl{
         MF{"Saint-Martin"}
         MG{"Madagaskar"}
         MH{"Wyspy Marshalla"}
-        MK{"Była Jugosłowiańska Republika Macedonii"}
+        MK{"Macedonia Północna"}
         ML{"Mali"}
         MM{"Mjanma (Birma)"}
         MN{"Mongolia"}
-        MO{"Makau"}
+        MO{"SRA Makau (Chiny)"}
         MP{"Mariany Północne"}
         MQ{"Martynika"}
         MR{"Mauretania"}
@@ -222,7 +223,7 @@ pl{
         PM{"Saint-Pierre i Miquelon"}
         PN{"Pitcairn"}
         PR{"Portoryko"}
-        PS{"Palestyna"}
+        PS{"Terytoria Palestyńskie"}
         PT{"Portugalia"}
         PW{"Palau"}
         PY{"Paragwaj"}
@@ -253,7 +254,7 @@ pl{
         SV{"Salwador"}
         SX{"Sint Maarten"}
         SY{"Syria"}
-        SZ{"Suazi"}
+        SZ{"Eswatini"}
         TA{"Tristan da Cunha"}
         TC{"Turks i Caicos"}
         TD{"Czad"}
@@ -287,6 +288,8 @@ pl{
         VU{"Vanuatu"}
         WF{"Wallis i Futuna"}
         WS{"Samoa"}
+        XA{"Pseudoakcenty"}
+        XB{"Pseudodwukierunkowe"}
         XK{"Kosowo"}
         YE{"Jemen"}
         YT{"Majotta"}
@@ -295,8 +298,14 @@ pl{
         ZW{"Zimbabwe"}
         ZZ{"Nieznany region"}
     }
+    Countries%chagos{
+        IO{"Archipelag Czagos"}
+    }
     Countries%short{
         GB{"Wlk. Bryt."}
+        HK{"Hongkong"}
+        MO{"Makau"}
+        PS{"Palestyna"}
         UN{"ONZ"}
         US{"USA"}
     }
@@ -305,7 +314,8 @@ pl{
         CG{"Republika Konga"}
         CI{"Wybrzeże Kości Słoniowej"}
         CZ{"Republika Czeska"}
+        FK{"Falklandy (Malwiny)"}
+        SZ{"Suazi"}
         TL{"Timor-Leste"}
     }
-    Version{"2.1.43.50"}
 }

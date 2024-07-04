@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,10 +21,12 @@
 
 #include "fxbarcode/cbc_datamatrix.h"
 
-#include <memory>
-#include <vector>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include <memory>
+
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/fx_coordinates.h"
 #include "fxbarcode/datamatrix/BC_DataMatrixWriter.h"
 
 CBC_DataMatrix::CBC_DataMatrix()
@@ -36,19 +38,19 @@ bool CBC_DataMatrix::Encode(WideStringView contents) {
   int32_t width;
   int32_t height;
   auto* pWriter = GetDataMatrixWriter();
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
+  DataVector<uint8_t> data =
       pWriter->Encode(WideString(contents), &width, &height);
   return pWriter->RenderResult(data, width, height);
 }
 
 bool CBC_DataMatrix::RenderDevice(CFX_RenderDevice* device,
-                                  const CFX_Matrix* matrix) {
+                                  const CFX_Matrix& matrix) {
   GetDataMatrixWriter()->RenderDeviceResult(device, matrix);
   return true;
 }
 
 BC_TYPE CBC_DataMatrix::GetType() {
-  return BC_DATAMATRIX;
+  return BC_TYPE::kDataMatrix;
 }
 
 CBC_DataMatrixWriter* CBC_DataMatrix::GetDataMatrixWriter() {

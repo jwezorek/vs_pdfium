@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,13 @@
 #ifndef CORE_FPDFAPI_RENDER_CPDF_PROGRESSIVERENDERER_H_
 #define CORE_FPDFAPI_RENDER_CPDF_PROGRESSIVERENDERER_H_
 
+#include <stdint.h>
+
 #include <memory>
 
 #include "core/fpdfapi/page/cpdf_pageobjectholder.h"
 #include "core/fpdfapi/render/cpdf_rendercontext.h"
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_RenderOptions;
@@ -48,11 +49,11 @@ class CPDF_ProgressiveRenderer {
   Status m_Status = kReady;
   UnownedPtr<CPDF_RenderContext> const m_pContext;
   UnownedPtr<CFX_RenderDevice> const m_pDevice;
-  const CPDF_RenderOptions* const m_pOptions;
+  UnownedPtr<const CPDF_RenderOptions> const m_pOptions;
   std::unique_ptr<CPDF_RenderStatus> m_pRenderStatus;
   CFX_FloatRect m_ClipRect;
   uint32_t m_LayerIndex = 0;
-  CPDF_RenderContext::Layer* m_pCurrentLayer = nullptr;
+  UnownedPtr<CPDF_RenderContext::Layer> m_pCurrentLayer;
   CPDF_PageObjectHolder::const_iterator m_LastObjectRendered;
 };
 

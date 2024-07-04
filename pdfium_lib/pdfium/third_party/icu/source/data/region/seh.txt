@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 seh{
     Countries{
         AD{"Andorra"}
@@ -92,7 +93,6 @@ seh{
         IE{"Irlanda"}
         IL{"Israel"}
         IN{"Índia"}
-        IO{"Território Britânico do Oceano Índico"}
         IQ{"Iraque"}
         IR{"Irã"}
         IS{"Islândia"}
@@ -127,7 +127,6 @@ seh{
         MD{"Moldávia"}
         MG{"Madagascar"}
         MH{"Ilhas Marshall"}
-        MK{"Macedônia"}
         ML{"Mali"}
         MM{"Mianmar"}
         MN{"Mongólia"}
@@ -226,5 +225,4 @@ seh{
         ZM{"Zâmbia"}
         ZW{"Zimbábue"}
     }
-    Version{"2.1.39.11"}
 }

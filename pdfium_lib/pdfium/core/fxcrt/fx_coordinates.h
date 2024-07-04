@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,28 +7,23 @@
 #ifndef CORE_FXCRT_FX_COORDINATES_H_
 #define CORE_FXCRT_FX_COORDINATES_H_
 
-#include <algorithm>
-
-#include "core/fxcrt/fx_system.h"
+#include <stdint.h>
 
 #ifndef NDEBUG
-#include <ostream>
+#include <iosfwd>
 #endif
+
+#include "core/fxcrt/span.h"
 
 template <class BaseType>
 class CFX_PTemplate {
  public:
-  CFX_PTemplate() : x(0), y(0) {}
-  CFX_PTemplate(BaseType new_x, BaseType new_y) : x(new_x), y(new_y) {}
-  CFX_PTemplate(const CFX_PTemplate& other) : x(other.x), y(other.y) {}
+  constexpr CFX_PTemplate() = default;
+  constexpr CFX_PTemplate(BaseType new_x, BaseType new_y)
+      : x(new_x), y(new_y) {}
+  CFX_PTemplate(const CFX_PTemplate& other) = default;
+  CFX_PTemplate& operator=(const CFX_PTemplate& other) = default;
 
-  CFX_PTemplate& operator=(const CFX_PTemplate& other) {
-    if (this != &other) {
-      x = other.x;
-      y = other.y;
-    }
-    return *this;
-  }
   bool operator==(const CFX_PTemplate& other) const {
     return x == other.x && y == other.y;
   }
@@ -52,8 +47,8 @@ class CFX_PTemplate {
     return CFX_PTemplate(x - other.x, y - other.y);
   }
 
-  BaseType x;
-  BaseType y;
+  BaseType x = 0;
+  BaseType y = 0;
 };
 using CFX_Point16 = CFX_PTemplate<int16_t>;
 using CFX_Point = CFX_PTemplate<int32_t>;
@@ -62,13 +57,11 @@ using CFX_PointF = CFX_PTemplate<float>;
 template <class BaseType>
 class CFX_STemplate {
  public:
-  CFX_STemplate() : width(0), height(0) {}
-
-  CFX_STemplate(BaseType new_width, BaseType new_height)
+  constexpr CFX_STemplate() = default;
+  constexpr CFX_STemplate(BaseType new_width, BaseType new_height)
       : width(new_width), height(new_height) {}
-
-  CFX_STemplate(const CFX_STemplate& other)
-      : width(other.width), height(other.height) {}
+  CFX_STemplate(const CFX_STemplate& other) = default;
+  CFX_STemplate& operator=(const CFX_STemplate& other) = default;
 
   template <typename OtherType>
   CFX_STemplate<OtherType> As() const {
@@ -79,13 +72,6 @@ class CFX_STemplate {
   void clear() {
     width = 0;
     height = 0;
-  }
-  CFX_STemplate& operator=(const CFX_STemplate& other) {
-    if (this != &other) {
-      width = other.width;
-      height = other.height;
-    }
-    return *this;
   }
   bool operator==(const CFX_STemplate& other) const {
     return width == other.width && height == other.height;
@@ -126,8 +112,8 @@ class CFX_STemplate {
     return CFX_STemplate(width / divisor, height / divisor);
   }
 
-  BaseType width;
-  BaseType height;
+  BaseType width = 0;
+  BaseType height = 0;
 };
 using CFX_Size = CFX_STemplate<int32_t>;
 using CFX_SizeF = CFX_STemplate<float>;
@@ -148,29 +134,8 @@ class CFX_VTemplate final : public CFX_PTemplate<BaseType> {
                 const CFX_PTemplate<BaseType>& point2)
       : CFX_PTemplate<BaseType>(point2.x - point1.x, point2.y - point1.y) {}
 
-  float Length() const { return sqrt(x * x + y * y); }
-  void Normalize() {
-    float fLen = Length();
-    if (fLen < 0.0001f)
-      return;
-
-    x /= fLen;
-    y /= fLen;
-  }
-  void Translate(BaseType dx, BaseType dy) {
-    x += dx;
-    y += dy;
-  }
-  void Scale(BaseType sx, BaseType sy) {
-    x *= sx;
-    y *= sy;
-  }
-  void Rotate(float fRadian) {
-    float cosValue = cos(fRadian);
-    float sinValue = sin(fRadian);
-    x = x * cosValue - y * sinValue;
-    y = x * sinValue + y * cosValue;
-  }
+  float Length() const;
+  void Normalize();
 };
 using CFX_Vector = CFX_VTemplate<int32_t>;
 using CFX_VectorF = CFX_VTemplate<float>;
@@ -181,8 +146,11 @@ using CFX_VectorF = CFX_VTemplate<float>;
 // LTRB rectangles (y-axis runs downwards).
 // Struct layout is compatible with win32 RECT.
 struct FX_RECT {
-  FX_RECT() = default;
-  FX_RECT(int l, int t, int r, int b) : left(l), top(t), right(r), bottom(b) {}
+  constexpr FX_RECT() = default;
+  constexpr FX_RECT(int l, int t, int r, int b)
+      : left(l), top(t), right(r), bottom(b) {}
+  FX_RECT(const FX_RECT& that) = default;
+  FX_RECT& operator=(const FX_RECT& that) = default;
 
   int Width() const { return right - left; }
   int Height() const { return bottom - top; }
@@ -193,6 +161,7 @@ struct FX_RECT {
   void Normalize();
   void Intersect(const FX_RECT& src);
   void Intersect(int l, int t, int r, int b) { Intersect(FX_RECT(l, t, r, b)); }
+  FX_RECT SwappedClipBox(int width, int height, bool bFlipX, bool bFlipY) const;
 
   void Offset(int dx, int dy) {
     left += dx;
@@ -222,13 +191,13 @@ class CFX_FloatRect {
   constexpr CFX_FloatRect() = default;
   constexpr CFX_FloatRect(float l, float b, float r, float t)
       : left(l), bottom(b), right(r), top(t) {}
-
-  explicit CFX_FloatRect(const float* pArray)
-      : CFX_FloatRect(pArray[0], pArray[1], pArray[2], pArray[3]) {}
+  CFX_FloatRect(const CFX_FloatRect& that) = default;
+  CFX_FloatRect& operator=(const CFX_FloatRect& that) = default;
 
   explicit CFX_FloatRect(const FX_RECT& rect);
+  explicit CFX_FloatRect(const CFX_PointF& point);
 
-  static CFX_FloatRect GetBBox(const CFX_PointF* pPoints, int nPoints);
+  static CFX_FloatRect GetBBox(pdfium::span<const CFX_PointF> pPoints);
 
   void Normalize();
 
@@ -255,12 +224,6 @@ class CFX_FloatRect {
 
   CFX_FloatRect GetCenterSquare() const;
 
-  void InitRect(const CFX_PointF& point) {
-    left = point.x;
-    right = point.x;
-    bottom = point.y;
-    top = point.y;
-  }
   void UpdateRect(const CFX_PointF& point);
 
   float Width() const { return right - left; }
@@ -302,6 +265,11 @@ class CFX_FloatRect {
   // Rounds LBRT values.
   FX_RECT ToRoundedFxRect() const;
 
+  bool operator==(const CFX_FloatRect& other) const {
+    return left == other.left && right == other.right && top == other.top &&
+           bottom == other.bottom;
+  }
+
   float left = 0.0f;
   float bottom = 0.0f;
   float right = 0.0f;
@@ -318,9 +286,15 @@ class CFX_RectF {
   using PointType = CFX_PointF;
   using SizeType = CFX_SizeF;
 
-  CFX_RectF() = default;
-  CFX_RectF(float dst_left, float dst_top, float dst_width, float dst_height)
+  constexpr CFX_RectF() = default;
+  constexpr CFX_RectF(float dst_left,
+                      float dst_top,
+                      float dst_width,
+                      float dst_height)
       : left(dst_left), top(dst_top), width(dst_width), height(dst_height) {}
+  CFX_RectF(const CFX_RectF& other) = default;
+  CFX_RectF& operator=(const CFX_RectF& other) = default;
+
   CFX_RectF(float dst_left, float dst_top, const SizeType& dst_size)
       : left(dst_left),
         top(dst_top),
@@ -335,9 +309,6 @@ class CFX_RectF {
         top(static_cast<float>(that.top)),
         width(static_cast<float>(that.Width())),
         height(static_cast<float>(that.Height())) {}
-
-  // NOLINTNEXTLINE(runtime/explicit)
-  CFX_RectF(const CFX_RectF& other) = default;
 
   CFX_RectF& operator+=(const PointType& p) {
     left += p.x;
@@ -430,43 +401,10 @@ class CFX_RectF {
   PointType Center() const {
     return PointType(left + width / 2, top + height / 2);
   }
-  void Union(float x, float y) {
-    float r = right();
-    float b = bottom();
-
-    left = std::min(left, x);
-    top = std::min(top, y);
-    r = std::max(r, x);
-    b = std::max(b, y);
-
-    width = r - left;
-    height = b - top;
-  }
+  void Union(float x, float y);
   void Union(const PointType& p) { Union(p.x, p.y); }
-  void Union(const CFX_RectF& rt) {
-    float r = right();
-    float b = bottom();
-
-    left = std::min(left, rt.left);
-    top = std::min(top, rt.top);
-    r = std::max(r, rt.right());
-    b = std::max(b, rt.bottom());
-
-    width = r - left;
-    height = b - top;
-  }
-  void Intersect(const CFX_RectF& rt) {
-    float r = right();
-    float b = bottom();
-
-    left = std::max(left, rt.left);
-    top = std::max(top, rt.top);
-    r = std::min(r, rt.right());
-    b = std::min(b, rt.bottom());
-
-    width = r - left;
-    height = b - top;
-  }
+  void Union(const CFX_RectF& rt);
+  void Intersect(const CFX_RectF& rt);
   bool IntersectWith(const CFX_RectF& rt) const {
     CFX_RectF rect = rt;
     rect.Intersect(*this);
@@ -513,12 +451,14 @@ std::ostream& operator<<(std::ostream& os, const CFX_RectF& rect);
 //
 class CFX_Matrix {
  public:
-  CFX_Matrix() = default;
+  constexpr CFX_Matrix() = default;
 
-  explicit CFX_Matrix(const float n[6])
-      : a(n[0]), b(n[1]), c(n[2]), d(n[3]), e(n[4]), f(n[5]) {}
-
-  CFX_Matrix(float a1, float b1, float c1, float d1, float e1, float f1)
+  constexpr CFX_Matrix(float a1,
+                       float b1,
+                       float c1,
+                       float d1,
+                       float e1,
+                       float f1)
       : a(a1), b(b1), c(c1), d(d1), e(e1), f(f1) {}
 
   CFX_Matrix(const CFX_Matrix& other) = default;

@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +6,10 @@
 
 #include "core/fpdfapi/cmaps/GB1/cmaps_gb1.h"
 
-const uint16_t g_FXCMAP_GB1CID2Unicode_5[30284] = {
+namespace fxcmap {
+namespace {
+
+const uint16_t kGB1CID2UnicodeData[] = {
     0xFFFD, 0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
     0x0028, 0x0029, 0x002A, 0x002B, 0x002C, 0x002D, 0x002E, 0x002F, 0x0030,
     0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039,
@@ -3373,3 +3376,9 @@ const uint16_t g_FXCMAP_GB1CID2Unicode_5[30284] = {
     0xA4B6, 0xA4B7, 0xA4B8, 0xA4B9, 0xA4BA, 0xA4BB, 0xA4BC, 0xA4BD, 0xA4BE,
     0xA4BF, 0xA4C0, 0xA4C1, 0xA4C2, 0xA4C3, 0xA4C4, 0xA4C5, 0xA4C6,
 };
+
+}  // namespace
+
+const pdfium::span<const uint16_t> kGB1CID2Unicode_5{kGB1CID2UnicodeData};
+
+}  // namespace fxcmap

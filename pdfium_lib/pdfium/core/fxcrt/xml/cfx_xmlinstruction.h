@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/widestring.h"
 #include "core/fxcrt/xml/cfx_xmlnode.h"
 
 class CFX_XMLDocument;
@@ -22,7 +22,7 @@ class CFX_XMLInstruction final : public CFX_XMLNode {
   // CFX_XMLNode
   Type GetType() const override;
   CFX_XMLNode* Clone(CFX_XMLDocument* doc) override;
-  void Save(const RetainPtr<IFX_SeekableWriteStream>& pXMLStream) override;
+  void Save(const RetainPtr<IFX_RetainableWriteStream>& pXMLStream) override;
 
   bool IsOriginalXFAVersion() const;
   bool IsAcrobat() const;

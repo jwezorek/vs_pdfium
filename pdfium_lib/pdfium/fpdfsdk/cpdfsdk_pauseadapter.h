@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,6 @@
 #ifndef FPDFSDK_CPDFSDK_PAUSEADAPTER_H_
 #define FPDFSDK_CPDFSDK_PAUSEADAPTER_H_
 
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/pauseindicator_iface.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "public/fpdf_progressive.h"

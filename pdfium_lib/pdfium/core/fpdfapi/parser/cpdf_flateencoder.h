@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,35 +7,43 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_FLATEENCODER_H_
 #define CORE_FPDFAPI_PARSER_CPDF_FLATEENCODER_H_
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/maybe_owned.h"
+#include <stdint.h>
+
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/raw_span.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/span.h"
+#include "third_party/abseil-cpp/absl/types/variant.h"
 
 class CPDF_Dictionary;
+class CPDF_Encryptor;
 class CPDF_Stream;
 class CPDF_StreamAcc;
+class IFX_ArchiveStream;
 
 class CPDF_FlateEncoder {
  public:
-  CPDF_FlateEncoder(const CPDF_Stream* pStream, bool bFlateEncode);
+  CPDF_FlateEncoder(RetainPtr<const CPDF_Stream> pStream, bool bFlateEncode);
   ~CPDF_FlateEncoder();
 
-  void CloneDict();
-  CPDF_Dictionary* GetClonedDict();
+  void UpdateLength(size_t size);
+  bool WriteDictTo(IFX_ArchiveStream* archive,
+                   const CPDF_Encryptor* encryptor) const;
+
+  pdfium::span<const uint8_t> GetSpan() const;
+
+ private:
+  bool is_owned() const {
+    return absl::holds_alternative<DataVector<uint8_t>>(m_Data);
+  }
 
   // Returns |m_pClonedDict| if it is valid. Otherwise returns |m_pDict|.
   const CPDF_Dictionary* GetDict() const;
 
-  pdfium::span<const uint8_t> GetSpan() const {
-    return pdfium::make_span(m_pData.Get(), m_dwSize);
-  }
+  // Must outlive `m_Data`.
+  RetainPtr<CPDF_StreamAcc> const m_pAcc;
 
- private:
-  RetainPtr<CPDF_StreamAcc> m_pAcc;
-
-  uint32_t m_dwSize;
-  MaybeOwned<uint8_t, FxFreeDeleter> m_pData;
+  absl::variant<pdfium::raw_span<const uint8_t>, DataVector<uint8_t>> m_Data;
 
   // Only one of these two pointers is valid at any time.
   RetainPtr<const CPDF_Dictionary> m_pDict;

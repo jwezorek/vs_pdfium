@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sq{
     Countries{
         001{"Bota"}
@@ -110,7 +111,7 @@ sq{
         EZ{"Zona euro"}
         FI{"Finlandë"}
         FJ{"Fixhi"}
-        FK{"Ishujt Falkland (Malvine)"}
+        FK{"Ishujt Falkland"}
         FM{"Mikronezi"}
         FO{"Ishujt Faroe"}
         FR{"Francë"}
@@ -133,7 +134,7 @@ sq{
         GU{"Guam"}
         GW{"Guine-Bisau"}
         GY{"Guajanë"}
-        HK{"Hong-Kong"}
+        HK{"RPA i Hong-Kongut"}
         HM{"Ishujt Hërd e Mekdonald"}
         HN{"Honduras"}
         HR{"Kroaci"}
@@ -183,11 +184,11 @@ sq{
         MF{"Sen-Marten"}
         MG{"Madagaskar"}
         MH{"Ishujt Marshall"}
-        MK{"Maqedoni (IRJM)"}
+        MK{"Maqedonia e Veriut"}
         ML{"Mali"}
         MM{"Mianmar (Burmë)"}
         MN{"Mongoli"}
-        MO{"Makao"}
+        MO{"RPA i Makaos"}
         MP{"Ishujt e Marianës Veriore"}
         MQ{"Martinikë"}
         MR{"Mauritani"}
@@ -222,7 +223,7 @@ sq{
         PM{"Shën-Pier dhe Mikelon"}
         PN{"Ishujt Pitkern"}
         PR{"Porto-Riko"}
-        PS{"Palestinë"}
+        PS{"Territoret Palestineze"}
         PT{"Portugali"}
         PW{"Palau"}
         PY{"Paraguai"}
@@ -253,7 +254,7 @@ sq{
         SV{"Salvador"}
         SX{"Sint-Marten"}
         SY{"Siri"}
-        SZ{"Suazilend"}
+        SZ{"Esvatini"}
         TA{"Tristan-da-Kuna"}
         TC{"Ishujt Turks dhe Kaikos"}
         TD{"Çad"}
@@ -287,6 +288,8 @@ sq{
         VU{"Vanuatu"}
         WF{"Uollis e Futuna"}
         WS{"Samoa"}
+        XA{"Pseudo-thekse"}
+        XB{"Pseudo-bidi"}
         XK{"Kosovë"}
         YE{"Jemen"}
         YT{"Majotë"}
@@ -295,17 +298,24 @@ sq{
         ZW{"Zimbabve"}
         ZZ{"I panjohur"}
     }
+    Countries%chagos{
+        IO{"Arkipelagu i Çagosit"}
+    }
     Countries%short{
         GB{"MB"}
+        HK{"Hong-Kong"}
+        MO{"Makao"}
+        PS{"Palestinë"}
         UN{"OKB"}
-        US{"SHBA"}
     }
     Countries%variant{
         CD{"Kongo (RDK)"}
         CG{"Kongo (Republika)"}
         CI{"Bregu i Fildishtë"}
         CZ{"Republika Çeke"}
+        FK{"Ishujt Falkland (Malvine)"}
+        NZ{"Zelanda e Re-Aotearoa"}
+        SZ{"Suazilend"}
         TL{"Timori Lindor"}
     }
-    Version{"2.1.43.50"}
 }

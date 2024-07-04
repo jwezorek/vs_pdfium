@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,9 +7,9 @@
 #ifndef FXBARCODE_COMMON_REEDSOLOMON_BC_REEDSOLOMONGF256_H_
 #define FXBARCODE_COMMON_REEDSOLOMON_BC_REEDSOLOMONGF256_H_
 
+#include <array>
 #include <memory>
-
-#include "third_party/base/optional.h"
+#include <optional>
 
 class CBC_ReedSolomonGF256Poly;
 
@@ -25,15 +25,15 @@ class CBC_ReedSolomonGF256 {
                                                           int32_t coefficient);
   static int32_t AddOrSubtract(int32_t a, int32_t b);
   int32_t Exp(int32_t a);
-  Optional<int32_t> Inverse(int32_t a);
+  std::optional<int32_t> Inverse(int32_t a);
   int32_t Multiply(int32_t a, int32_t b);
   void Init();
 
  private:
   std::unique_ptr<CBC_ReedSolomonGF256Poly> m_zero;
   std::unique_ptr<CBC_ReedSolomonGF256Poly> m_one;
-  int32_t m_expTable[256];
-  int32_t m_logTable[256];
+  std::array<int32_t, 256> m_expTable;
+  std::array<int32_t, 256> m_logTable;
 };
 
 #endif  // FXBARCODE_COMMON_REEDSOLOMON_BC_REEDSOLOMONGF256_H_

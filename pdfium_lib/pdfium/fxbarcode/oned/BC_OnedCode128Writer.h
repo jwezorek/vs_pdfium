@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,12 @@
 #ifndef FXBARCODE_ONED_BC_ONEDCODE128WRITER_H_
 #define FXBARCODE_ONED_BC_ONEDCODE128WRITER_H_
 
+#include <stdint.h>
+
 #include <vector>
 
 #include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "fxbarcode/BC_Library.h"
 #include "fxbarcode/oned/BC_OneDimWriter.h"
 
 class CBC_OnedCode128Writer final : public CBC_OneDimWriter {
@@ -25,15 +27,10 @@ class CBC_OnedCode128Writer final : public CBC_OneDimWriter {
                             std::vector<int32_t>* patterns);
 
   // CBC_OneDimWriter
-  uint8_t* EncodeWithHint(const ByteString& contents,
-                          BCFORMAT format,
-                          int32_t& outWidth,
-                          int32_t& outHeight,
-                          int32_t hints) override;
-  uint8_t* EncodeImpl(const ByteString& contents, int32_t& outLength) override;
+  DataVector<uint8_t> Encode(const ByteString& contents) override;
   bool CheckContentValidity(WideStringView contents) override;
   WideString FilterContents(WideStringView contents) override;
-  bool SetTextLocation(BC_TEXT_LOC location) override;
+  void SetTextLocation(BC_TEXT_LOC location) override;
 
   BC_TYPE GetType() const { return m_codeFormat; }
 

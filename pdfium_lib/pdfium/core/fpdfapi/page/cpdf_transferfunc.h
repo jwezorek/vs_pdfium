@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,16 +7,14 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_TRANSFERFUNC_H_
 #define CORE_FPDFAPI_PAGE_CPDF_TRANSFERFUNC_H_
 
-#include <vector>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/fixed_size_data_vector.h"
 #include "core/fxcrt/observed_ptr.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/span.h"
 
-class CPDF_Document;
 class CFX_DIBBase;
 
 class CPDF_TransferFunc final : public Retainable, public Observable {
@@ -26,9 +24,7 @@ class CPDF_TransferFunc final : public Retainable, public Observable {
   static constexpr size_t kChannelSampleSize = 256;
 
   FX_COLORREF TranslateColor(FX_COLORREF colorref) const;
-  RetainPtr<CFX_DIBBase> TranslateImage(const RetainPtr<CFX_DIBBase>& pSrc);
-
-  const CPDF_Document* GetDocument() const { return m_pPDFDoc.Get(); }
+  RetainPtr<CFX_DIBBase> TranslateImage(RetainPtr<CFX_DIBBase> pSrc);
 
   // Spans are |kChannelSampleSize| in size.
   pdfium::span<const uint8_t> GetSamplesR() const;
@@ -38,18 +34,16 @@ class CPDF_TransferFunc final : public Retainable, public Observable {
   bool GetIdentity() const { return m_bIdentity; }
 
  private:
-  CPDF_TransferFunc(CPDF_Document* pDoc,
-                    bool bIdentify,
-                    std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_r,
-                    std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_g,
-                    std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_b);
+  CPDF_TransferFunc(bool bIdentify,
+                    FixedSizeDataVector<uint8_t> samples_r,
+                    FixedSizeDataVector<uint8_t> samples_g,
+                    FixedSizeDataVector<uint8_t> samples_b);
   ~CPDF_TransferFunc() override;
 
-  UnownedPtr<CPDF_Document> const m_pPDFDoc;
   const bool m_bIdentity;
-  const std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_SamplesR;
-  const std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_SamplesG;
-  const std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_SamplesB;
+  const FixedSizeDataVector<uint8_t> m_SamplesR;
+  const FixedSizeDataVector<uint8_t> m_SamplesG;
+  const FixedSizeDataVector<uint8_t> m_SamplesB;
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_TRANSFERFUNC_H_

@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -73,14 +73,16 @@ source_set("parser") {
     "fpdf_parser_decode.h",
     "fpdf_parser_utility.cpp",
     "fpdf_parser_utility.h",
+    "object_tree_traversal_util.cpp",
+    "object_tree_traversal_util.h",
   ]
-  configs += [ "../../../:pdfium_core_config" ]
+  configs += [ "../../../:pdfium_strict_config" ]
   deps = [
     "../../../constants",
     "../../fdrm",
     "../../fxcodec",
-    "../../fxcrt",
   ]
+  public_deps = [ "../../fxcrt" ]
   allow_circular_includes_from = []
   visibility = [ "../../../*" ]
 
@@ -90,20 +92,36 @@ source_set("parser") {
       "cpdf_seekablemultistream.h",
     ]
   }
-  if (pdf_use_skia || pdf_use_skia_paths) {
+  if (pdf_use_skia) {
     deps += [ "../../fxge" ]
     allow_circular_includes_from += [ "../../fxge" ]
   }
+}
+
+source_set("unit_test_support") {
+  testonly = true
+  sources = [
+    "cpdf_test_document.cpp",
+    "cpdf_test_document.h",
+  ]
+  configs += [ "../../../:pdfium_strict_config" ]
+  deps = [
+    ":parser",
+    "../page",
+    "../render",
+  ]
 }
 
 pdfium_unittest_source_set("unittests") {
   sources = [
     "cpdf_array_unittest.cpp",
     "cpdf_cross_ref_avail_unittest.cpp",
+    "cpdf_dictionary_unittest.cpp",
     "cpdf_document_unittest.cpp",
     "cpdf_hint_tables_unittest.cpp",
     "cpdf_indirect_object_holder_unittest.cpp",
     "cpdf_object_avail_unittest.cpp",
+    "cpdf_object_stream_unittest.cpp",
     "cpdf_object_unittest.cpp",
     "cpdf_object_walker_unittest.cpp",
     "cpdf_page_object_avail_unittest.cpp",
@@ -117,18 +135,17 @@ pdfium_unittest_source_set("unittests") {
   ]
   deps = [
     ":parser",
+    ":unit_test_support",
     "../../../constants",
+    "../../fxcodec",
     "../page",
+    "../page:unit_test_support",
     "../render",
   ]
   pdfium_root_dir = "../../../"
 
   if (pdf_enable_xfa) {
     sources += [ "cpdf_seekablemultistream_unittest.cpp" ]
-  }
-  if (is_clang) {
-    # Suppress no override warning for overridden functions.
-    cflags = [ "-Wno-inconsistent-missing-override" ]
   }
 }
 
@@ -137,7 +154,11 @@ pdfium_embeddertest_source_set("embeddertests") {
     "cpdf_parser_embeddertest.cpp",
     "cpdf_security_handler_embeddertest.cpp",
     "fpdf_parser_decode_embeddertest.cpp",
+    "object_tree_traversal_util_embeddertest.cpp",
   ]
-  deps = [ ":parser" ]
+  deps = [
+    ":parser",
+    "../../fxge",
+  ]
   pdfium_root_dir = "../../../"
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,13 +8,13 @@
 #define CORE_FPDFAPI_FONT_CPDF_TYPE3CHAR_H_
 
 #include <memory>
+#include <optional>
 #include <utility>
 
 #include "core/fpdfapi/font/cpdf_font.h"
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "third_party/base/optional.h"
+#include "core/fxcrt/span.h"
 
 class CFX_DIBitmap;
 
@@ -27,12 +27,11 @@ class CPDF_Type3Char {
   static void TextUnitRectToGlyphUnitRect(CFX_FloatRect* pRect);
 
   bool LoadBitmapFromSoleImageOfForm();
-  void InitializeFromStreamData(bool bColored, const float* pData);
+  void InitializeFromStreamData(bool bColored, pdfium::span<const float> pData);
   void Transform(CPDF_Font::FormIface* pForm, const CFX_Matrix& matrix);
   void WillBeDestroyed();
 
   RetainPtr<CFX_DIBitmap> GetBitmap();
-  const RetainPtr<CFX_DIBitmap>& GetBitmap() const;
 
   bool colored() const { return m_bColored; }
   int width() const { return m_Width; }

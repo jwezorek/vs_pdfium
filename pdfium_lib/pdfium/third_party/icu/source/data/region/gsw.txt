@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 gsw{
     Countries{
         001{"Wält"}
@@ -125,7 +126,7 @@ gsw{
         GU{"Guam"}
         GW{"Gineea-Bissau"}
         GY{"Guäjaana"}
-        HK{"Hongkong"}
+        HK{"Sonderverwaltigszone Hongkong"}
         HM{"Höörd- und MäcDonald-Insle"}
         HN{"Honduras"}
         HR{"Kroaazie"}
@@ -136,7 +137,6 @@ gsw{
         IL{"Israel"}
         IM{"Insle vo Män"}
         IN{"Indie"}
-        IO{"Britischs Territoorium im Indische Oozean"}
         IQ{"Iraak"}
         IR{"Iraan"}
         IS{"Iisland"}
@@ -174,11 +174,10 @@ gsw{
         MF{"St. Martin"}
         MG{"Madagaschkar"}
         MH{"Marshallinsle"}
-        MK{"Mazedoonie (EJRM)"}
         ML{"Maali"}
         MM{"Myanmar (Burma)"}
         MN{"Mongolei"}
-        MO{"Macao"}
+        MO{"Sonderverwaltigszone Macao"}
         MP{"Nördlichi Mariaane"}
         MQ{"Martinigg"}
         MR{"Mauretaanie"}
@@ -281,5 +280,8 @@ gsw{
         ZW{"Simbabwe"}
         ZZ{"Unbekannti oder ungültigi Regioon"}
     }
-    Version{"2.1.41.34"}
+    Countries%short{
+        HK{"Hongkong"}
+        MO{"Macao"}
+    }
 }

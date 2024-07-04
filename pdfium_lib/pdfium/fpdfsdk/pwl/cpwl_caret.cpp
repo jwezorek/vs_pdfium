@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,12 +11,12 @@
 
 #include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/cfx_graphstatedata.h"
-#include "core/fxge/cfx_pathdata.h"
+#include "core/fxge/cfx_path.h"
 #include "core/fxge/cfx_renderdevice.h"
 
 CPWL_Caret::CPWL_Caret(
     const CreateParams& cp,
-    std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData)
+    std::unique_ptr<IPWL_FillerNotify::PerWindowData> pAttachedData)
     : CPWL_Wnd(cp, std::move(pAttachedData)) {}
 
 CPWL_Caret::~CPWL_Caret() = default;
@@ -28,7 +28,6 @@ void CPWL_Caret::DrawThisAppearance(CFX_RenderDevice* pDevice,
 
   CFX_FloatRect rcRect = GetCaretRect();
   CFX_FloatRect rcClip = GetClipRect();
-  CFX_PathData path;
 
   float fCaretX = rcRect.left + m_fWidth * 0.5f;
   float fCaretTop = rcRect.top;
@@ -42,12 +41,15 @@ void CPWL_Caret::DrawThisAppearance(CFX_RenderDevice* pDevice,
     fCaretBottom = rcRect.bottom;
   }
 
-  path.AppendPoint(CFX_PointF(fCaretX, fCaretBottom), FXPT_TYPE::MoveTo);
-  path.AppendPoint(CFX_PointF(fCaretX, fCaretTop), FXPT_TYPE::LineTo);
+  CFX_Path path;
+  path.AppendPoint(CFX_PointF(fCaretX, fCaretBottom),
+                   CFX_Path::Point::Type::kMove);
+  path.AppendPoint(CFX_PointF(fCaretX, fCaretTop),
+                   CFX_Path::Point::Type::kLine);
 
   CFX_GraphStateData gsd;
   gsd.m_LineWidth = m_fWidth;
-  pDevice->DrawPath(&path, &mtUser2Device, &gsd, 0, ArgbEncode(255, 0, 0, 0),
+  pDevice->DrawPath(path, &mtUser2Device, &gsd, 0, ArgbEncode(255, 0, 0, 0),
                     CFX_FillRenderOptions::EvenOddOptions());
 }
 
@@ -74,7 +76,7 @@ void CPWL_Caret::SetCaret(bool bVisible,
       return;
 
     m_pTimer.reset();
-    CPWL_Wnd::SetVisible(false);
+    (void)CPWL_Wnd::SetVisible(false);
     // Note, |this| may no longer be viable at this point. If more work needs
     // to be done, check the return value of SetVisible().
     return;

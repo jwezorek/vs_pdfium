@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,12 @@
 #ifndef CORE_FPDFAPI_RENDER_CPDF_TYPE3GLYPHMAP_H_
 #define CORE_FPDFAPI_RENDER_CPDF_TYPE3GLYPHMAP_H_
 
+#include <stdint.h>
+
 #include <map>
 #include <memory>
 #include <utility>
 #include <vector>
-
-#include "core/fxcrt/fx_system.h"
 
 class CFX_GlyphBitmap;
 

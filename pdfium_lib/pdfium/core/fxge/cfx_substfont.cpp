@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,6 +10,7 @@ CFX_SubstFont::CFX_SubstFont() = default;
 
 CFX_SubstFont::~CFX_SubstFont() = default;
 
+#if defined(PDF_USE_SKIA)
 int CFX_SubstFont::GetOriginalWeight() const {
   int weight = m_Weight;
 
@@ -19,6 +20,7 @@ int CFX_SubstFont::GetOriginalWeight() const {
     weight = weight * 5 / 4;
   return weight;
 }
+#endif
 
 void CFX_SubstFont::UseChromeSerif() {
   m_Weight = m_Weight * 4 / 5;

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,38 +7,33 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_SECURITY_HANDLER_H_
 #define CORE_FPDFAPI_PARSER_CPDF_SECURITY_HANDLER_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fpdfapi/parser/cpdf_crypto_handler.h"
+#include "core/fxcrt/bytestring.h"
 #include "core/fxcrt/retain_ptr.h"
 
-#define FXCIPHER_NONE 0
-#define FXCIPHER_RC4 1
-#define FXCIPHER_AES 2
-#define FXCIPHER_AES2 3
-
 class CPDF_Array;
-class CPDF_CryptoHandler;
 class CPDF_Dictionary;
-class CPDF_Parser;
 
-class CPDF_SecurityHandler : public Retainable {
+class CPDF_SecurityHandler final : public Retainable {
  public:
   CONSTRUCT_VIA_MAKE_RETAIN;
 
   bool OnInit(const CPDF_Dictionary* pEncryptDict,
-              const CPDF_Array* pIdArray,
+              RetainPtr<const CPDF_Array> pIdArray,
               const ByteString& password);
   void OnCreate(CPDF_Dictionary* pEncryptDict,
                 const CPDF_Array* pIdArray,
-                const ByteString& user_password,
-                const ByteString& owner_password);
-  void OnCreate(CPDF_Dictionary* pEncryptDict,
-                const CPDF_Array* pIdArray,
-                const ByteString& user_password);
+                const ByteString& password);
 
-  uint32_t GetPermissions() const;
+  // When `get_owner_perms` is true, returns full permissions if unlocked by
+  // owner.
+  uint32_t GetPermissions(bool get_owner_perms) const;
   bool IsMetadataEncrypted() const;
 
   CPDF_CryptoHandler* GetCryptoHandler() const {
@@ -62,7 +57,7 @@ class CPDF_SecurityHandler : public Retainable {
 
   bool LoadDict(const CPDF_Dictionary* pEncryptDict);
   bool LoadDict(const CPDF_Dictionary* pEncryptDict,
-                int* cipher,
+                CPDF_CryptoHandler::Cipher* cipher,
                 size_t* key_len);
 
   ByteString GetUserPassword(const ByteString& owner_password) const;
@@ -72,14 +67,8 @@ class CPDF_SecurityHandler : public Retainable {
   bool CheckOwnerPassword(const ByteString& password);
   bool AES256_CheckPassword(const ByteString& password, bool bOwner);
   void AES256_SetPassword(CPDF_Dictionary* pEncryptDict,
-                          const ByteString& password,
-                          bool bOwner);
+                          const ByteString& password);
   void AES256_SetPerms(CPDF_Dictionary* pEncryptDict);
-  void OnCreateInternal(CPDF_Dictionary* pEncryptDict,
-                        const CPDF_Array* pIdArray,
-                        const ByteString& user_password,
-                        const ByteString& owner_password,
-                        bool bDefault);
   bool CheckSecurity(const ByteString& password);
 
   void InitCryptoHandler();
@@ -88,13 +77,13 @@ class CPDF_SecurityHandler : public Retainable {
   int m_Version = 0;
   int m_Revision = 0;
   uint32_t m_Permissions = 0;
-  int m_Cipher = FXCIPHER_NONE;
   size_t m_KeyLen = 0;
+  CPDF_CryptoHandler::Cipher m_Cipher = CPDF_CryptoHandler::Cipher::kNone;
   PasswordEncodingConversion m_PasswordEncodingConversion = kUnknown;
   ByteString m_FileId;
   RetainPtr<const CPDF_Dictionary> m_pEncryptDict;
   std::unique_ptr<CPDF_CryptoHandler> m_pCryptoHandler;
-  uint8_t m_EncryptKey[32];
+  std::array<uint8_t, 32> m_EncryptKey = {};
 };
 
 #endif  // CORE_FPDFAPI_PARSER_CPDF_SECURITY_HANDLER_H_

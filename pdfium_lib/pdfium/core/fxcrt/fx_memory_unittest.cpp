@@ -1,21 +1,29 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fxcrt/fx_memory.h"
 
 #include <limits>
+#include <memory>
 
 #include "build/build_config.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
+#if defined(PDF_USE_PARTITION_ALLOC)
+#include "partition_alloc/partition_address_space.h"
+#endif
 
 namespace {
 
-const size_t kMaxByteAlloc = std::numeric_limits<size_t>::max();
-const size_t kMaxIntAlloc = kMaxByteAlloc / sizeof(int);
-const size_t kOverflowIntAlloc = kMaxIntAlloc + 100;
-const size_t kWidth = 640;
-const size_t kOverflowIntAlloc2D = kMaxIntAlloc / kWidth + 10;
+constexpr size_t kMaxByteAlloc = std::numeric_limits<size_t>::max();
+constexpr size_t kMaxIntAlloc = kMaxByteAlloc / sizeof(int);
+constexpr size_t kOverflowIntAlloc = kMaxIntAlloc + 100;
+constexpr size_t kWidth = 640;
+constexpr size_t kOverflowIntAlloc2D = kMaxIntAlloc / kWidth + 10;
+constexpr size_t kCloseToMaxIntAlloc = kMaxIntAlloc - 100;
+constexpr size_t kCloseToMaxByteAlloc = kMaxByteAlloc - 100;
 
 }  // namespace
 
@@ -28,14 +36,13 @@ TEST(fxcrt, FX_AllocZero) {
   FX_Free(ptr);
 }
 
-// TODO(tsepez): re-enable OOM tests if we can find a way to
-// prevent it from hosing the bots.
-TEST(fxcrt, DISABLED_FX_AllocOOM) {
-  EXPECT_DEATH_IF_SUPPORTED((void)FX_Alloc(int, kMaxIntAlloc), "");
+TEST(fxcrt, FXAllocOOM) {
+  EXPECT_DEATH_IF_SUPPORTED((void)FX_Alloc(int, kCloseToMaxIntAlloc), "");
 
   int* ptr = FX_Alloc(int, 1);
   EXPECT_TRUE(ptr);
-  EXPECT_DEATH_IF_SUPPORTED((void)FX_Realloc(int, ptr, kMaxIntAlloc), "");
+  EXPECT_DEATH_IF_SUPPORTED((void)FX_Realloc(int, ptr, kCloseToMaxIntAlloc),
+                            "");
   FX_Free(ptr);
 }
 
@@ -60,12 +67,12 @@ TEST(fxcrt, FX_AllocOverflow2D) {
       << ptr;
 }
 
-TEST(fxcrt, DISABLED_FX_TryAllocOOM) {
-  EXPECT_FALSE(FX_TryAlloc(int, kMaxIntAlloc));
+TEST(fxcrt, FXTryAllocOOM) {
+  EXPECT_FALSE(FX_TryAlloc(int, kCloseToMaxIntAlloc));
 
   int* ptr = FX_Alloc(int, 1);
   EXPECT_TRUE(ptr);
-  EXPECT_FALSE(FX_TryRealloc(int, ptr, kMaxIntAlloc));
+  EXPECT_FALSE(FX_TryRealloc(int, ptr, kCloseToMaxIntAlloc));
   FX_Free(ptr);
 }
 
@@ -85,20 +92,22 @@ TEST(fxcrt, FX_TryAllocOverflow) {
 }
 #endif
 
-TEST(fxcrt, DISABLED_FXMEM_DefaultOOM) {
-  EXPECT_FALSE(FXMEM_DefaultAlloc(kMaxByteAlloc));
+TEST(fxcrt, FXMEMDefaultOOM) {
+  EXPECT_FALSE(FXMEM_DefaultAlloc(kCloseToMaxByteAlloc));
 
   void* ptr = FXMEM_DefaultAlloc(1);
   EXPECT_TRUE(ptr);
-  EXPECT_FALSE(FXMEM_DefaultRealloc(ptr, kMaxByteAlloc));
+  EXPECT_FALSE(FXMEM_DefaultRealloc(ptr, kCloseToMaxByteAlloc));
   FXMEM_DefaultFree(ptr);
 }
 
 TEST(fxcrt, AllocZeroesMemory) {
   uint8_t* ptr = FX_Alloc(uint8_t, 32);
   ASSERT_TRUE(ptr);
-  for (size_t i = 0; i < 32; ++i)
-    EXPECT_EQ(0, ptr[i]);
+  for (size_t i = 0; i < 32; ++i) {
+    // SAFETY: required for testing, length and loop bounds 32.
+    EXPECT_EQ(0, UNSAFE_BUFFERS(ptr[i]));
+  }
   FX_Free(ptr);
 }
 
@@ -124,3 +133,40 @@ TEST(fxcrt, FXAlign) {
   EXPECT_EQ(512, FxAlignToBoundary<512>(i512));
   EXPECT_EQ(-512, FxAlignToBoundary<512>(ineg));
 }
+
+#if defined(PDF_USE_PARTITION_ALLOC)
+#if PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) && \
+    PA_BUILDFLAG(HAS_64_BIT_POINTERS)
+TEST(FxMemory, NewOperatorResultIsPA) {
+  auto obj = std::make_unique<double>(4.0);
+  EXPECT_TRUE(partition_alloc::IsManagedByPartitionAlloc(
+      reinterpret_cast<uintptr_t>(obj.get())));
+#if PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+  EXPECT_TRUE(partition_alloc::IsManagedByPartitionAllocBRPPool(
+      reinterpret_cast<uintptr_t>(obj.get())));
+#endif  // PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+}
+
+TEST(FxMemory, MallocResultIsPA) {
+  void* obj = malloc(16);
+  EXPECT_TRUE(partition_alloc::IsManagedByPartitionAlloc(
+      reinterpret_cast<uintptr_t>(obj)));
+#if PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+  EXPECT_TRUE(partition_alloc::IsManagedByPartitionAllocBRPPool(
+      reinterpret_cast<uintptr_t>(obj)));
+#endif  // PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+  free(obj);
+}
+
+TEST(FxMemory, StackObjectIsNotPA) {
+  int x = 3;
+  EXPECT_FALSE(partition_alloc::IsManagedByPartitionAlloc(
+      reinterpret_cast<uintptr_t>(&x)));
+#if PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+  EXPECT_FALSE(partition_alloc::IsManagedByPartitionAllocBRPPool(
+      reinterpret_cast<uintptr_t>(&x)));
+#endif  // PA_BUILDFLAG(ENABLE_BACKUP_REF_PTR_SUPPORT)
+}
+#endif  // PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC) &&
+        // PA_BUILDFLAG(HAS_64_BIT_POINTERS)
+#endif  // defined(PDF_USE_PARTITION_ALLOC)

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 bm{
     Countries{
         AD{"Andɔr"}
@@ -92,7 +93,6 @@ bm{
         IE{"Irilandi"}
         IL{"Isirayeli"}
         IN{"Ɛndujamana"}
-        IO{"Angilɛ ka ɛndu dugukolo"}
         IQ{"Iraki"}
         IR{"Iraŋ"}
         IS{"Isilandi"}
@@ -127,7 +127,6 @@ bm{
         MD{"Molidavi"}
         MG{"Madagasikari"}
         MH{"Marisali Gun"}
-        MK{"Macedɔni"}
         ML{"Mali"}
         MM{"Myanimari"}
         MN{"Moŋoli"}
@@ -227,5 +226,4 @@ bm{
         ZM{"Zanbi"}
         ZW{"Zimbabuwe"}
     }
-    Version{"2.1.39.11"}
 }

@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sr{
-    Version{"2.1.43.94"}
     zoneStrings{
         "Africa:Abidjan"{
             ec{"Абиџан"}
@@ -258,6 +258,9 @@ sr{
         "America:Chihuahua"{
             ec{"Чихуахуа"}
         }
+        "America:Ciudad_Juarez"{
+            ec{"Сиудад Хуарез"}
+        }
         "America:Coral_Harbour"{
             ec{"Корал Харбур"}
         }
@@ -274,7 +277,7 @@ sr{
             ec{"Куиаба"}
         }
         "America:Curacao"{
-            ec{"Кирасо"}
+            ec{"Курасао"}
         }
         "America:Danmarkshavn"{
             ec{"Данмарксхаген"}
@@ -462,9 +465,6 @@ sr{
         "America:New_York"{
             ec{"Њујорк"}
         }
-        "America:Nipigon"{
-            ec{"Нипигон"}
-        }
         "America:Nome"{
             ec{"Ном"}
         }
@@ -485,9 +485,6 @@ sr{
         }
         "America:Panama"{
             ec{"Панама"}
-        }
-        "America:Pangnirtung"{
-            ec{"Пангниртунг"}
         }
         "America:Paramaribo"{
             ec{"Парамарибо"}
@@ -510,9 +507,6 @@ sr{
         "America:Punta_Arenas"{
             ec{"Пунта Аренас"}
         }
-        "America:Rainy_River"{
-            ec{"Рејни Ривер"}
-        }
         "America:Rankin_Inlet"{
             ec{"Ранкин Инлет"}
         }
@@ -527,9 +521,6 @@ sr{
         }
         "America:Rio_Branco"{
             ec{"Рио Бранко"}
-        }
-        "America:Santa_Isabel"{
-            ec{"Санта Изабел"}
         }
         "America:Santarem"{
             ec{"Сантарем"}
@@ -576,9 +567,6 @@ sr{
         "America:Thule"{
             ec{"Тул"}
         }
-        "America:Thunder_Bay"{
-            ec{"Тандер Беј"}
-        }
         "America:Tijuana"{
             ec{"Тихуана"}
         }
@@ -599,9 +587,6 @@ sr{
         }
         "America:Yakutat"{
             ec{"Јакутат"}
-        }
-        "America:Yellowknife"{
-            ec{"Јелоунајф"}
         }
         "Antarctica:Casey"{
             ec{"Кејси"}
@@ -810,6 +795,9 @@ sr{
         "Asia:Qatar"{
             ec{"Катар"}
         }
+        "Asia:Qostanay"{
+            ec{"Костанај"}
+        }
         "Asia:Qyzylorda"{
             ec{"Кизилорда"}
         }
@@ -924,9 +912,6 @@ sr{
         "Australia:Broken_Hill"{
             ec{"Брокен Хил"}
         }
-        "Australia:Currie"{
-            ec{"Кари"}
-        }
         "Australia:Darwin"{
             ec{"Дарвин"}
         }
@@ -1016,7 +1001,7 @@ sr{
             ec{"Истанбул"}
         }
         "Europe:Jersey"{
-            ec{"Џерси"}
+            ec{"Џерзи"}
         }
         "Europe:Kaliningrad"{
             ec{"Калињинград"}
@@ -1109,9 +1094,6 @@ sr{
         "Europe:Ulyanovsk"{
             ec{"Уљановск"}
         }
-        "Europe:Uzhgorod"{
-            ec{"Ужгород"}
-        }
         "Europe:Vaduz"{
             ec{"Вадуз"}
         }
@@ -1132,9 +1114,6 @@ sr{
         }
         "Europe:Zagreb"{
             ec{"Загреб"}
-        }
-        "Europe:Zaporozhye"{
-            ec{"Запорожје"}
         }
         "Europe:Zurich"{
             ec{"Цирих"}
@@ -1217,8 +1196,8 @@ sr{
         "Pacific:Honolulu"{
             ec{"Хонолулу"}
         }
-        "Pacific:Johnston"{
-            ec{"Џонстон"}
+        "Pacific:Kanton"{
+            ec{"Кантон"}
         }
         "Pacific:Kiritimati"{
             ec{"Киритимати"}
@@ -1523,7 +1502,7 @@ sr{
             ss{"EET"}
         }
         "meta:Europe_Further_Eastern"{
-            ls{"Даљи исток Европе"}
+            ls{"Време даљег истока Европе"}
         }
         "meta:Europe_Western"{
             ld{"Западноевропско летње време"}
@@ -1682,9 +1661,6 @@ sr{
             lg{"Макао време"}
             ls{"Макао стандардно време"}
         }
-        "meta:Macquarie"{
-            ls{"Острво Маквери време"}
-        }
         "meta:Magadan"{
             ld{"Магадан, летње време"}
             lg{"Магадан време"}
@@ -1709,11 +1685,6 @@ sr{
         }
         "meta:Mawson"{
             ls{"Мосон време"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Северозападни Мексико, летње време"}
-            lg{"Северозападни Мексико"}
-            ls{"Северозападни Мексико, стандардно време"}
         }
         "meta:Mexico_Pacific"{
             ld{"Мексички Пацифик, летње време"}
@@ -1758,7 +1729,9 @@ sr{
             ls{"Ниуе време"}
         }
         "meta:Norfolk"{
-            ls{"Норфолк Острво време"}
+            ld{"Норфолк Острво, летње време"}
+            lg{"Норфолк Острво време"}
+            ls{"Норфолк Острво, стандардно време"}
         }
         "meta:Noronha"{
             ld{"Фернандо де Нороња, летње време"}
@@ -1942,11 +1915,9 @@ sr{
             lg{"Јекатеринбург време"}
             ls{"Јекатеринбург, стандардно време"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
-        regionFormat{"{0}"}
+        "meta:Yukon"{
+            ls{"Јукон"}
+        }
         regionFormatDaylight{"{0}, летње време"}
         regionFormatStandard{"{0}, стандардно време"}
     }

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 asa{
     Countries{
         AD{"Andora"}
@@ -91,7 +92,6 @@ asa{
         IE{"Ayalandi"}
         IL{"Ithraeli"}
         IN{"India"}
-        IO{"Ieneo la Uingeredha katika Bahari Hindi"}
         IQ{"Iraki"}
         IR{"Uajemi"}
         IS{"Aithlandi"}
@@ -126,7 +126,6 @@ asa{
         MD{"Moldova"}
         MG{"Bukini"}
         MH{"Vithiwa vya Marshal"}
-        MK{"Mathedonia"}
         ML{"Mali"}
         MM{"Myama"}
         MN{"Mongolia"}
@@ -225,5 +224,4 @@ asa{
         ZM{"Dhambia"}
         ZW{"Dhimbabwe"}
     }
-    Version{"2.1.39.11"}
 }

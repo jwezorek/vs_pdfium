@@ -38,7 +38,7 @@ public:
         kNegativeNumberRule = -1,
         kImproperFractionRule = -2,
         kProperFractionRule = -3,
-        kMasterRule = -4,
+        kDefaultRule = -4,
         kInfinityRule = -5,
         kNaNRule = -6,
         kOtherRule = -7
@@ -54,8 +54,8 @@ public:
     NFRule(const RuleBasedNumberFormat* rbnf, const UnicodeString &ruleText, UErrorCode &status);
     ~NFRule();
 
-    UBool operator==(const NFRule& rhs) const;
-    UBool operator!=(const NFRule& rhs) const { return !operator==(rhs); }
+    bool operator==(const NFRule& rhs) const;
+    bool operator!=(const NFRule& rhs) const { return !operator==(rhs); }
 
     ERuleType getType() const { return (ERuleType)(baseValue <= kNoBase ? (ERuleType)baseValue : kOtherRule); }
     void setType(ERuleType ruleType) { baseValue = (int32_t)ruleType; }
@@ -63,9 +63,11 @@ public:
     int64_t getBaseValue() const { return baseValue; }
     void setBaseValue(int64_t value, UErrorCode& status);
 
-    UChar getDecimalPoint() const { return decimalPoint; }
+    char16_t getDecimalPoint() const { return decimalPoint; }
 
     int64_t getDivisor() const;
+    
+    bool hasModulusSubstitution() const;
 
     void doFormat(int64_t number, UnicodeString& toAppendTo, int32_t pos, int32_t recursionCount, UErrorCode& status) const;
     void doFormat(double  number, UnicodeString& toAppendTo, int32_t pos, int32_t recursionCount, UErrorCode& status) const;
@@ -108,7 +110,7 @@ private:
     int64_t baseValue;
     int32_t radix;
     int16_t exponent;
-    UChar decimalPoint;
+    char16_t decimalPoint;
     UnicodeString fRuleText;
     NFSubstitution* sub1;
     NFSubstitution* sub2;
@@ -117,6 +119,9 @@ private:
 
     NFRule(const NFRule &other); // forbid copying of this class
     NFRule &operator=(const NFRule &other); // forbid copying of this class
+    
+    // TODO: temporary hack to allow MultiplierSubstitution to get to formatter's rounding mode
+    friend class MultiplierSubstitution;
 };
 
 U_NAMESPACE_END

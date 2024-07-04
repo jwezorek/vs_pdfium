@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,6 @@
 
 #include "constants/form_fields.h"
 #include "constants/form_flags.h"
-#include "core/fpdfapi/page/cpdf_docpagedata.h"
 #include "core/fpdfapi/page/cpdf_pagemodule.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
@@ -18,10 +17,11 @@
 #include "core/fpdfapi/parser/cpdf_number.h"
 #include "core/fpdfapi/parser/cpdf_reference.h"
 #include "core/fpdfapi/parser/cpdf_string.h"
-#include "core/fpdfapi/render/cpdf_docrenderdata.h"
+#include "core/fpdfapi/parser/cpdf_test_document.h"
 #include "core/fpdfdoc/cpdf_interactiveform.h"
+#include "core/fxcrt/containers/contains.h"
+#include "core/fxcrt/fx_memory.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -29,15 +29,10 @@ namespace {
 // CPDF_Document.
 class ScopedCPDF_PageModule {
  public:
+  FX_STACK_ALLOCATED();
+
   ScopedCPDF_PageModule() { CPDF_PageModule::Create(); }
   ~ScopedCPDF_PageModule() { CPDF_PageModule::Destroy(); }
-};
-
-class CPDF_TestEmptyDocument final : public CPDF_Document {
- public:
-  CPDF_TestEmptyDocument()
-      : CPDF_Document(std::make_unique<CPDF_DocRenderData>(),
-                      std::make_unique<CPDF_DocPageData>()) {}
 };
 
 void TestMultiselectFieldDict(RetainPtr<CPDF_Array> opt_array,
@@ -57,9 +52,9 @@ void TestMultiselectFieldDict(RetainPtr<CPDF_Array> opt_array,
   form_dict->SetFor(pdfium::form_fields::kV, values);
   form_dict->SetFor("I", selected_indices);
 
-  CPDF_TestEmptyDocument doc;
+  CPDF_TestDocument doc;
   CPDF_InteractiveForm form(&doc);
-  CPDF_FormField form_field(&form, form_dict.Get());
+  CPDF_FormField form_field(&form, std::move(form_dict));
   EXPECT_EQ(expected_use_indices, form_field.UseSelectedIndicesObject());
   for (int i = 0; i < form_field.CountOptions(); i++) {
     const bool expected_selected = pdfium::Contains(expected_indices, i);
@@ -77,37 +72,37 @@ TEST(CPDF_FormFieldTest, GetFullNameForDict) {
   EXPECT_TRUE(name.IsEmpty());
 
   CPDF_IndirectObjectHolder obj_holder;
-  CPDF_Dictionary* root = obj_holder.NewIndirect<CPDF_Dictionary>();
+  auto root = obj_holder.NewIndirect<CPDF_Dictionary>();
   root->SetNewFor<CPDF_Name>("T", "foo");
-  name = CPDF_FormField::GetFullNameForDict(root);
-  EXPECT_STREQ("foo", name.ToUTF8().c_str());
+  name = CPDF_FormField::GetFullNameForDict(root.Get());
+  EXPECT_EQ("foo", name.ToUTF8());
 
-  CPDF_Dictionary* dict1 = obj_holder.NewIndirect<CPDF_Dictionary>();
+  auto dict1 = obj_holder.NewIndirect<CPDF_Dictionary>();
   root->SetNewFor<CPDF_Reference>("Parent", &obj_holder, dict1->GetObjNum());
   dict1->SetNewFor<CPDF_Name>("T", "bar");
-  name = CPDF_FormField::GetFullNameForDict(root);
-  EXPECT_STREQ("bar.foo", name.ToUTF8().c_str());
+  name = CPDF_FormField::GetFullNameForDict(root.Get());
+  EXPECT_EQ("bar.foo", name.ToUTF8());
 
-  CPDF_Dictionary* dict2 = dict1->SetNewFor<CPDF_Dictionary>("Parent");
-  name = CPDF_FormField::GetFullNameForDict(root);
-  EXPECT_STREQ("bar.foo", name.ToUTF8().c_str());
+  auto dict2 = dict1->SetNewFor<CPDF_Dictionary>("Parent");
+  name = CPDF_FormField::GetFullNameForDict(root.Get());
+  EXPECT_EQ("bar.foo", name.ToUTF8());
 
-  CPDF_Dictionary* dict3 = obj_holder.NewIndirect<CPDF_Dictionary>();
+  auto dict3 = obj_holder.NewIndirect<CPDF_Dictionary>();
   dict2->SetNewFor<CPDF_Reference>("Parent", &obj_holder, dict3->GetObjNum());
 
   dict3->SetNewFor<CPDF_Name>("T", "qux");
-  name = CPDF_FormField::GetFullNameForDict(root);
-  EXPECT_STREQ("qux.bar.foo", name.ToUTF8().c_str());
+  name = CPDF_FormField::GetFullNameForDict(root.Get());
+  EXPECT_EQ("qux.bar.foo", name.ToUTF8());
 
   dict3->SetNewFor<CPDF_Reference>("Parent", &obj_holder, root->GetObjNum());
-  name = CPDF_FormField::GetFullNameForDict(root);
-  EXPECT_STREQ("qux.bar.foo", name.ToUTF8().c_str());
-  name = CPDF_FormField::GetFullNameForDict(dict1);
-  EXPECT_STREQ("foo.qux.bar", name.ToUTF8().c_str());
-  name = CPDF_FormField::GetFullNameForDict(dict2);
-  EXPECT_STREQ("bar.foo.qux", name.ToUTF8().c_str());
-  name = CPDF_FormField::GetFullNameForDict(dict3);
-  EXPECT_STREQ("bar.foo.qux", name.ToUTF8().c_str());
+  name = CPDF_FormField::GetFullNameForDict(root.Get());
+  EXPECT_EQ("qux.bar.foo", name.ToUTF8());
+  name = CPDF_FormField::GetFullNameForDict(dict1.Get());
+  EXPECT_EQ("foo.qux.bar", name.ToUTF8());
+  name = CPDF_FormField::GetFullNameForDict(dict2.Get());
+  EXPECT_EQ("bar.foo.qux", name.ToUTF8());
+  name = CPDF_FormField::GetFullNameForDict(dict3.Get());
+  EXPECT_EQ("bar.foo.qux", name.ToUTF8());
 }
 
 TEST(CPDF_FormFieldTest, IsItemSelected) {

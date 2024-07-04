@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 zh_Hant{
     %%Parent{"root"}
     Countries{
@@ -111,7 +112,7 @@ zh_Hant{
         EZ{"歐元區"}
         FI{"芬蘭"}
         FJ{"斐濟"}
-        FK{"福克蘭群島（馬爾維納斯群島）"}
+        FK{"福克蘭群島"}
         FM{"密克羅尼西亞"}
         FO{"法羅群島"}
         FR{"法國"}
@@ -134,7 +135,7 @@ zh_Hant{
         GU{"關島"}
         GW{"幾內亞比索"}
         GY{"蓋亞那"}
-        HK{"香港"}
+        HK{"中國香港特別行政區"}
         HM{"赫德島及麥唐納群島"}
         HN{"宏都拉斯"}
         HR{"克羅埃西亞"}
@@ -184,11 +185,11 @@ zh_Hant{
         MF{"法屬聖馬丁"}
         MG{"馬達加斯加"}
         MH{"馬紹爾群島"}
-        MK{"前南斯拉夫馬其頓共和國"}
+        MK{"北馬其頓"}
         ML{"馬利"}
         MM{"緬甸"}
         MN{"蒙古"}
-        MO{"澳門"}
+        MO{"中國澳門特別行政區"}
         MP{"北馬利安納群島"}
         MQ{"馬丁尼克"}
         MR{"茅利塔尼亞"}
@@ -223,7 +224,7 @@ zh_Hant{
         PM{"聖皮埃與密克隆群島"}
         PN{"皮特肯群島"}
         PR{"波多黎各"}
-        PS{"巴勒斯坦"}
+        PS{"巴勒斯坦自治區"}
         PT{"葡萄牙"}
         PW{"帛琉"}
         PY{"巴拉圭"}
@@ -254,7 +255,7 @@ zh_Hant{
         SV{"薩爾瓦多"}
         SX{"荷屬聖馬丁"}
         SY{"敘利亞"}
-        SZ{"史瓦濟蘭"}
+        SZ{"史瓦帝尼"}
         TA{"特里斯坦達庫尼亞群島"}
         TC{"土克斯及開科斯群島"}
         TD{"查德"}
@@ -288,6 +289,8 @@ zh_Hant{
         VU{"萬那杜"}
         WF{"瓦利斯群島和富圖那群島"}
         WS{"薩摩亞"}
+        XA{"偽區域"}
+        XB{"偽比迪"}
         XK{"科索沃"}
         YE{"葉門"}
         YT{"馬約特島"}
@@ -296,15 +299,19 @@ zh_Hant{
         ZW{"辛巴威"}
         ZZ{"未知區域"}
     }
+    Countries%chagos{
+        IO{"查哥斯群島"}
+    }
     Countries%short{
-        GB{"英國"}
-        UN{"聯合國"}
-        US{"美國"}
+        HK{"香港"}
+        MO{"澳門"}
+        PS{"巴勒斯坦"}
     }
     Countries%variant{
         CD{"剛果民主共和國"}
         CG{"剛果共和國"}
         CZ{"捷克共和國"}
+        FK{"福克蘭群島（馬爾維納斯群島）"}
+        SZ{"史瓦濟蘭"}
     }
-    Version{"2.1.44.91"}
 }

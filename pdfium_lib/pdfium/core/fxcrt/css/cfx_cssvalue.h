@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,13 +12,24 @@
 
 class CFX_CSSValue : public Retainable {
  public:
-  CFX_CSSPrimitiveType GetType() const { return m_value; }
+  enum class PrimitiveType : uint8_t {
+    kUnknown = 0,
+    kNumber,
+    kString,
+    kRGB,
+    kEnum,
+    kFunction,
+    kList,
+  };
+
+  PrimitiveType GetType() const { return m_value; }
 
  protected:
-  explicit CFX_CSSValue(CFX_CSSPrimitiveType type);
+  explicit CFX_CSSValue(PrimitiveType type);
+  ~CFX_CSSValue() override;
 
  private:
-  CFX_CSSPrimitiveType m_value;
+  const PrimitiveType m_value;
 };
 
 #endif  // CORE_FXCRT_CSS_CFX_CSSVALUE_H_

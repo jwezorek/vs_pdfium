@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 nl{
     Countries{
         001{"wereld"}
@@ -84,6 +85,7 @@ nl{
         CN{"China"}
         CO{"Colombia"}
         CP{"Clipperton"}
+        CQ{"Sark"}
         CR{"Costa Rica"}
         CU{"Cuba"}
         CV{"Kaapverdië"}
@@ -110,7 +112,7 @@ nl{
         EZ{"eurozone"}
         FI{"Finland"}
         FJ{"Fiji"}
-        FK{"Falklandeilanden (Islas Malvinas)"}
+        FK{"Falklandeilanden"}
         FM{"Micronesia"}
         FO{"Faeröer"}
         FR{"Frankrijk"}
@@ -133,7 +135,7 @@ nl{
         GU{"Guam"}
         GW{"Guinee-Bissau"}
         GY{"Guyana"}
-        HK{"Hongkong"}
+        HK{"Hongkong SAR van China"}
         HM{"Heard en McDonaldeilanden"}
         HN{"Honduras"}
         HR{"Kroatië"}
@@ -183,11 +185,11 @@ nl{
         MF{"Saint-Martin"}
         MG{"Madagaskar"}
         MH{"Marshalleilanden"}
-        MK{"Macedonië (FYROM)"}
+        MK{"Noord-Macedonië"}
         ML{"Mali"}
         MM{"Myanmar (Birma)"}
         MN{"Mongolië"}
-        MO{"Macau"}
+        MO{"Macau SAR van China"}
         MP{"Noordelijke Marianen"}
         MQ{"Martinique"}
         MR{"Mauritanië"}
@@ -222,7 +224,7 @@ nl{
         PM{"Saint-Pierre en Miquelon"}
         PN{"Pitcairneilanden"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Palestijnse gebieden"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -253,7 +255,7 @@ nl{
         SV{"El Salvador"}
         SX{"Sint-Maarten"}
         SY{"Syrië"}
-        SZ{"Swaziland"}
+        SZ{"Eswatini"}
         TA{"Tristan da Cunha"}
         TC{"Turks- en Caicoseilanden"}
         TD{"Tsjaad"}
@@ -287,6 +289,8 @@ nl{
         VU{"Vanuatu"}
         WF{"Wallis en Futuna"}
         WS{"Samoa"}
+        XA{"Pseudo-Accenten"}
+        XB{"Pseudo-Bidi"}
         XK{"Kosovo"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -295,17 +299,26 @@ nl{
         ZW{"Zimbabwe"}
         ZZ{"onbekend gebied"}
     }
+    Countries%chagos{
+        IO{"Chagoseilanden"}
+    }
     Countries%short{
         GB{"VK"}
+        HK{"Hongkong"}
+        MO{"Macau"}
+        PS{"Palestina"}
         UN{"VN"}
         US{"VS"}
     }
     Countries%variant{
         CD{"Congo (DRC)"}
         CG{"Congo (Republiek)"}
-        CI{"Republiek Ivoorkust"}
+        CI{"Côte d’Ivoire"}
         CZ{"Tsjechische Republiek"}
+        FK{"Falklandeilanden (Islas Malvinas)"}
+        NZ{"Aotearoa Nieuw-Zeeland"}
+        SZ{"Swaziland"}
         TL{"Democratische Republiek Oost-Timor"}
+        TR{"Türkiye"}
     }
-    Version{"2.1.45.14"}
 }

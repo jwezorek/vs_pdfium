@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -24,8 +24,8 @@ class CFX_ImageRenderer {
  public:
   CFX_ImageRenderer(const RetainPtr<CFX_DIBitmap>& pDevice,
                     const CFX_ClipRgn* pClipRgn,
-                    const RetainPtr<CFX_DIBBase>& pSource,
-                    int bitmap_alpha,
+                    RetainPtr<const CFX_DIBBase> source,
+                    float alpha,
                     uint32_t mask_color,
                     const CFX_Matrix& matrix,
                     const FXDIB_ResampleOptions& options,
@@ -35,6 +35,8 @@ class CFX_ImageRenderer {
   bool Continue(PauseIndicatorIface* pPause);
 
  private:
+  enum class State : uint8_t { kInitial = 0, kStretching, kTransforming };
+
   RetainPtr<CFX_DIBitmap> const m_pDevice;
   UnownedPtr<const CFX_ClipRgn> const m_pClipRgn;
   const CFX_Matrix m_Matrix;
@@ -42,9 +44,9 @@ class CFX_ImageRenderer {
   std::unique_ptr<CFX_ImageStretcher> m_Stretcher;
   CFX_BitmapComposer m_Composer;
   FX_RECT m_ClipBox;
-  const int m_BitmapAlpha;
-  int m_Status = 0;
+  const float m_Alpha;
   uint32_t m_MaskColor;
+  State m_State = State::kInitial;
   const bool m_bRgbByteOrder;
 };
 

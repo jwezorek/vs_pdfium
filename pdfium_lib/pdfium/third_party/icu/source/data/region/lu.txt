@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 lu{
     Countries{
         AD{"Andore"}
@@ -92,7 +93,6 @@ lu{
         IE{"Irelande"}
         IL{"Isirayele"}
         IN{"Inde"}
-        IO{"Lutanda lwa Angeletele ku mbu wa Indiya"}
         IQ{"Iraki"}
         IR{"Ira"}
         IS{"Isilande"}
@@ -127,7 +127,6 @@ lu{
         MD{"Molidavi"}
         MG{"Madagasikari"}
         MH{"Lutanda lua Marishale"}
-        MK{"Masedwane"}
         ML{"Mali"}
         MM{"Myamare"}
         MN{"Mongoli"}
@@ -227,5 +226,4 @@ lu{
         ZM{"Zambi"}
         ZW{"Zimbabwe"}
     }
-    Version{"2.1.39.11"}
 }

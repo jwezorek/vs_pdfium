@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,7 +12,9 @@
 
 class CFX_CSSStringValue final : public CFX_CSSValue {
  public:
-  explicit CFX_CSSStringValue(const WideString& value);
+  // Callers always have views, so do the copy here instead of requiring
+  // each of them to create a WideString.
+  explicit CFX_CSSStringValue(WideStringView value);
   ~CFX_CSSStringValue() override;
 
   const WideString Value() const { return value_; }

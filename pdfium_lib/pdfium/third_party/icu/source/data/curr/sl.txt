@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sl{
     Currencies{
         ADP{
@@ -204,7 +205,7 @@ sl{
         }
         CDF{
             "CDF",
-            "kongoški frank",
+            "kongovski frank",
         }
         CHE{
             "CHE",
@@ -540,7 +541,7 @@ sl{
         }
         LSL{
             "LSL",
-            "lesoški loti",
+            "lesotski loti",
         }
         LTL{
             "LTL",
@@ -826,9 +827,13 @@ sl{
             "SKK",
             "slovaška krona",
         }
+        SLE{
+            "SLE",
+            "sieraleonski leone",
+        }
         SLL{
             "SLL",
-            "sieraleonski leone",
+            "sieraleonski leone (1964—2022)",
         }
         SOS{
             "SOS",
@@ -988,7 +993,7 @@ sl{
         }
         XAF{
             "FCFA",
-            "CFA frank BEAC",
+            "srednjeafriški frank CFA",
         }
         XAG{
             "XAG",
@@ -1035,7 +1040,7 @@ sl{
             "frank UIC",
         }
         XOF{
-            "CFA",
+            "F CFA",
             "zahodnoafriški frank CFA",
         }
         XPD{
@@ -1044,7 +1049,7 @@ sl{
         }
         XPF{
             "CFPF",
-            "CFP frank",
+            "frank CFP",
         }
         XPT{
             "XPT",
@@ -1112,104 +1117,8 @@ sl{
         }
     }
     Currencies%narrow{
-        AOA{"Kz"}
-        ARS{"$"}
-        AUD{"$"}
-        BAM{"KM"}
-        BBD{"$"}
-        BDT{"৳"}
-        BMD{"$"}
-        BND{"$"}
-        BOB{"Bs"}
-        BRL{"R$"}
-        BSD{"$"}
-        BWP{"P"}
         BYN{"р."}
-        BZD{"$"}
-        CAD{"$"}
-        CLP{"$"}
-        CNY{"¥"}
-        COP{"$"}
-        CRC{"₡"}
-        CUC{"$"}
-        CUP{"$"}
-        CZK{"Kč"}
-        DKK{"kr"}
-        DOP{"$"}
-        EGP{"E£"}
-        EUR{"€"}
-        FJD{"$"}
-        FKP{"£"}
-        GBP{"£"}
-        GEL{"₾"}
-        GIP{"£"}
-        GNF{"FG"}
-        GTQ{"Q"}
-        GYD{"$"}
-        HKD{"$"}
-        HNL{"L"}
-        HRK{"kn"}
-        HUF{"Ft"}
-        IDR{"Rp"}
-        ILS{"₪"}
-        INR{"₹"}
-        ISK{"kr"}
-        JMD{"$"}
-        JPY{"¥"}
-        KHR{"៛"}
-        KMF{"CF"}
-        KPW{"₩"}
-        KRW{"₩"}
-        KYD{"$"}
-        KZT{"₸"}
-        LAK{"₭"}
-        LBP{"L£"}
-        LKR{"Rs"}
-        LRD{"$"}
-        MGA{"Ar"}
-        MMK{"K"}
-        MNT{"₮"}
-        MUR{"Rs"}
-        MXN{"$"}
-        MYR{"RM"}
-        NAD{"$"}
-        NGN{"₦"}
-        NIO{"C$"}
-        NOK{"kr"}
-        NPR{"Rs"}
-        NZD{"$"}
-        PHP{"₱"}
-        PKR{"Rs"}
-        PLN{"zł"}
-        PYG{"₲"}
-        RON{"lei"}
-        RUB{"₽"}
-        RWF{"RF"}
-        SBD{"$"}
-        SEK{"kr"}
-        SGD{"$"}
-        SHP{"£"}
-        SRD{"$"}
-        SSP{"£"}
-        STN{"Db"}
-        SYP{"£"}
-        THB{"฿"}
-        TOP{"T$"}
-        TRY{"₺"}
-        TTD{"$"}
         TWD{"NT$"}
-        UAH{"₴"}
-        USD{"$"}
-        UYU{"$"}
-        VEF{"Bs"}
-        VND{"₫"}
-        XCD{"$"}
-        ZAR{"R"}
-        ZMW{"ZK"}
-    }
-    Currencies%variant{
-        GEL{"₾"}
-        TRY{"TL"}
     }
     CurrencyPlurals{
         AED{
@@ -1261,7 +1170,7 @@ sl{
             two{"avstralska dolarja"}
         }
         AWG{
-            few{"arubski florin"}
+            few{"arubski florini"}
             one{"arubski florin"}
             other{"arubskih florinov"}
             two{"arubska florina"}
@@ -1375,10 +1284,10 @@ sl{
             two{"kanadska dolarja"}
         }
         CDF{
-            few{"kongoški frank"}
-            one{"kongoški frank"}
-            other{"kongoških frankov"}
-            two{"kongoška franka"}
+            few{"kongovski franki"}
+            one{"kongovski frank"}
+            other{"kongovskih frankov"}
+            two{"kongovska franka"}
         }
         CHF{
             few{"švicarski franki"}
@@ -1585,10 +1494,10 @@ sl{
             two{"indonezijski rupiji"}
         }
         ILS{
-            few{"izraelski šekeli"}
+            few{"izraelski šekli"}
             one{"izraelski šekel"}
-            other{"izraelskih šekelov"}
-            two{"izraelska šekela"}
+            other{"izraelskih šeklov"}
+            two{"izraelska šekla"}
         }
         INR{
             few{"indijske rupije"}
@@ -1677,7 +1586,7 @@ sl{
         KYD{
             few{"kajmanski dolarji"}
             one{"kajmanski dolar"}
-            other{"kajmanski dolar"}
+            other{"kajmanskih dolarjev"}
             two{"kajmanska dolarja"}
         }
         KZT{
@@ -1710,17 +1619,11 @@ sl{
             other{"liberijskih dolarjev"}
             two{"liberijska dolarja"}
         }
-        LTL{
-            few{"litovski litas"}
-            one{"litovski litas"}
-            other{"litovski litas"}
-            two{"litovski litas"}
-        }
-        LVL{
-            few{"latvijski lats"}
-            one{"latvijski lats"}
-            other{"latvijski lats"}
-            two{"latvijski lats"}
+        LSL{
+            few{"lesotski loti"}
+            one{"lesotski lot"}
+            other{"lesotskih lotov"}
+            two{"lesotska lota"}
         }
         LYD{
             few{"libijski dinarji"}
@@ -1980,11 +1883,17 @@ sl{
             other{"funtov Sv. Helene"}
             two{"funta Sv. Helene"}
         }
-        SLL{
+        SLE{
             few{"sieraleonski leoni"}
             one{"sieraleonski leone"}
             other{"sieraleonskih leonov"}
             two{"sieraleonska leona"}
+        }
+        SLL{
+            few{"sieraleonski leoni (1964—2022)"}
+            one{"sieraleonski leone (1964—2022)"}
+            other{"sieraleonskih leonov (1964—2022)"}
+            two{"sieraleonska leona (1964—2022)"}
         }
         SOS{
             few{"somalski šilingi"}
@@ -2143,10 +2052,10 @@ sl{
             two{"samoanski tali"}
         }
         XAF{
-            few{"franki CFA BEAC"}
+            few{"srednjeafriški franki CFA"}
             one{"srednjeafriški frank CFA"}
-            other{"srednjeafriški frank CFA"}
-            two{"franka CFA BEAC"}
+            other{"srednjeafriških frankov CFA"}
+            two{"srednjeafriška franka CFA"}
         }
         XCD{
             few{"vzhodnokaribski dolarji"}
@@ -2155,14 +2064,14 @@ sl{
             two{"vzhodnokaribska dolarja"}
         }
         XOF{
-            few{"franki CFA BCEAO"}
+            few{"zahodnoafriški franki CFA"}
             one{"zahodnoafriški frank CFA"}
-            other{"zahodnoafriški frank CFA"}
-            two{"franka CFA BCEAO"}
+            other{"zahodnoafriških frankov CFA"}
+            two{"zahodnoafriška franka CFA"}
         }
         XPF{
             few{"franki CFP"}
-            one{"CFP frank"}
+            one{"frank CFP"}
             other{"frankov CFP"}
             two{"franka CFP"}
         }
@@ -2197,5 +2106,4 @@ sl{
         other{"{0} {1}"}
         two{"{0} {1}"}
     }
-    Version{"2.1.44.91"}
 }

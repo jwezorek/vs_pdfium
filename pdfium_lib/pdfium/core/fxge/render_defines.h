@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,9 +21,7 @@
 #define FXRC_ALPHA_OUTPUT 0x40
 #define FXRC_BLEND_MODE 0x80
 #define FXRC_SOFT_CLIP 0x100
-#define FXRC_BITMASK_OUTPUT 0x400
 #define FXRC_BYTEMASK_OUTPUT 0x800
-#define FXRENDER_IMAGE_LOSSY 0x1000
 #define FXRC_FILLSTROKE_PATH 0x2000
 #define FXRC_SHADING 0x4000
 

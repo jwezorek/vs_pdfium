@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,6 +9,7 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/js_define.h"
 
@@ -31,13 +32,13 @@ class CJS_Console final : public CJS_Object {
   static const JSMethodSpec MethodSpecs[];
 
   CJS_Result clear(CJS_Runtime* pRuntime,
-                   const std::vector<v8::Local<v8::Value>>& params);
+                   pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result hide(CJS_Runtime* pRuntime,
-                  const std::vector<v8::Local<v8::Value>>& params);
+                  pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result println(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result show(CJS_Runtime* pRuntime,
-                  const std::vector<v8::Local<v8::Value>>& params);
+                  pdfium::span<v8::Local<v8::Value>> params);
 };
 
 #endif  // FXJS_CJS_CONSOLE_H_

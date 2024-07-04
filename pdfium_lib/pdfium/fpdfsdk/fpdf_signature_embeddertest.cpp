@@ -1,11 +1,12 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
+#include <vector>
 
 #include "public/fpdf_signature.h"
 #include "testing/embedder_test.h"
 #include "testing/fx_string_testhelpers.h"
-#include "third_party/base/stl_util.h"
 
 class FPDFSignatureEmbedderTest : public EmbedderTest {};
 
@@ -26,23 +27,23 @@ TEST_F(FPDFSignatureEmbedderTest, GetSignatureObject) {
   ASSERT_TRUE(OpenDocument("two_signatures.pdf"));
   // Different, non-null signature objects are returned.
   FPDF_SIGNATURE signature1 = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature1);
+  EXPECT_TRUE(signature1);
   FPDF_SIGNATURE signature2 = FPDF_GetSignatureObject(document(), 1);
-  EXPECT_NE(nullptr, signature2);
+  EXPECT_TRUE(signature2);
   EXPECT_NE(signature1, signature2);
 
   // Out of bounds.
-  EXPECT_EQ(nullptr, FPDF_GetSignatureObject(document(), -1));
-  EXPECT_EQ(nullptr, FPDF_GetSignatureObject(document(), 2));
+  EXPECT_FALSE(FPDF_GetSignatureObject(document(), -1));
+  EXPECT_FALSE(FPDF_GetSignatureObject(document(), 2));
 
   // Provide no document.
-  EXPECT_EQ(nullptr, FPDF_GetSignatureObject(nullptr, 0));
+  EXPECT_FALSE(FPDF_GetSignatureObject(nullptr, 0));
 }
 
 TEST_F(FPDFSignatureEmbedderTest, GetContents) {
   ASSERT_TRUE(OpenDocument("two_signatures.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetContents() positive testing.
   unsigned long size = FPDFSignatureObj_GetContents(signature, nullptr, 0);
@@ -71,7 +72,7 @@ TEST_F(FPDFSignatureEmbedderTest, GetContents) {
 TEST_F(FPDFSignatureEmbedderTest, GetByteRange) {
   ASSERT_TRUE(OpenDocument("two_signatures.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetByteRange() positive testing.
   unsigned long size = FPDFSignatureObj_GetByteRange(signature, nullptr, 0);
@@ -98,7 +99,7 @@ TEST_F(FPDFSignatureEmbedderTest, GetByteRange) {
 TEST_F(FPDFSignatureEmbedderTest, GetSubFilter) {
   ASSERT_TRUE(OpenDocument("two_signatures.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetSubFilter() positive testing.
   unsigned long size = FPDFSignatureObj_GetSubFilter(signature, nullptr, 0);
@@ -125,7 +126,7 @@ TEST_F(FPDFSignatureEmbedderTest, GetSubFilter) {
 TEST_F(FPDFSignatureEmbedderTest, GetSubFilterNoKeyExists) {
   ASSERT_TRUE(OpenDocument("signature_no_sub_filter.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetSubFilter() negative testing: no SubFilter
   ASSERT_EQ(0U, FPDFSignatureObj_GetSubFilter(signature, nullptr, 0));
@@ -134,12 +135,12 @@ TEST_F(FPDFSignatureEmbedderTest, GetSubFilterNoKeyExists) {
 TEST_F(FPDFSignatureEmbedderTest, GetReason) {
   ASSERT_TRUE(OpenDocument("signature_reason.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetReason() positive testing.
   constexpr char kReason[] = "test reason";
   // Return value includes the terminating NUL that is provided.
-  constexpr unsigned long kReasonUTF16Size = pdfium::size(kReason) * 2;
+  constexpr unsigned long kReasonUTF16Size = std::size(kReason) * 2;
   constexpr wchar_t kReasonWide[] = L"test reason";
   unsigned long size = FPDFSignatureObj_GetReason(signature, nullptr, 0);
   ASSERT_EQ(kReasonUTF16Size, size);
@@ -164,7 +165,7 @@ TEST_F(FPDFSignatureEmbedderTest, GetReason) {
 TEST_F(FPDFSignatureEmbedderTest, GetTime) {
   ASSERT_TRUE(OpenDocument("two_signatures.pdf"));
   FPDF_SIGNATURE signature = FPDF_GetSignatureObject(document(), 0);
-  EXPECT_NE(nullptr, signature);
+  EXPECT_TRUE(signature);
 
   // FPDFSignatureObj_GetTime() positive testing.
   unsigned long size = FPDFSignatureObj_GetTime(signature, nullptr, 0);

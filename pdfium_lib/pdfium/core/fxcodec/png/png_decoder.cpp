@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,18 +6,18 @@
 
 #include "core/fxcodec/png/png_decoder.h"
 
-#include <algorithm>
+#include <setjmp.h>
+#include <string.h>
 
 #include "core/fxcodec/cfx_codec_memory.h"
 #include "core/fxcodec/fx_codec.h"
+#include "core/fxcodec/fx_codec_def.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/compiler_specific.h"
 
 #ifdef USE_SYSTEM_LIBPNG
 #include <png.h>
 #else
-#include "third_party/libpng16/png.h"
+#include "third_party/libpng/png.h"
 #endif
 
 #define PNG_ERROR_SIZE 256
@@ -30,7 +30,7 @@ class CPngContext final : public ProgressiveDecoderIface::Context {
   png_structp m_pPng = nullptr;
   png_infop m_pInfo = nullptr;
   UnownedPtr<PngDecoder::Delegate> const m_pDelegate;
-  char m_szLastError[PNG_ERROR_SIZE];
+  char m_szLastError[PNG_ERROR_SIZE] = {};
 };
 
 extern "C" {
@@ -58,10 +58,10 @@ void _png_load_bmp_attribute(png_structp png_ptr,
     png_get_pHYs(png_ptr, info_ptr, &res_x, &res_y, &unit_type);
     switch (unit_type) {
       case PNG_RESOLUTION_METER:
-        pAttribute->m_wDPIUnit = FXCODEC_RESUNIT_METER;
+        pAttribute->m_wDPIUnit = CFX_DIBAttribute::kResUnitMeter;
         break;
       default:
-        pAttribute->m_wDPIUnit = FXCODEC_RESUNIT_NONE;
+        pAttribute->m_wDPIUnit = CFX_DIBAttribute::kResUnitNone;
     }
 #endif
 #if defined(PNG_iCCP_SUPPORTED)
@@ -129,7 +129,7 @@ void _png_get_header_func(png_structp png_ptr, png_infop info_ptr) {
       if (color_type1 != PNG_COLOR_TYPE_PALETTE) {
         png_error(pContext->m_pPng, "Not Support Output Palette Now");
       }
-      FALLTHROUGH;
+      [[fallthrough]];
     case PNG_COLOR_TYPE_RGB:
     case PNG_COLOR_TYPE_RGB_ALPHA:
       if (!(color_type1 & PNG_COLOR_MASK_COLOR)) {
@@ -172,9 +172,7 @@ void _png_get_row_func(png_structp png_ptr,
 }  // extern "C"
 
 CPngContext::CPngContext(PngDecoder::Delegate* pDelegate)
-    : m_pDelegate(pDelegate) {
-  memset(m_szLastError, 0, sizeof(m_szLastError));
-}
+    : m_pDelegate(pDelegate) {}
 
 CPngContext::~CPngContext() {
   png_destroy_read_struct(m_pPng ? &m_pPng : nullptr,
@@ -218,7 +216,7 @@ bool PngDecoder::ContinueDecode(ProgressiveDecoderIface::Context* pContext,
     }
     return false;
   }
-  pdfium::span<uint8_t> src_buf = codec_memory->GetSpan();
+  pdfium::span<uint8_t> src_buf = codec_memory->GetUnconsumedSpan();
   png_process_data(ctx->m_pPng, ctx->m_pInfo, src_buf.data(), src_buf.size());
   return true;
 }

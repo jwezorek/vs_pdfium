@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 yue{
     Countries{
         001{"世界"}
@@ -183,7 +184,7 @@ yue{
         MF{"法屬聖馬丁"}
         MG{"馬達加斯加"}
         MH{"馬紹爾群島"}
-        MK{"馬其頓"}
+        MK{"北馬其頓"}
         ML{"馬利"}
         MM{"緬甸"}
         MN{"蒙古"}
@@ -287,6 +288,8 @@ yue{
         VU{"萬那杜"}
         WF{"瓦利斯同富圖納群島"}
         WS{"薩摩亞"}
+        XA{"偽口音"}
+        XB{"偽 Bidi"}
         XK{"科索沃"}
         YE{"葉門"}
         YT{"馬約特"}
@@ -295,19 +298,19 @@ yue{
         ZW{"辛巴威"}
         ZZ{"未知區域"}
     }
+    Countries%chagos{
+        IO{"查哥斯群島"}
+    }
     Countries%short{
-        GB{"英國"}
         HK{"香港"}
         MO{"澳門"}
         PS{"巴勒斯坦"}
-        US{"美國"}
     }
     Countries%variant{
         CD{"剛果民主共和國"}
         CG{"剛果共和國"}
         CZ{"捷克共和國"}
         FK{"福克蘭群島 (馬爾維納斯群島)"}
-        MK{"前南斯拉夫馬其頓共和國"}
+        SZ{"斯威士蘭"}
     }
-    Version{"2.1.44.91"}
 }

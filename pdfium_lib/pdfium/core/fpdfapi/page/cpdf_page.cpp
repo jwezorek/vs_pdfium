@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,24 +11,26 @@
 
 #include "constants/page_object.h"
 #include "core/fpdfapi/page/cpdf_contentparser.h"
+#include "core/fpdfapi/page/cpdf_pageimagecache.h"
 #include "core/fpdfapi/page/cpdf_pageobject.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_object.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/containers/contains.h"
 
-CPDF_Page::CPDF_Page(CPDF_Document* pDocument, CPDF_Dictionary* pPageDict)
-    : CPDF_PageObjectHolder(pDocument, pPageDict, nullptr, nullptr),
+CPDF_Page::CPDF_Page(CPDF_Document* pDocument,
+                     RetainPtr<CPDF_Dictionary> pPageDict)
+    : CPDF_PageObjectHolder(pDocument, std::move(pPageDict), nullptr, nullptr),
       m_PageSize(100, 100),
       m_pPDFDocument(pDocument) {
-  DCHECK(pPageDict);
-
   // Cannot initialize |m_pResources| and |m_pPageResources| via the
   // CPDF_PageObjectHolder ctor because GetPageAttr() requires
   // CPDF_PageObjectHolder to finish initializing first.
-  CPDF_Object* pPageAttr = GetPageAttr(pdfium::page_object::kResources);
-  m_pResources.Reset(pPageAttr ? pPageAttr->GetDict() : nullptr);
+  RetainPtr<CPDF_Object> pPageAttr =
+      GetMutablePageAttr(pdfium::page_object::kResources);
+  m_pResources = pPageAttr ? pPageAttr->GetMutableDict() : nullptr;
   m_pPageResources = m_pResources;
 
   UpdateDimensions();
@@ -47,7 +49,7 @@ CPDFXFA_Page* CPDF_Page::AsXFAPage() {
 }
 
 CPDF_Document* CPDF_Page::GetDocument() const {
-  return GetPDFDocument();
+  return m_pPDFDocument;
 }
 
 float CPDF_Page::GetPageWidth() const {
@@ -69,28 +71,32 @@ void CPDF_Page::ParseContent() {
   if (GetParseState() == ParseState::kNotParsed)
     StartParse(std::make_unique<CPDF_ContentParser>(this));
 
-  DCHECK(GetParseState() == ParseState::kParsing);
+  DCHECK_EQ(GetParseState(), ParseState::kParsing);
   ContinueParse(nullptr);
 }
 
-CPDF_Object* CPDF_Page::GetPageAttr(const ByteString& name) const {
-  CPDF_Dictionary* pPageDict = GetDict();
-  std::set<CPDF_Dictionary*> visited;
-  while (1) {
-    visited.insert(pPageDict);
-    if (CPDF_Object* pObj = pPageDict->GetDirectObjectFor(name))
+RetainPtr<CPDF_Object> CPDF_Page::GetMutablePageAttr(const ByteString& name) {
+  return pdfium::WrapRetain(const_cast<CPDF_Object*>(GetPageAttr(name).Get()));
+}
+
+RetainPtr<const CPDF_Object> CPDF_Page::GetPageAttr(
+    const ByteString& name) const {
+  std::set<RetainPtr<const CPDF_Dictionary>> visited;
+  RetainPtr<const CPDF_Dictionary> pPageDict = GetDict();
+  while (pPageDict && !pdfium::Contains(visited, pPageDict)) {
+    RetainPtr<const CPDF_Object> pObj = pPageDict->GetDirectObjectFor(name);
+    if (pObj)
       return pObj;
 
+    visited.insert(pPageDict);
     pPageDict = pPageDict->GetDictFor(pdfium::page_object::kParent);
-    if (!pPageDict || pdfium::Contains(visited, pPageDict))
-      break;
   }
   return nullptr;
 }
 
 CFX_FloatRect CPDF_Page::GetBox(const ByteString& name) const {
   CFX_FloatRect box;
-  CPDF_Array* pBox = ToArray(GetPageAttr(name));
+  RetainPtr<const CPDF_Array> pBox = ToArray(GetPageAttr(name));
   if (pBox) {
     box = pBox->GetRect();
     box.Normalize();
@@ -98,7 +104,7 @@ CFX_FloatRect CPDF_Page::GetBox(const ByteString& name) const {
   return box;
 }
 
-Optional<CFX_PointF> CPDF_Page::DeviceToPage(
+std::optional<CFX_PointF> CPDF_Page::DeviceToPage(
     const FX_RECT& rect,
     int rotate,
     const CFX_PointF& device_point) const {
@@ -106,7 +112,7 @@ Optional<CFX_PointF> CPDF_Page::DeviceToPage(
   return page2device.GetInverse().Transform(device_point);
 }
 
-Optional<CFX_PointF> CPDF_Page::PageToDevice(
+std::optional<CFX_PointF> CPDF_Page::PageToDevice(
     const FX_RECT& rect,
     int rotate,
     const CFX_PointF& page_point) const {
@@ -172,9 +178,41 @@ CFX_Matrix CPDF_Page::GetDisplayMatrix(const FX_RECT& rect, int iRotate) const {
 }
 
 int CPDF_Page::GetPageRotation() const {
-  CPDF_Object* pRotate = GetPageAttr(pdfium::page_object::kRotate);
+  RetainPtr<const CPDF_Object> pRotate =
+      GetPageAttr(pdfium::page_object::kRotate);
   int rotate = pRotate ? (pRotate->GetInteger() / 90) % 4 : 0;
   return (rotate < 0) ? (rotate + 4) : rotate;
+}
+
+RetainPtr<CPDF_Array> CPDF_Page::GetOrCreateAnnotsArray() {
+  return GetMutableDict()->GetOrCreateArrayFor("Annots");
+}
+
+RetainPtr<CPDF_Array> CPDF_Page::GetMutableAnnotsArray() {
+  return GetMutableDict()->GetMutableArrayFor("Annots");
+}
+
+RetainPtr<const CPDF_Array> CPDF_Page::GetAnnotsArray() const {
+  return GetDict()->GetArrayFor("Annots");
+}
+
+void CPDF_Page::AddPageImageCache() {
+  m_pPageImageCache = std::make_unique<CPDF_PageImageCache>(this);
+}
+
+void CPDF_Page::SetRenderContext(std::unique_ptr<RenderContextIface> pContext) {
+  DCHECK(!m_pRenderContext);
+  DCHECK(pContext);
+  m_pRenderContext = std::move(pContext);
+}
+
+void CPDF_Page::ClearRenderContext() {
+  m_pRenderContext.reset();
+}
+
+void CPDF_Page::ClearView() {
+  if (m_pView)
+    m_pView->ClearPage(this);
 }
 
 void CPDF_Page::UpdateDimensions() {
@@ -214,5 +252,6 @@ CPDF_Page::RenderContextClearer::RenderContextClearer(CPDF_Page* pPage)
     : m_pPage(pPage) {}
 
 CPDF_Page::RenderContextClearer::~RenderContextClearer() {
-  m_pPage->SetRenderContext(nullptr);
+  if (m_pPage)
+    m_pPage->ClearRenderContext();
 }

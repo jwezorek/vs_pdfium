@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,7 +15,10 @@
 #include "core/fpdfapi/render/cpdf_docrenderdata.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/fx_stream.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 #include "fpdfsdk/cpdfsdk_helpers.h"
 #include "public/fpdf_formfill.h"
 
@@ -24,28 +27,29 @@
 #endif  // PDF_ENABLE_XFA
 
 // These checks are here because core/ and public/ cannot depend on each other.
-static_assert(CPDF_DataAvail::DataError == PDF_DATA_ERROR,
-              "CPDF_DataAvail::DataError value mismatch");
-static_assert(CPDF_DataAvail::DataNotAvailable == PDF_DATA_NOTAVAIL,
-              "CPDF_DataAvail::DataNotAvailable value mismatch");
-static_assert(CPDF_DataAvail::DataAvailable == PDF_DATA_AVAIL,
-              "CPDF_DataAvail::DataAvailable value mismatch");
+static_assert(CPDF_DataAvail::kDataError == PDF_DATA_ERROR,
+              "CPDF_DataAvail::kDataError value mismatch");
+static_assert(CPDF_DataAvail::kDataNotAvailable == PDF_DATA_NOTAVAIL,
+              "CPDF_DataAvail::kDataNotAvailable value mismatch");
+static_assert(CPDF_DataAvail::kDataAvailable == PDF_DATA_AVAIL,
+              "CPDF_DataAvail::kDataAvailable value mismatch");
 
-static_assert(CPDF_DataAvail::LinearizationUnknown == PDF_LINEARIZATION_UNKNOWN,
-              "CPDF_DataAvail::LinearizationUnknown value mismatch");
-static_assert(CPDF_DataAvail::NotLinearized == PDF_NOT_LINEARIZED,
-              "CPDF_DataAvail::NotLinearized value mismatch");
-static_assert(CPDF_DataAvail::Linearized == PDF_LINEARIZED,
-              "CPDF_DataAvail::Linearized value mismatch");
+static_assert(CPDF_DataAvail::kLinearizationUnknown ==
+                  PDF_LINEARIZATION_UNKNOWN,
+              "CPDF_DataAvail::kLinearizationUnknown value mismatch");
+static_assert(CPDF_DataAvail::kNotLinearized == PDF_NOT_LINEARIZED,
+              "CPDF_DataAvail::kNotLinearized value mismatch");
+static_assert(CPDF_DataAvail::kLinearized == PDF_LINEARIZED,
+              "CPDF_DataAvail::kLinearized value mismatch");
 
-static_assert(CPDF_DataAvail::FormError == PDF_FORM_ERROR,
-              "CPDF_DataAvail::FormError value mismatch");
-static_assert(CPDF_DataAvail::FormNotAvailable == PDF_FORM_NOTAVAIL,
-              "CPDF_DataAvail::FormNotAvailable value mismatch");
-static_assert(CPDF_DataAvail::FormAvailable == PDF_FORM_AVAIL,
-              "CPDF_DataAvail::FormAvailable value mismatch");
-static_assert(CPDF_DataAvail::FormNotExist == PDF_FORM_NOTEXIST,
-              "CPDF_DataAvail::FormNotExist value mismatch");
+static_assert(CPDF_DataAvail::kFormError == PDF_FORM_ERROR,
+              "CPDF_DataAvail::kFormError value mismatch");
+static_assert(CPDF_DataAvail::kFormNotAvailable == PDF_FORM_NOTAVAIL,
+              "CPDF_DataAvail::kFormNotAvailable value mismatch");
+static_assert(CPDF_DataAvail::kFormAvailable == PDF_FORM_AVAIL,
+              "CPDF_DataAvail::kFormAvailable value mismatch");
+static_assert(CPDF_DataAvail::kFormNotExist == PDF_FORM_NOTEXIST,
+              "CPDF_DataAvail::kFormNotExist value mismatch");
 
 namespace {
 
@@ -56,11 +60,13 @@ class FPDF_FileAvailContext final : public CPDF_DataAvail::FileAvail {
 
   // CPDF_DataAvail::FileAvail:
   bool IsDataAvail(FX_FILESIZE offset, size_t size) override {
-    return !!avail_->IsDataAvail(avail_, offset, size);
+    return !!avail_->IsDataAvail(avail_, pdfium::checked_cast<size_t>(offset),
+                                 size);
   }
 
  private:
-  FX_FILEAVAIL* const avail_;
+  // TODO(tsepez): fix murky ownership in tests.
+  UNOWNED_PTR_EXCLUSION FX_FILEAVAIL* const avail_;
 };
 
 class FPDF_FileAccessContext final : public IFX_SeekableReadStream {
@@ -70,45 +76,48 @@ class FPDF_FileAccessContext final : public IFX_SeekableReadStream {
   // IFX_SeekableReadStream:
   FX_FILESIZE GetSize() override { return file_->m_FileLen; }
 
-  bool ReadBlockAtOffset(void* buffer,
-                         FX_FILESIZE offset,
-                         size_t size) override {
-    if (!buffer || offset < 0 || !size)
+  bool ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                         FX_FILESIZE offset) override {
+    if (buffer.empty() || offset < 0)
       return false;
 
-    if (!pdfium::base::IsValueInRangeForNumericType<FX_FILESIZE>(size))
+    if (!pdfium::IsValueInRangeForNumericType<FX_FILESIZE>(buffer.size())) {
       return false;
+    }
 
-    FX_SAFE_FILESIZE new_pos = size;
+    FX_SAFE_FILESIZE new_pos = buffer.size();
     new_pos += offset;
     return new_pos.IsValid() && new_pos.ValueOrDie() <= GetSize() &&
-           file_->m_GetBlock(file_->m_Param, offset,
-                             static_cast<uint8_t*>(buffer), size);
+           file_->m_GetBlock(
+               file_->m_Param, pdfium::checked_cast<unsigned long>(offset),
+               buffer.data(),
+               pdfium::checked_cast<unsigned long>(buffer.size()));
   }
 
  private:
   explicit FPDF_FileAccessContext(FPDF_FILEACCESS* file) : file_(file) {}
   ~FPDF_FileAccessContext() override = default;
 
-  FPDF_FILEACCESS* const file_;
+  // TODO(tsepez): fix murky ownership in tests.
+  UNOWNED_PTR_EXCLUSION FPDF_FILEACCESS* const file_;
 };
 
 class FPDF_DownloadHintsContext final : public CPDF_DataAvail::DownloadHints {
  public:
-  explicit FPDF_DownloadHintsContext(FX_DOWNLOADHINTS* pDownloadHints) {
-    m_pDownloadHints = pDownloadHints;
-  }
-  ~FPDF_DownloadHintsContext() override {}
+  explicit FPDF_DownloadHintsContext(FX_DOWNLOADHINTS* pDownloadHints)
+      : m_pDownloadHints(pDownloadHints) {}
+  ~FPDF_DownloadHintsContext() override = default;
 
- public:
   // IFX_DownloadHints
   void AddSegment(FX_FILESIZE offset, size_t size) override {
-    if (m_pDownloadHints)
-      m_pDownloadHints->AddSegment(m_pDownloadHints, offset, size);
+    if (m_pDownloadHints) {
+      m_pDownloadHints->AddSegment(m_pDownloadHints,
+                                   static_cast<size_t>(offset), size);
+    }
   }
 
  private:
-  FX_DOWNLOADHINTS* m_pDownloadHints;
+  UnownedPtr<FX_DOWNLOADHINTS> m_pDownloadHints;
 };
 
 class FPDF_AvailContext {
@@ -116,9 +125,8 @@ class FPDF_AvailContext {
   FPDF_AvailContext(FX_FILEAVAIL* file_avail, FPDF_FILEACCESS* file)
       : file_avail_(std::make_unique<FPDF_FileAvailContext>(file_avail)),
         file_read_(pdfium::MakeRetain<FPDF_FileAccessContext>(file)),
-        data_avail_(std::make_unique<CPDF_DataAvail>(file_avail_.get(),
-                                                     file_read_,
-                                                     true)) {}
+        data_avail_(
+            std::make_unique<CPDF_DataAvail>(file_avail_.get(), file_read_)) {}
   ~FPDF_AvailContext() = default;
 
   CPDF_DataAvail* data_avail() { return data_avail_.get(); }
@@ -130,7 +138,11 @@ class FPDF_AvailContext {
 };
 
 FPDF_AvailContext* FPDFAvailContextFromFPDFAvail(FPDF_AVAIL avail) {
-  return static_cast<FPDF_AvailContext*>(avail);
+  return reinterpret_cast<FPDF_AvailContext*>(avail);
+}
+
+FPDF_AVAIL FPDFAvailFromFPDFAvailContext(FPDF_AvailContext* pAvailContext) {
+  return reinterpret_cast<FPDF_AVAIL>(pAvailContext);
 }
 
 }  // namespace
@@ -138,7 +150,9 @@ FPDF_AvailContext* FPDFAvailContextFromFPDFAvail(FPDF_AVAIL avail) {
 FPDF_EXPORT FPDF_AVAIL FPDF_CALLCONV FPDFAvail_Create(FX_FILEAVAIL* file_avail,
                                                       FPDF_FILEACCESS* file) {
   auto pAvail = std::make_unique<FPDF_AvailContext>(file_avail, file);
-  return pAvail.release();  // Caller takes ownership.
+
+  // Caller takes ownership.
+  return FPDFAvailFromFPDFAvailContext(pAvail.release());
 }
 
 FPDF_EXPORT void FPDF_CALLCONV FPDFAvail_Destroy(FPDF_AVAIL avail) {

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,9 +6,11 @@
 
 #include "fxjs/xfa/cjx_draw.h"
 
+#include "core/fxcrt/check.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/xfa/cfxjse_value.h"
-#include "third_party/base/check.h"
+#include "v8/include/v8-primitive.h"
+#include "v8/include/v8-value.h"
 #include "xfa/fxfa/parser/cxfa_draw.h"
 
 CJX_Draw::CJX_Draw(CXFA_Draw* node) : CJX_Container(node) {}

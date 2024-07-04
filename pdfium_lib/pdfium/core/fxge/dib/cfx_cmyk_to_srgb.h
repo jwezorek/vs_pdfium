@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,18 +9,15 @@
 
 #include <stdint.h>
 
-#include <tuple>
+#include "core/fxge/dib/fx_dib.h"
 
 namespace fxge {
 
-std::tuple<float, float, float> AdobeCMYK_to_sRGB(float c,
-                                                  float m,
-                                                  float y,
-                                                  float k);
-std::tuple<uint8_t, uint8_t, uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
-                                                         uint8_t m,
-                                                         uint8_t y,
-                                                         uint8_t k);
+FX_RGB_STRUCT<float> AdobeCMYK_to_sRGB(float c, float m, float y, float k);
+FX_RGB_STRUCT<uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
+                                          uint8_t m,
+                                          uint8_t y,
+                                          uint8_t k);
 
 }  // namespace fxge
 

@@ -1,12 +1,13 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "core/fpdfapi/page/cpdf_psengine.h"
+
+#include <iterator>
 #include <limits>
 
-#include "core/fpdfapi/page/cpdf_psengine.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -70,15 +71,13 @@ TEST(CPDF_PSProc, AddOperator) {
   };
 
   CPDF_PSProc proc;
-  EXPECT_EQ(0U, proc.num_operators());
-  for (size_t i = 0; i < pdfium::size(kTestData); ++i) {
-    ByteStringView word(kTestData[i].name);
+  for (const auto& item : kTestData) {
+    ByteStringView word(item.name);
     proc.AddOperatorForTesting(word);
-    ASSERT_EQ(i + 1, proc.num_operators());
     const std::unique_ptr<CPDF_PSOP>& new_psop = proc.last_operator();
     ASSERT_TRUE(new_psop);
     PDF_PSOP new_op = new_psop->GetOp();
-    EXPECT_EQ(kTestData[i].op, new_op);
+    EXPECT_EQ(item.op, new_op);
     if (new_op == PSOP_CONST) {
       float fv = new_psop->GetFloatValue();
       if (word == "invalid")
@@ -102,12 +101,15 @@ TEST(CPDF_PSEngine, Basic) {
   EXPECT_FLOAT_EQ(5.0f, DoOperator1(&engine, -5, PSOP_ABS));
 }
 
-TEST(CPDF_PSEngine, IDivByZero) {
+TEST(CPDF_PSEngine, DivByZero) {
   CPDF_PSEngine engine;
 
   // Integer divide by zero is defined as resulting in 0.
   EXPECT_FLOAT_EQ(0.0f, DoOperator2(&engine, 100, 0.0, PSOP_IDIV));
   EXPECT_FLOAT_EQ(0.0f, DoOperator2(&engine, 100, 0.0, PSOP_MOD));
+
+  // floating divide by zero is defined as resulting in 0.
+  EXPECT_FLOAT_EQ(0.0f, DoOperator2(&engine, 100, 0.0, PSOP_DIV));
 }
 
 TEST(CPDF_PSEngine, Ceiling) {
@@ -202,7 +204,7 @@ TEST(CPDF_PSEngine, Truncate) {
   // Truncate does not behave according to the PostScript Language Reference for
   // values beyond the range of integers. This seems to match Acrobat's
   // behavior. See https://crbug.com/pdfium/1314.
-  float max_int = std::numeric_limits<int>::max();
+  float max_int = static_cast<float>(std::numeric_limits<int>::max());
   EXPECT_FLOAT_EQ(-max_int,
                   DoOperator1(&engine, max_int * -1.5f, PSOP_TRUNCATE));
 }

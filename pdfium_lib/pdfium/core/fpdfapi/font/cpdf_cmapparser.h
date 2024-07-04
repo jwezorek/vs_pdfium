@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,14 @@
 #ifndef CORE_FPDFAPI_FONT_CPDF_CMAPPARSER_H_
 #define CORE_FPDFAPI_FONT_CPDF_CMAPPARSER_H_
 
+#include <array>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "core/fpdfapi/font/cpdf_cidfont.h"
 #include "core/fpdfapi/font/cpdf_cmap.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "third_party/base/optional.h"
 
 class CPDF_CMapParser {
  public:
@@ -43,8 +44,9 @@ class CPDF_CMapParser {
   void HandleCodeSpaceRange(ByteStringView word);
 
   static uint32_t GetCode(ByteStringView word);
-  static Optional<CPDF_CMap::CodeRange> GetCodeRange(ByteStringView first,
-                                                     ByteStringView second);
+  static std::optional<CPDF_CMap::CodeRange> GetCodeRange(
+      ByteStringView first,
+      ByteStringView second);
 
   Status m_Status = kStart;
   int m_CodeSeq = 0;
@@ -53,7 +55,7 @@ class CPDF_CMapParser {
   std::vector<CPDF_CMap::CodeRange> m_PendingRanges;
   std::vector<CPDF_CMap::CIDRange> m_AdditionalCharcodeToCIDMappings;
   ByteString m_LastWord;
-  uint32_t m_CodePoints[4];
+  std::array<uint32_t, 4> m_CodePoints = {};
 };
 
 #endif  // CORE_FPDFAPI_FONT_CPDF_CMAPPARSER_H_

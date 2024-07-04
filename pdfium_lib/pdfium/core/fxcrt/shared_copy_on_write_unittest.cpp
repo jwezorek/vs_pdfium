@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -31,6 +31,11 @@ class Observer {
 
 class Object final : public Retainable {
  public:
+  CONSTRUCT_VIA_MAKE_RETAIN;
+
+  RetainPtr<Object> Clone() const { return pdfium::MakeRetain<Object>(*this); }
+
+ private:
   Object(Observer* observer, const std::string& name)
       : name_(name), observer_(observer) {
     observer->OnConstruct(name_);
@@ -40,9 +45,6 @@ class Object final : public Retainable {
   }
   ~Object() override { observer_->OnDestruct(name_); }
 
-  RetainPtr<Object> Clone() const { return pdfium::MakeRetain<Object>(*this); }
-
- private:
   std::string name_;
   Observer* observer_;
 };
@@ -53,7 +55,7 @@ TEST(SharedCopyOnWrite, Null) {
   Observer observer;
   {
     SharedCopyOnWrite<Object> ptr;
-    EXPECT_EQ(nullptr, ptr.GetObject());
+    EXPECT_FALSE(ptr.GetObject());
   }
 }
 
@@ -112,16 +114,16 @@ TEST(SharedCopyOnWrite, GetModify) {
   Observer observer;
   {
     SharedCopyOnWrite<Object> ptr;
-    EXPECT_NE(nullptr, ptr.GetPrivateCopy(&observer, std::string("one")));
+    EXPECT_TRUE(ptr.GetPrivateCopy(&observer, std::string("one")));
     EXPECT_EQ(1, observer.GetConstructionCount("one"));
     EXPECT_EQ(0, observer.GetDestructionCount("one"));
 
-    EXPECT_NE(nullptr, ptr.GetPrivateCopy(&observer, std::string("one")));
+    EXPECT_TRUE(ptr.GetPrivateCopy(&observer, std::string("one")));
     EXPECT_EQ(1, observer.GetConstructionCount("one"));
     EXPECT_EQ(0, observer.GetDestructionCount("one"));
     {
       SharedCopyOnWrite<Object> other(ptr);
-      EXPECT_NE(nullptr, ptr.GetPrivateCopy(&observer, std::string("one")));
+      EXPECT_TRUE(ptr.GetPrivateCopy(&observer, std::string("one")));
       EXPECT_EQ(2, observer.GetConstructionCount("one"));
       EXPECT_EQ(0, observer.GetDestructionCount("one"));
     }

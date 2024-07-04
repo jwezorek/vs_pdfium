@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,7 @@
 #ifndef FXJS_GLOBAL_TIMER_H_
 #define FXJS_GLOBAL_TIMER_H_
 
+#include "core/fxcrt/unowned_ptr.h"
 #include "fxjs/cjs_runtime.h"
 
 class CJS_App;
@@ -17,6 +18,9 @@ class GlobalTimer {
     kRepeating = false,
     kOneShot = true,
   };
+
+  static void InitializeGlobals();
+  static void DestroyGlobals();
 
   GlobalTimer(CJS_App* pObj,
               CJS_Runtime* pRuntime,
@@ -44,7 +48,7 @@ class GlobalTimer {
   const uint32_t m_dwTimeOut;
   const WideString m_swJScript;
   ObservedPtr<CJS_Runtime> m_pRuntime;
-  CJS_App* const m_pEmbedApp;
+  UnownedPtr<CJS_App> const m_pEmbedApp;
 };
 
 #endif  // FXJS_GLOBAL_TIMER_H_

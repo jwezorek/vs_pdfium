@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,17 +13,16 @@
 #include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_Object;
-class CPDF_Reference;
 class CPDF_IndirectObjectHolder;
 class CPDF_ReadValidator;
 
 // Helper for check availability of object tree.
 class CPDF_ObjectAvail {
  public:
-  CPDF_ObjectAvail(const RetainPtr<CPDF_ReadValidator>& validator,
+  CPDF_ObjectAvail(RetainPtr<CPDF_ReadValidator> validator,
                    CPDF_IndirectObjectHolder* holder,
-                   CPDF_Object* root);
-  CPDF_ObjectAvail(const RetainPtr<CPDF_ReadValidator>& validator,
+                   RetainPtr<const CPDF_Object> root);
+  CPDF_ObjectAvail(RetainPtr<CPDF_ReadValidator> validator,
                    CPDF_IndirectObjectHolder* holder,
                    uint32_t obj_num);
   virtual ~CPDF_ObjectAvail();
@@ -36,14 +35,14 @@ class CPDF_ObjectAvail {
  private:
   bool LoadRootObject();
   bool CheckObjects();
-  bool AppendObjectSubRefs(const CPDF_Object* object,
+  bool AppendObjectSubRefs(RetainPtr<const CPDF_Object> object,
                            std::stack<uint32_t>* refs) const;
   void CleanMemory();
   bool HasObjectParsed(uint32_t obj_num) const;
 
-  RetainPtr<CPDF_ReadValidator> validator_;
-  UnownedPtr<CPDF_IndirectObjectHolder> holder_;
-  RetainPtr<CPDF_Object> root_;
+  RetainPtr<CPDF_ReadValidator> const validator_;
+  UnownedPtr<CPDF_IndirectObjectHolder> const holder_;
+  RetainPtr<const CPDF_Object> root_;
   std::set<uint32_t> parsed_objnums_;
   std::stack<uint32_t> non_parsed_objects_;
 };

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,9 +7,11 @@
 #ifndef FPDFSDK_CPDFSDK_APPSTREAM_H_
 #define FPDFSDK_CPDFSDK_APPSTREAM_H_
 
+#include <optional>
+
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "third_party/base/optional.h"
 
 class CPDFSDK_Widget;
 class CPDF_Dictionary;
@@ -23,16 +25,16 @@ class CPDFSDK_AppStream {
   void SetAsPushButton();
   void SetAsCheckBox();
   void SetAsRadioButton();
-  void SetAsComboBox(Optional<WideString> sValue);
+  void SetAsComboBox(std::optional<WideString> sValue);
   void SetAsListBox();
-  void SetAsTextField(Optional<WideString> sValue);
+  void SetAsTextField(std::optional<WideString> sValue);
 
  private:
-  void AddImage(const ByteString& sAPType, CPDF_Stream* pImage);
+  void AddImage(const ByteString& sAPType, const CPDF_Stream* pImage);
   void Write(const ByteString& sAPType,
              const ByteString& sContents,
              const ByteString& sAPState);
-  void Remove(const ByteString& sAPType);
+  void Remove(ByteStringView sAPType);
 
   ByteString GetBackgroundAppStream() const;
   ByteString GetBorderAppStream() const;

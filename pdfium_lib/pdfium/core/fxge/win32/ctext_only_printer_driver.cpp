@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,17 +6,19 @@
 
 #include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <string.h>
 
 #include <algorithm>
 
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/fx_memcpy_wrappers.h"
 #include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/notreached.h"
 #include "core/fxge/cfx_font.h"
+#include "core/fxge/dib/cfx_dibbase.h"
+#include "core/fxge/dib/cfx_dibitmap.h"
 #include "core/fxge/text_char_pos.h"
-#include "third_party/base/check.h"
-#include "third_party/base/notreached.h"
 
 CTextOnlyPrinterDriver::CTextOnlyPrinterDriver(HDC hDC)
     : m_hDC(hDC),
@@ -50,26 +52,29 @@ int CTextOnlyPrinterDriver::GetDeviceCaps(int caps_id) const {
     case FXDC_VERT_SIZE:
       return m_VertSize;
     default:
-      NOTREACHED();
-      return 0;
+      NOTREACHED_NORETURN();
   }
 }
 
+void CTextOnlyPrinterDriver::SaveState() {}
+
+void CTextOnlyPrinterDriver::RestoreState(bool bKeepSaved) {}
+
 bool CTextOnlyPrinterDriver::SetClip_PathFill(
-    const CFX_PathData* pPathData,
+    const CFX_Path& path,
     const CFX_Matrix* pObject2Device,
     const CFX_FillRenderOptions& fill_options) {
   return true;
 }
 
 bool CTextOnlyPrinterDriver::SetClip_PathStroke(
-    const CFX_PathData* pPathData,
+    const CFX_Path& path,
     const CFX_Matrix* pObject2Device,
     const CFX_GraphStateData* pGraphState) {
   return false;
 }
 
-bool CTextOnlyPrinterDriver::DrawPath(const CFX_PathData* pPathData,
+bool CTextOnlyPrinterDriver::DrawPath(const CFX_Path& path,
                                       const CFX_Matrix* pObject2Device,
                                       const CFX_GraphStateData* pGraphState,
                                       uint32_t fill_color,
@@ -79,7 +84,7 @@ bool CTextOnlyPrinterDriver::DrawPath(const CFX_PathData* pPathData,
   return false;
 }
 
-bool CTextOnlyPrinterDriver::SetDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
+bool CTextOnlyPrinterDriver::SetDIBits(RetainPtr<const CFX_DIBBase> bitmap,
                                        uint32_t color,
                                        const FX_RECT& src_rect,
                                        int left,
@@ -88,30 +93,25 @@ bool CTextOnlyPrinterDriver::SetDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
   return false;
 }
 
-bool CTextOnlyPrinterDriver::GetClipBox(FX_RECT* pRect) {
-  pRect->left = 0;
-  pRect->right = m_Width;
-  pRect->top = 0;
-  pRect->bottom = m_Height;
-  return true;
+FX_RECT CTextOnlyPrinterDriver::GetClipBox() const {
+  return FX_RECT(0, 0, m_Width, m_Height);
 }
 
-bool CTextOnlyPrinterDriver::StretchDIBits(
-    const RetainPtr<CFX_DIBBase>& pBitmap,
-    uint32_t color,
-    int dest_left,
-    int dest_top,
-    int dest_width,
-    int dest_height,
-    const FX_RECT* pClipRect,
-    const FXDIB_ResampleOptions& options,
-    BlendMode blend_type) {
+bool CTextOnlyPrinterDriver::StretchDIBits(RetainPtr<const CFX_DIBBase> bitmap,
+                                           uint32_t color,
+                                           int dest_left,
+                                           int dest_top,
+                                           int dest_width,
+                                           int dest_height,
+                                           const FX_RECT* pClipRect,
+                                           const FXDIB_ResampleOptions& options,
+                                           BlendMode blend_type) {
   return false;
 }
 
 bool CTextOnlyPrinterDriver::StartDIBits(
-    const RetainPtr<CFX_DIBBase>& pBitmap,
-    int bitmap_alpha,
+    RetainPtr<const CFX_DIBBase> bitmap,
+    float alpha,
     uint32_t color,
     const CFX_Matrix& matrix,
     const FXDIB_ResampleOptions& options,
@@ -121,17 +121,18 @@ bool CTextOnlyPrinterDriver::StartDIBits(
 }
 
 bool CTextOnlyPrinterDriver::DrawDeviceText(
-    int nChars,
-    const TextCharPos* pCharPos,
+    pdfium::span<const TextCharPos> pCharPos,
     CFX_Font* pFont,
     const CFX_Matrix& mtObject2Device,
     float font_size,
     uint32_t color,
     const CFX_TextRenderOptions& /*options*/) {
-  if (g_pdfium_print_mode != 1)
+  if (g_pdfium_print_mode != WindowsPrintMode::kTextOnly) {
     return false;
-  if (nChars < 1 || !pFont || !pFont->IsEmbedded() || !pFont->IsTTFont())
+  }
+  if (pCharPos.empty() || !pFont) {
     return false;
+  }
 
   // Scale factor used to minimize the kerning problems caused by rounding
   // errors below. Value chosen based on the title of https://crbug.com/18383
@@ -142,7 +143,7 @@ bool CTextOnlyPrinterDriver::DrawDeviceText(
   // preserved in the text location. clrf characters seem to be ignored by
   // label printers that use this driver.
   WideString wsText;
-  size_t len = nChars;
+  size_t len = pCharPos.size();
   float fOffsetY = mtObject2Device.f * kScaleFactor;
   if (m_SetOrigin && FXSYS_roundf(m_OriginY) != FXSYS_roundf(fOffsetY)) {
     wsText += L"\r\n";
@@ -153,16 +154,14 @@ bool CTextOnlyPrinterDriver::DrawDeviceText(
   m_SetOrigin = true;
 
   // Text
-  for (int i = 0; i < nChars; ++i) {
+  for (const auto& charpos : pCharPos) {
     // Only works with PDFs from Skia's PDF generator. Cannot handle arbitrary
     // values from PDFs.
-    const TextCharPos& charpos = pCharPos[i];
-    DCHECK(charpos.m_AdjustMatrix[0] == 0);
-    DCHECK(charpos.m_AdjustMatrix[1] == 0);
-    DCHECK(charpos.m_AdjustMatrix[2] == 0);
-    DCHECK(charpos.m_AdjustMatrix[3] == 0);
-    DCHECK(charpos.m_Origin.y == 0);
-
+    DCHECK_EQ(charpos.m_AdjustMatrix[0], 0);
+    DCHECK_EQ(charpos.m_AdjustMatrix[1], 0);
+    DCHECK_EQ(charpos.m_AdjustMatrix[2], 0);
+    DCHECK_EQ(charpos.m_AdjustMatrix[3], 0);
+    DCHECK_EQ(charpos.m_Origin.y, 0);
     wsText += charpos.m_Unicode;
   }
   ByteString text = wsText.ToDefANSI();
@@ -171,9 +170,22 @@ bool CTextOnlyPrinterDriver::DrawDeviceText(
     uint8_t buffer[1026];
     size_t send_len = std::min<size_t>(text_span.size(), 1024);
     *(reinterpret_cast<uint16_t*>(buffer)) = static_cast<uint16_t>(send_len);
-    memcpy(buffer + 2, text_span.data(), send_len);
-    ::GdiComment(m_hDC, send_len + 2, buffer);
+    UNSAFE_TODO(FXSYS_memcpy(buffer + 2, text_span.data(), send_len));
+    ::GdiComment(m_hDC, static_cast<UINT>(send_len + 2), buffer);
     text_span = text_span.subspan(send_len);
   }
   return true;
+}
+
+bool CTextOnlyPrinterDriver::MultiplyAlpha(float alpha) {
+  // Not needed. All callers are using `CFX_DIBitmap`-backed raster devices
+  // anyway.
+  NOTREACHED_NORETURN();
+}
+
+bool CTextOnlyPrinterDriver::MultiplyAlphaMask(
+    RetainPtr<const CFX_DIBitmap> mask) {
+  // Not needed. All callers are using `CFX_DIBitmap`-backed raster devices
+  // anyway.
+  NOTREACHED_NORETURN();
 }

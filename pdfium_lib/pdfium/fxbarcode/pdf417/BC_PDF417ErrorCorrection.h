@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,8 +9,9 @@
 
 #include <stdint.h>
 
-#include "core/fxcrt/fx_string.h"
-#include "third_party/base/optional.h"
+#include <optional>
+
+#include "core/fxcrt/widestring.h"
 
 class CBC_PDF417ErrorCorrection {
  public:
@@ -18,7 +19,7 @@ class CBC_PDF417ErrorCorrection {
   ~CBC_PDF417ErrorCorrection() = delete;
 
   static int32_t GetErrorCorrectionCodewordCount(int32_t errorCorrectionLevel);
-  static Optional<WideString> GenerateErrorCorrection(
+  static std::optional<WideString> GenerateErrorCorrection(
       const WideString& dataCodewords,
       int32_t errorCorrectionLevel);
 };

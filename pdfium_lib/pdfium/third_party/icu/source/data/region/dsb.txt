@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 dsb{
     Countries{
         001{"swět"}
@@ -31,6 +32,7 @@ dsb{
         151{"pódzajtšna Europa"}
         154{"pódpołnocna Europa"}
         155{"pódwjacorna Europa"}
+        202{"subsaharojska Afrika"}
         419{"Łatyńska Amerika"}
         AC{"Ascension"}
         AD{"Andorra"}
@@ -106,9 +108,10 @@ dsb{
         ES{"Špańska"}
         ET{"Etiopiska"}
         EU{"Europska unija"}
+        EZ{"europasmo"}
         FI{"Finska"}
         FJ{"Fidži"}
-        FK{"Falklandske kupy (Malwiny)"}
+        FK{"Falklandske kupy"}
         FM{"Mikroneziska"}
         FO{"Färöje"}
         FR{"Francojska"}
@@ -131,7 +134,7 @@ dsb{
         GU{"Guam"}
         GW{"Gineja-Bissau"}
         GY{"Guyana"}
-        HK{"Hongkong"}
+        HK{"Wósebna zastojnstwowa cona Hongkong"}
         HM{"Heardowa kupa a McDonaldowe kupy"}
         HN{"Honduras"}
         HR{"Chorwatska"}
@@ -181,11 +184,11 @@ dsb{
         MF{"St. Martin"}
         MG{"Madagaskar"}
         MH{"Marshallowe kupy"}
-        MK{"Makedońska (PRJ)"}
+        MK{"Pódpołnocna Makedańska"}
         ML{"Mali"}
         MM{"Myanmar"}
         MN{"Mongolska"}
-        MO{"Macao"}
+        MO{"Wósebna zastojnstwowa cona Macao"}
         MP{"Pódpołnocne Mariany"}
         MQ{"Martinique"}
         MR{"Mawretańska"}
@@ -220,7 +223,7 @@ dsb{
         PM{"St. Pierre a Miquelon"}
         PN{"Pitcairnowe kupy"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Palestinski awtonomny teritorium"}
         PT{"Portugalska"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -272,6 +275,7 @@ dsb{
         UA{"Ukraina"}
         UG{"Uganda"}
         UM{"Ameriska Oceaniska"}
+        UN{"Zjadnośone narody"}
         US{"Zjadnośone staty Ameriki"}
         UY{"Uruguay"}
         UZ{"Uzbekistan"}
@@ -284,6 +288,8 @@ dsb{
         VU{"Vanuatu"}
         WF{"Wallis a Futuna"}
         WS{"Samoa"}
+        XA{"pseudo-akcenty"}
+        XB{"pseudo-bidi"}
         XK{"Kosowo"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -292,15 +298,22 @@ dsb{
         ZW{"Simbabwe"}
         ZZ{"njeznaty region"}
     }
+    Countries%chagos{
+        IO{"Chagoske kupy"}
+    }
     Countries%short{
         GB{"UK"}
+        HK{"Hongkong"}
+        MO{"Macao"}
+        PS{"Palestina"}
         US{"USA"}
     }
     Countries%variant{
         CD{"Kongo (Demokratiska republika)"}
         CG{"Kongo (Republika)"}
         CI{"Słonowokósćowy pśibrjog"}
+        FK{"Falklandske kupy (Malwiny)"}
+        NZ{"Aotearoa Nowoseelandska"}
         TL{"Pódzajtšny Timor"}
     }
-    Version{"2.1.41.34"}
 }

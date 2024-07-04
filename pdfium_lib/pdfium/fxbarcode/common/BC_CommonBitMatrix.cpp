@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,30 +22,24 @@
 
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
 
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/fixed_size_data_vector.h"
 
-CBC_CommonBitMatrix::CBC_CommonBitMatrix() = default;
-
-void CBC_CommonBitMatrix::Init(int32_t width, int32_t height) {
-  m_width = width;
-  m_height = height;
-  m_rowSize = (width + 31) >> 5;
-  m_bits = pdfium::Vector2D<int32_t>(m_rowSize, m_height);
+CBC_CommonBitMatrix::CBC_CommonBitMatrix(size_t width, size_t height)
+    : m_height(height), m_rowSize((width + 31) >> 5) {
+  static constexpr int32_t kMaxBits = 1024 * 1024 * 1024;  // 1 Gb.
+  CHECK_LT(m_rowSize, kMaxBits / m_height);
+  m_bits = FixedSizeDataVector<uint32_t>::Zeroed(m_rowSize * m_height);
 }
 
 CBC_CommonBitMatrix::~CBC_CommonBitMatrix() = default;
 
-bool CBC_CommonBitMatrix::Get(int32_t x, int32_t y) const {
-  int32_t offset = y * m_rowSize + (x >> 5);
-  if (offset >= m_rowSize * m_height || offset < 0)
-    return false;
-  return ((((uint32_t)m_bits[offset]) >> (x & 0x1f)) & 1) != 0;
+bool CBC_CommonBitMatrix::Get(size_t x, size_t y) const {
+  size_t offset = y * m_rowSize + (x >> 5);
+  return ((m_bits.span()[offset] >> (x & 0x1f)) & 1) != 0;
 }
 
-void CBC_CommonBitMatrix::Set(int32_t x, int32_t y) {
-  int32_t offset = y * m_rowSize + (x >> 5);
-  DCHECK(offset >= 0);
-  DCHECK(offset < m_rowSize * m_height);
-  m_bits[offset] |= 1 << (x & 0x1f);
+void CBC_CommonBitMatrix::Set(size_t x, size_t y) {
+  size_t offset = y * m_rowSize + (x >> 5);
+  m_bits.span()[offset] |= 1u << (x & 0x1f);
 }

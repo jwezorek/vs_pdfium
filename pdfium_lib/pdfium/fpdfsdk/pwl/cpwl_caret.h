@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,7 +15,7 @@
 class CPWL_Caret final : public CPWL_Wnd, public CFX_Timer::CallbackIface {
  public:
   CPWL_Caret(const CreateParams& cp,
-             std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData);
+             std::unique_ptr<IPWL_FillerNotify::PerWindowData> pAttachedData);
   ~CPWL_Caret() override;
 
   // CPWL_Wnd:

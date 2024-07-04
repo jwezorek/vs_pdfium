@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,38 +19,41 @@ struct FFL_TextFieldState {
   WideString sValue;
 };
 
-class CFFL_TextField final : public CFFL_TextObject,
-                             public CPWL_Wnd::FocusHandlerIface {
+class CFFL_TextField final : public CFFL_TextObject {
  public:
-  CFFL_TextField(CPDFSDK_FormFillEnvironment* pApp, CPDFSDK_Widget* pWidget);
+  CFFL_TextField(CFFL_InteractiveFormFiller* pFormFiller,
+                 CPDFSDK_Widget* pWidget);
   ~CFFL_TextField() override;
 
   // CFFL_TextObject:
   CPWL_Wnd::CreateParams GetCreateParam() override;
   std::unique_ptr<CPWL_Wnd> NewPWLWindow(
       const CPWL_Wnd::CreateParams& cp,
-      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData)
-      override;
-  bool OnChar(CPDFSDK_Annot* pAnnot, uint32_t nChar, uint32_t nFlags) override;
-  bool IsDataChanged(CPDFSDK_PageView* pPageView) override;
-  void SaveData(CPDFSDK_PageView* pPageView) override;
-  void GetActionData(CPDFSDK_PageView* pPageView,
+      std::unique_ptr<IPWL_FillerNotify::PerWindowData> pAttachedData) override;
+  bool OnChar(CPDFSDK_Widget* pWidget,
+              uint32_t nChar,
+              Mask<FWL_EVENTFLAG> nFlags) override;
+  bool IsDataChanged(const CPDFSDK_PageView* pPageView) override;
+  void SaveData(const CPDFSDK_PageView* pPageView) override;
+  void GetActionData(const CPDFSDK_PageView* pPageView,
                      CPDF_AAction::AActionType type,
-                     CPDFSDK_FieldAction& fa) override;
-  void SetActionData(CPDFSDK_PageView* pPageView,
+                     CFFL_FieldAction& fa) override;
+  void SetActionData(const CPDFSDK_PageView* pPageView,
                      CPDF_AAction::AActionType type,
-                     const CPDFSDK_FieldAction& fa) override;
-  void SaveState(CPDFSDK_PageView* pPageView) override;
-  void RestoreState(CPDFSDK_PageView* pPageView) override;
+                     const CFFL_FieldAction& fa) override;
+  void SavePWLWindowState(const CPDFSDK_PageView* pPageView) override;
+  void RecreatePWLWindowFromSavedState(
+      const CPDFSDK_PageView* pPageView) override;
 #ifdef PDF_ENABLE_XFA
-  bool IsFieldFull(CPDFSDK_PageView* pPageView) override;
+  bool IsFieldFull(const CPDFSDK_PageView* pPageView) override;
 #endif
 
-  // CPWL_Wnd::FocusHandlerIface:
-  void OnSetFocus(CPWL_Edit* pEdit) override;
+  // CPWL_Wnd::ProviderIface:
+  void OnSetFocusForEdit(CPWL_Edit* pEdit) override;
 
  private:
-  CPWL_Edit* GetEdit(CPDFSDK_PageView* pPageView, bool bNew);
+  CPWL_Edit* GetPWLEdit(const CPDFSDK_PageView* pPageView) const;
+  CPWL_Edit* CreateOrUpdatePWLEdit(const CPDFSDK_PageView* pPageView);
 
   FFL_TextFieldState m_State;
 };

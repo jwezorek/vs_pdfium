@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,6 @@
 #define CORE_FXCRT_XML_CFX_XMLNODE_H_
 
 #include "core/fxcrt/fx_stream.h"
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/tree_node.h"
 
@@ -28,7 +27,7 @@ class CFX_XMLNode : public TreeNode<CFX_XMLNode> {
 
   virtual Type GetType() const = 0;
   virtual CFX_XMLNode* Clone(CFX_XMLDocument* doc) = 0;
-  virtual void Save(const RetainPtr<IFX_SeekableWriteStream>& pXMLStream) = 0;
+  virtual void Save(const RetainPtr<IFX_RetainableWriteStream>& pXMLStream) = 0;
 
   CFX_XMLNode* GetRoot();
   void InsertChildNode(CFX_XMLNode* pNode, int32_t index);

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,14 @@
 #ifndef CORE_FXGE_DIB_CFX_SCANLINECOMPOSITOR_H_
 #define CORE_FXGE_DIB_CFX_SCANLINECOMPOSITOR_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <memory>
 
 #include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/span.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/span.h"
 
 class CFX_ScanlineCompositor {
  public:
@@ -20,40 +23,33 @@ class CFX_ScanlineCompositor {
 
   bool Init(FXDIB_Format dest_format,
             FXDIB_Format src_format,
-            int32_t width,
             pdfium::span<const uint32_t> src_palette,
             uint32_t mask_color,
             BlendMode blend_type,
             bool bClip,
             bool bRgbByteOrder);
 
-  void CompositeRgbBitmapLine(uint8_t* dest_scan,
-                              const uint8_t* src_scan,
+  void CompositeRgbBitmapLine(pdfium::span<uint8_t> dest_scan,
+                              pdfium::span<const uint8_t> src_scan,
                               int width,
-                              const uint8_t* clip_scan,
-                              const uint8_t* src_extra_alpha,
-                              uint8_t* dst_extra_alpha);
+                              pdfium::span<const uint8_t> clip_scan) const;
 
-  void CompositePalBitmapLine(uint8_t* dest_scan,
-                              const uint8_t* src_scan,
+  void CompositePalBitmapLine(pdfium::span<uint8_t> dest_scan,
+                              pdfium::span<const uint8_t> src_scan,
                               int src_left,
                               int width,
-                              const uint8_t* clip_scan,
-                              const uint8_t* src_extra_alpha,
-                              uint8_t* dst_extra_alpha);
+                              pdfium::span<const uint8_t> clip_scan) const;
 
-  void CompositeByteMaskLine(uint8_t* dest_scan,
-                             const uint8_t* src_scan,
+  void CompositeByteMaskLine(pdfium::span<uint8_t> dest_scan,
+                             pdfium::span<const uint8_t> src_scan,
                              int width,
-                             const uint8_t* clip_scan,
-                             uint8_t* dst_extra_alpha);
+                             pdfium::span<const uint8_t> clip_scan) const;
 
-  void CompositeBitMaskLine(uint8_t* dest_scan,
-                            const uint8_t* src_scan,
+  void CompositeBitMaskLine(pdfium::span<uint8_t> dest_scan,
+                            pdfium::span<const uint8_t> src_scan,
                             int src_left,
                             int width,
-                            const uint8_t* clip_scan,
-                            uint8_t* dst_extra_alpha);
+                            pdfium::span<const uint8_t> clip_scan) const;
 
  private:
   class Palette {
@@ -75,16 +71,39 @@ class CFX_ScanlineCompositor {
     // If 4, then |m_pData| is uint32_t* as expected.
     size_t m_Width = 0;
     size_t m_nElements = 0;
+
+    // TODO(tsepez): convert to variant of FixedArray.
     std::unique_ptr<uint32_t, FxFreeDeleter> m_pData;
   };
 
-  void InitSourcePalette(FXDIB_Format src_format,
-                         FXDIB_Format dest_format,
-                         pdfium::span<const uint32_t> src_palette);
+  void InitSourcePalette(pdfium::span<const uint32_t> src_palette);
 
   void InitSourceMask(uint32_t mask_color);
 
-  int m_iTransparency;
+  void CompositeRgbBitmapLineSrcRgbx(
+      pdfium::span<uint8_t> dest_scan,
+      pdfium::span<const uint8_t> src_scan,
+      int width,
+      pdfium::span<const uint8_t> clip_scan) const;
+  void CompositeRgbBitmapLineSrcArgb(
+      pdfium::span<uint8_t> dest_scan,
+      pdfium::span<const uint8_t> src_scan,
+      int width,
+      pdfium::span<const uint8_t> clip_scan) const;
+
+  void CompositePalBitmapLineSrcBpp1(
+      pdfium::span<uint8_t> dest_scan,
+      pdfium::span<const uint8_t> src_scan,
+      int src_left,
+      int width,
+      pdfium::span<const uint8_t> clip_scan) const;
+  void CompositePalBitmapLineSrcBpp8(
+      pdfium::span<uint8_t> dest_scan,
+      pdfium::span<const uint8_t> src_scan,
+      int src_left,
+      int width,
+      pdfium::span<const uint8_t> clip_scan) const;
+
   FXDIB_Format m_SrcFormat;
   FXDIB_Format m_DestFormat;
   Palette m_SrcPalette;
@@ -94,6 +113,7 @@ class CFX_ScanlineCompositor {
   int m_MaskBlue;
   BlendMode m_BlendType = BlendMode::kNormal;
   bool m_bRgbByteOrder = false;
+  bool m_bClip = false;
 };
 
 #endif  // CORE_FXGE_DIB_CFX_SCANLINECOMPOSITOR_H_

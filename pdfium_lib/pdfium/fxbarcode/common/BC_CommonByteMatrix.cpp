@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -23,29 +23,37 @@
 
 #include <algorithm>
 #include <iterator>
-#include "third_party/base/stl_util.h"
+#include <utility>
 
-CBC_CommonByteMatrix::CBC_CommonByteMatrix(int32_t width, int32_t height)
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/data_vector.h"
+
+CBC_CommonByteMatrix::CBC_CommonByteMatrix(size_t width, size_t height)
     : m_width(width), m_height(height) {
-  m_bytes =
-      pdfium::Vector2D<uint8_t, FxAllocAllocator<uint8_t>>(m_height, m_width);
-  clear(0xff);
+  static constexpr size_t kMaxBytes = 256 * 1024 * 1024;  // 256 MB.
+  static constexpr uint8_t kDefaultFill = 0xff;
+  CHECK_LT(m_width, kMaxBytes / m_height);
+  m_bytes.resize(m_width * m_height, kDefaultFill);
 }
 
 CBC_CommonByteMatrix::~CBC_CommonByteMatrix() = default;
 
-uint8_t CBC_CommonByteMatrix::Get(int32_t x, int32_t y) const {
-  return m_bytes[y * m_width + x];
+DataVector<uint8_t> CBC_CommonByteMatrix::TakeArray() {
+  return std::move(m_bytes);
 }
 
-void CBC_CommonByteMatrix::Set(int32_t x, int32_t y, int32_t value) {
-  m_bytes[y * m_width + x] = (uint8_t)value;
+uint8_t CBC_CommonByteMatrix::Get(size_t x, size_t y) const {
+  const size_t offset = y * m_width + x;
+  CHECK_LT(offset, m_bytes.size());
+  return m_bytes[offset];
 }
 
-void CBC_CommonByteMatrix::Set(int32_t x, int32_t y, uint8_t value) {
-  m_bytes[y * m_width + x] = value;
+void CBC_CommonByteMatrix::Set(size_t x, size_t y, uint8_t value) {
+  const size_t offset = y * m_width + x;
+  CHECK_LT(offset, m_bytes.size());
+  m_bytes[offset] = value;
 }
 
-void CBC_CommonByteMatrix::clear(uint8_t value) {
+void CBC_CommonByteMatrix::Fill(uint8_t value) {
   std::fill(std::begin(m_bytes), std::end(m_bytes), value);
 }

@@ -7,8 +7,11 @@
 #ifndef __CHAR16PTR_H__
 #define __CHAR16PTR_H__
 
-#include <cstddef>
 #include "unicode/utypes.h"
+
+#if U_SHOW_CPLUSPLUS_API
+
+#include <cstddef>
 
 /**
  * \file
@@ -36,7 +39,7 @@ U_NAMESPACE_BEGIN
  * char16_t * wrapper with implicit conversion from distinct but bit-compatible pointer types.
  * @stable ICU 59
  */
-class U_COMMON_API Char16Ptr U_FINAL {
+class U_COMMON_API Char16Ptr final {
 public:
     /**
      * Copies the pointer.
@@ -143,7 +146,7 @@ char16_t *Char16Ptr::get() const { return u_.cp; }
  * const char16_t * wrapper with implicit conversion from distinct but bit-compatible pointer types.
  * @stable ICU 59
  */
-class U_COMMON_API ConstChar16Ptr U_FINAL {
+class U_COMMON_API ConstChar16Ptr final {
 public:
     /**
      * Copies the pointer.
@@ -304,5 +307,7 @@ inline OldUChar *toOldUCharPtr(char16_t *p) {
 }
 
 U_NAMESPACE_END
+
+#endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif  // __CHAR16PTR_H__

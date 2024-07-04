@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,14 +22,14 @@ IJS_EventContext* CJS_RuntimeStub::NewEventContext() {
 void CJS_RuntimeStub::ReleaseEventContext(IJS_EventContext* pContext) {}
 
 CPDFSDK_FormFillEnvironment* CJS_RuntimeStub::GetFormFillEnv() const {
-  return m_pFormFillEnv.Get();
+  return m_pFormFillEnv;
 }
 
 CJS_Runtime* CJS_RuntimeStub::AsCJSRuntime() {
   return nullptr;
 }
 
-Optional<IJS_Runtime::JS_Error> CJS_RuntimeStub::ExecuteScript(
+std::optional<IJS_Runtime::JS_Error> CJS_RuntimeStub::ExecuteScript(
     const WideString& script) {
-  return pdfium::nullopt;
+  return std::nullopt;
 }

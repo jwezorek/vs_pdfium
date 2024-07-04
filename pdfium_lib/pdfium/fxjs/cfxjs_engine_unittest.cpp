@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,6 +9,8 @@
 #include "fxjs/cjs_object.h"
 #include "testing/fxv8_unittest.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-isolate.h"
 
 class FXJSEngineUnitTest : public FXV8UnitTest {
  public:
@@ -35,33 +37,39 @@ static bool temp_created = false;
 static bool temp_destroyed = false;
 
 TEST_F(FXJSEngineUnitTest, GC) {
+  // Reset variables since there might be multiple iterations.
+  perm_created = false;
+  perm_destroyed = false;
+  temp_created = false;
+  temp_destroyed = false;
+
   v8::Isolate::Scope isolate_scope(isolate());
   v8::HandleScope handle_scope(isolate());
 
   // Object: 1
   engine()->DefineObj(
       "perm", FXJSOBJTYPE_DYNAMIC,
-      [](CFXJS_Engine* pEngine, v8::Local<v8::Object> obj) {
-        pEngine->SetObjectPrivate(obj,
-                                  std::make_unique<CJS_Object>(obj, nullptr));
+      [](CFXJS_Engine* pEngine, v8::Local<v8::Object> obj,
+         v8::Local<v8::Object> proxy) {
+        pEngine->SetBinding(obj, std::make_unique<CJS_Object>(proxy, nullptr));
         perm_created = true;
       },
       [](v8::Local<v8::Object> obj) {
         perm_destroyed = true;
-        CFXJS_Engine::SetObjectPrivate(obj, nullptr);
+        CFXJS_Engine::SetBinding(obj, nullptr);
       });
 
   // Object: 2
   engine()->DefineObj(
       "temp", FXJSOBJTYPE_DYNAMIC,
-      [](CFXJS_Engine* pEngine, v8::Local<v8::Object> obj) {
-        pEngine->SetObjectPrivate(obj,
-                                  std::make_unique<CJS_Object>(obj, nullptr));
+      [](CFXJS_Engine* pEngine, v8::Local<v8::Object> obj,
+         v8::Local<v8::Object> proxy) {
+        pEngine->SetBinding(obj, std::make_unique<CJS_Object>(proxy, nullptr));
         temp_created = true;
       },
       [](v8::Local<v8::Object> obj) {
         temp_destroyed = true;
-        CFXJS_Engine::SetObjectPrivate(obj, nullptr);
+        CFXJS_Engine::SetBinding(obj, nullptr);
       });
 
   engine()->InitializeEngine();
@@ -82,7 +90,7 @@ TEST_F(FXJSEngineUnitTest, GC) {
     EXPECT_FALSE(temp_destroyed);
   }
 
-  Optional<IJS_Runtime::JS_Error> err = engine()->Execute(L"gc();");
+  std::optional<IJS_Runtime::JS_Error> err = engine()->Execute(L"gc();");
   EXPECT_FALSE(err);
 
   EXPECT_TRUE(perm_created);

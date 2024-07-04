@@ -1,10 +1,12 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
 #include "core/fpdftext/cpdf_linkextract.h"
+
+#include <wchar.h>
 
 #include <vector>
 
@@ -112,11 +114,11 @@ CPDF_LinkExtract::~CPDF_LinkExtract() = default;
 
 void CPDF_LinkExtract::ExtractLinks() {
   m_LinkArray.clear();
-  int start = 0;
-  int pos = 0;
+  size_t start = 0;
+  size_t pos = 0;
   bool bAfterHyphen = false;
   bool bLineBreak = false;
-  const int nTotalChar = m_pTextPage->CountChars();
+  const size_t nTotalChar = m_pTextPage->CountChars();
   const WideString page_text = m_pTextPage->GetAllPageText();
   while (pos < nTotalChar) {
     const CPDF_TextPage::CharInfo& char_info = m_pTextPage->GetCharInfo(pos);
@@ -130,7 +132,7 @@ void CPDF_LinkExtract::ExtractLinks() {
       continue;
     }
 
-    int nCount = pos - start;
+    size_t nCount = pos - start;
     if (pos == nTotalChar - 1) {
       ++nCount;
     } else if (bAfterHyphen &&
@@ -163,13 +165,12 @@ void CPDF_LinkExtract::ExtractLinks() {
       // Check for potential web URLs and email addresses.
       // Ftp address, file system links, data, blob etc. are not checked.
       if (nCount > 5) {
-        int32_t nStartOffset;
-        int32_t nCountOverload;
-        if (CheckWebLink(&strBeCheck, &nStartOffset, &nCountOverload)) {
-          m_LinkArray.push_back(
-              {start + nStartOffset, nCountOverload, strBeCheck});
+        auto maybe_link = CheckWebLink(strBeCheck);
+        if (maybe_link.has_value()) {
+          maybe_link.value().m_Start += start;
+          m_LinkArray.push_back(maybe_link.value());
         } else if (CheckMailLink(&strBeCheck)) {
-          m_LinkArray.push_back({start, nCount, strBeCheck});
+          m_LinkArray.push_back(Link{{start, nCount}, strBeCheck});
         }
       }
     }
@@ -177,36 +178,34 @@ void CPDF_LinkExtract::ExtractLinks() {
   }
 }
 
-bool CPDF_LinkExtract::CheckWebLink(WideString* strBeCheck,
-                                    int32_t* nStart,
-                                    int32_t* nCount) {
+std::optional<CPDF_LinkExtract::Link> CPDF_LinkExtract::CheckWebLink(
+    const WideString& strBeCheck) {
   static const wchar_t kHttpScheme[] = L"http";
   static const wchar_t kWWWAddrStart[] = L"www.";
 
-  const size_t kHttpSchemeLen = FXSYS_len(kHttpScheme);
-  const size_t kWWWAddrStartLen = FXSYS_len(kWWWAddrStart);
+  const size_t kHttpSchemeLen = wcslen(kHttpScheme);
+  const size_t kWWWAddrStartLen = wcslen(kWWWAddrStart);
 
-  WideString str = *strBeCheck;
+  WideString str = strBeCheck;
   str.MakeLower();
 
-  size_t len = str.GetLength();
   // First, try to find the scheme.
   auto start = str.Find(kHttpScheme);
   if (start.has_value()) {
     size_t off = start.value() + kHttpSchemeLen;  // move after "http".
-    if (len > off + 4) {     // At least "://<char>" follows.
+    if (str.GetLength() > off + 4) {  // At least "://<char>" follows.
       if (str[off] == L's')  // "https" scheme is accepted.
         off++;
       if (str[off] == L':' && str[off + 1] == L'/' && str[off + 2] == L'/') {
         off += 3;
-        size_t end = TrimExternalBracketsFromWebLink(str, start.value(),
-                                                     str.GetLength() - 1);
-        end = FindWebLinkEnding(str, off, end);
+        const size_t end =
+            FindWebLinkEnding(str, off,
+                              TrimExternalBracketsFromWebLink(
+                                  str, start.value(), str.GetLength() - 1));
         if (end > off) {  // Non-empty host name.
-          *nStart = start.value();
-          *nCount = end - start.value() + 1;
-          *strBeCheck = strBeCheck->Substr(*nStart, *nCount);
-          return true;
+          const size_t nStart = start.value();
+          const size_t nCount = end - nStart + 1;
+          return Link{{nStart, nCount}, strBeCheck.Substr(nStart, nCount)};
         }
       }
     }
@@ -214,18 +213,23 @@ bool CPDF_LinkExtract::CheckWebLink(WideString* strBeCheck,
 
   // When there is no scheme, try to find url starting with "www.".
   start = str.Find(kWWWAddrStart);
-  if (start.has_value() && len > start.value() + kWWWAddrStartLen) {
-    size_t end = TrimExternalBracketsFromWebLink(str, start.value(),
-                                                 str.GetLength() - 1);
-    end = FindWebLinkEnding(str, start.value(), end);
-    if (end > start.value() + kWWWAddrStartLen) {
-      *nStart = start.value();
-      *nCount = end - start.value() + 1;
-      *strBeCheck = L"http://" + strBeCheck->Substr(*nStart, *nCount);
-      return true;
+  if (start.has_value()) {
+    size_t off = start.value() + kWWWAddrStartLen;
+    if (str.GetLength() > off) {
+      const size_t end =
+          FindWebLinkEnding(str, start.value(),
+                            TrimExternalBracketsFromWebLink(
+                                str, start.value(), str.GetLength() - 1));
+      if (end > off) {
+        const size_t nStart = start.value();
+        const size_t nCount = end - nStart + 1;
+        return Link{{nStart, nCount},
+                    L"http://" + strBeCheck.Substr(nStart, nCount)};
+      }
     }
   }
-  return false;
+
+  return std::nullopt;
 }
 
 bool CPDF_LinkExtract::CheckMailLink(WideString* str) {
@@ -261,7 +265,7 @@ bool CPDF_LinkExtract::CheckMailLink(WideString* str) {
   if (!aPos.has_value() || aPos.value() == 0)
     return false;
 
-  str->TrimRight(L'.');
+  str->TrimBack(L'.');
   // At least one '.' in domain name, but not at the beginning.
   // TODO(weili): RFC5322 allows domain names to be a local name without '.'.
   // Check whether we should remove this check.
@@ -309,12 +313,9 @@ std::vector<CFX_FloatRect> CPDF_LinkExtract::GetRects(size_t index) const {
                                    m_LinkArray[index].m_Count);
 }
 
-bool CPDF_LinkExtract::GetTextRange(size_t index,
-                                    int* start_char_index,
-                                    int* char_count) const {
+std::optional<CPDF_LinkExtract::Range> CPDF_LinkExtract::GetTextRange(
+    size_t index) const {
   if (index >= m_LinkArray.size())
-    return false;
-  *start_char_index = m_LinkArray[index].m_Start;
-  *char_count = m_LinkArray[index].m_Count;
-  return true;
+    return std::nullopt;
+  return m_LinkArray[index];
 }

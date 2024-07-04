@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,95 +10,25 @@
 #include <utility>
 #include <vector>
 
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/containers/contains.h"
 #include "core/fxcrt/fx_extension.h"
+#include "core/fxcrt/span.h"
 #include "fxjs/cfx_globaldata.h"
 #include "fxjs/cfx_keyvalue.h"
 #include "fxjs/cjs_event_context.h"
-#include "fxjs/cjs_eventrecorder.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/js_define.h"
 #include "fxjs/js_resources.h"
-#include "third_party/base/check.h"
+#include "v8/include/v8-isolate.h"
 
 namespace {
 
-void JSSpecialPropQuery(v8::Local<v8::String> property,
-                        const v8::PropertyCallbackInfo<v8::Integer>& info) {
-  auto pObj = JSGetObject<CJS_Global>(info.Holder());
-  if (!pObj)
-    return;
-
-  CJS_Runtime* pRuntime = pObj->GetRuntime();
-  if (!pRuntime)
-    return;
-
-  WideString wsProp = fxv8::ToWideString(info.GetIsolate(), property);
-  CJS_Result result = pObj->QueryProperty(wsProp.c_str());
-  v8::PropertyAttribute attr = !result.HasError()
-                                   ? v8::PropertyAttribute::DontDelete
-                                   : v8::PropertyAttribute::None;
-
-  info.GetReturnValue().Set(static_cast<int>(attr));
-}
-
-void JSSpecialPropGet(v8::Local<v8::String> property,
-                      const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto pObj = JSGetObject<CJS_Global>(info.Holder());
-  if (!pObj)
-    return;
-
-  CJS_Runtime* pRuntime = pObj->GetRuntime();
-  if (!pRuntime)
-    return;
-
-  WideString wsProp = fxv8::ToWideString(info.GetIsolate(), property);
-  CJS_Result result = pObj->GetProperty(pRuntime, wsProp.c_str());
-  if (result.HasError()) {
-    pRuntime->Error(
-        JSFormatErrorString("global", "GetProperty", result.Error()));
-    return;
-  }
-  if (result.HasReturn())
-    info.GetReturnValue().Set(result.Return());
-}
-
-void JSSpecialPropPut(v8::Local<v8::String> property,
-                      v8::Local<v8::Value> value,
-                      const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto pObj = JSGetObject<CJS_Global>(info.Holder());
-  if (!pObj)
-    return;
-
-  CJS_Runtime* pRuntime = pObj->GetRuntime();
-  if (!pRuntime)
-    return;
-
-  WideString wsProp = fxv8::ToWideString(info.GetIsolate(), property);
-  CJS_Result result = pObj->SetProperty(pRuntime, wsProp.c_str(), value);
-  if (result.HasError()) {
-    pRuntime->Error(
-        JSFormatErrorString("global", "PutProperty", result.Error()));
-  }
-}
-
-void JSSpecialPropDel(v8::Local<v8::String> property,
-                      const v8::PropertyCallbackInfo<v8::Boolean>& info) {
-  auto pObj = JSGetObject<CJS_Global>(info.Holder());
-  if (!pObj)
-    return;
-
-  CJS_Runtime* pRuntime = pObj->GetRuntime();
-  if (!pRuntime)
-    return;
-
-  WideString wsProp = fxv8::ToWideString(info.GetIsolate(), property);
-  pObj->DelProperty(pRuntime, wsProp.c_str());  // Silently ignore error.
-}
-
-v8::Local<v8::String> GetV8StringFromName(v8::Isolate* pIsolate,
-                                          v8::Local<v8::Name> pName) {
-  return pName->ToString(pIsolate->GetCurrentContext()).ToLocalChecked();
+ByteString ByteStringFromV8Name(v8::Isolate* pIsolate,
+                                v8::Local<v8::Name> name) {
+  CHECK(name->IsString());
+  return fxv8::ToByteString(pIsolate, name.As<v8::String>());
 }
 
 }  // namespace
@@ -120,44 +50,114 @@ void CJS_Global::setPersistent_static(
 }
 
 // static
-void CJS_Global::queryprop_static(
+v8::Intercepted CJS_Global::queryprop_static(
     v8::Local<v8::Name> property,
     const v8::PropertyCallbackInfo<v8::Integer>& info) {
-  DCHECK(property->IsString());
-  JSSpecialPropQuery(GetV8StringFromName(info.GetIsolate(), property), info);
+  auto pObj = JSGetObject<CJS_Global>(info.GetIsolate(), info.Holder());
+  if (!pObj) {
+    return v8::Intercepted::kNo;
+  }
+
+  ByteString bsProp = ByteStringFromV8Name(info.GetIsolate(), property);
+  if (!pObj->HasProperty(bsProp)) {
+    return v8::Intercepted::kNo;
+  }
+
+  info.GetReturnValue().Set(static_cast<int>(v8::PropertyAttribute::None));
+  return v8::Intercepted::kYes;
 }
 
 // static
-void CJS_Global::getprop_static(
+v8::Intercepted CJS_Global::getprop_static(
     v8::Local<v8::Name> property,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  DCHECK(property->IsString());
-  JSSpecialPropGet(GetV8StringFromName(info.GetIsolate(), property), info);
+  auto pObj = JSGetObject<CJS_Global>(info.GetIsolate(), info.Holder());
+  if (!pObj) {
+    return v8::Intercepted::kNo;
+  }
+
+  CJS_Runtime* pRuntime = pObj->GetRuntime();
+  if (!pRuntime) {
+    return v8::Intercepted::kNo;
+  }
+
+  ByteString bsProp = ByteStringFromV8Name(info.GetIsolate(), property);
+  CJS_Result result = pObj->GetProperty(pRuntime, bsProp);
+  if (result.HasError()) {
+    pRuntime->Error(
+        JSFormatErrorString("global", "GetProperty", result.Error()));
+    return v8::Intercepted::kYes;
+  }
+  if (!result.HasReturn()) {
+    return v8::Intercepted::kNo;
+  }
+
+  info.GetReturnValue().Set(result.Return());
+  return v8::Intercepted::kYes;
 }
 
 // static
-void CJS_Global::putprop_static(
+v8::Intercepted CJS_Global::putprop_static(
     v8::Local<v8::Name> property,
     v8::Local<v8::Value> value,
-    const v8::PropertyCallbackInfo<v8::Value>& info) {
-  DCHECK(property->IsString());
-  JSSpecialPropPut(GetV8StringFromName(info.GetIsolate(), property), value,
-                   info);
+    const v8::PropertyCallbackInfo<void>& info) {
+  auto pObj = JSGetObject<CJS_Global>(info.GetIsolate(), info.Holder());
+  if (!pObj) {
+    return v8::Intercepted::kNo;
+  }
+
+  CJS_Runtime* pRuntime = pObj->GetRuntime();
+  if (!pRuntime) {
+    return v8::Intercepted::kNo;
+  }
+
+  ByteString bsProp = ByteStringFromV8Name(info.GetIsolate(), property);
+  CJS_Result result = pObj->SetProperty(pRuntime, bsProp, value);
+  if (result.HasError()) {
+    pRuntime->Error(
+        JSFormatErrorString("global", "PutProperty", result.Error()));
+    return v8::Intercepted::kYes;
+  }
+  return v8::Intercepted::kYes;
 }
 
 // static
-void CJS_Global::delprop_static(
+v8::Intercepted CJS_Global::delprop_static(
     v8::Local<v8::Name> property,
     const v8::PropertyCallbackInfo<v8::Boolean>& info) {
-  DCHECK(property->IsString());
-  JSSpecialPropDel(GetV8StringFromName(info.GetIsolate(), property), info);
+  auto pObj = JSGetObject<CJS_Global>(info.GetIsolate(), info.Holder());
+  if (!pObj) {
+    return v8::Intercepted::kNo;
+  }
+
+  ByteString bsProp = ByteStringFromV8Name(info.GetIsolate(), property);
+  if (!pObj->DelProperty(bsProp)) {
+    return v8::Intercepted::kNo;
+  }
+
+  info.GetReturnValue().Set(true);
+  return v8::Intercepted::kYes;
+}
+
+void CJS_Global::enumprop_static(
+    const v8::PropertyCallbackInfo<v8::Array>& info) {
+  auto pObj = JSGetObject<CJS_Global>(info.GetIsolate(), info.Holder());
+  if (!pObj)
+    return;
+
+  CJS_Runtime* pRuntime = pObj->GetRuntime();
+  if (!pRuntime)
+    return;
+
+  pObj->EnumProperties(pRuntime, info);
 }
 
 // static
 void CJS_Global::DefineAllProperties(CFXJS_Engine* pEngine) {
   pEngine->DefineObjAllProperties(
       ObjDefnID, CJS_Global::queryprop_static, CJS_Global::getprop_static,
-      CJS_Global::putprop_static, CJS_Global::delprop_static);
+      CJS_Global::putprop_static, CJS_Global::delprop_static,
+      CJS_Global::enumprop_static);
 }
 
 // static
@@ -174,38 +174,32 @@ void CJS_Global::DefineJSObjects(CFXJS_Engine* pEngine) {
 }
 
 CJS_Global::CJS_Global(v8::Local<v8::Object> pObject, CJS_Runtime* pRuntime)
-    : CJS_Object(pObject, pRuntime) {
-  CPDFSDK_FormFillEnvironment* pFormFillEnv = GetRuntime()->GetFormFillEnv();
-  m_pFormFillEnv.Reset(pFormFillEnv);
-  m_pGlobalData = CFX_GlobalData::GetRetainedInstance(nullptr);
+    : CJS_Object(pObject, pRuntime),
+      m_pGlobalData(CFX_GlobalData::GetRetainedInstance(nullptr)) {
   UpdateGlobalPersistentVariables();
 }
 
 CJS_Global::~CJS_Global() {
   DestroyGlobalPersisitentVariables();
-  m_pGlobalData->Release();
+  m_pGlobalData.ExtractAsDangling()->Release();
 }
 
-CJS_Result CJS_Global::QueryProperty(const wchar_t* propname) {
-  if (WideString(propname).EqualsASCII("setPersistent"))
-    return CJS_Result::Success();
-
-  return CJS_Result::Failure(JSMessage::kUnknownProperty);
+bool CJS_Global::HasProperty(const ByteString& propname) {
+  return pdfium::Contains(m_MapGlobal, propname);
 }
 
-CJS_Result CJS_Global::DelProperty(CJS_Runtime* pRuntime,
-                                   const wchar_t* propname) {
-  auto it = m_MapGlobal.find(WideString(propname).ToDefANSI());
+bool CJS_Global::DelProperty(const ByteString& propname) {
+  auto it = m_MapGlobal.find(propname);
   if (it == m_MapGlobal.end())
-    return CJS_Result::Failure(JSMessage::kUnknownProperty);
+    return false;
 
   it->second->bDeleted = true;
-  return CJS_Result::Success();
+  return true;
 }
 
 CJS_Result CJS_Global::GetProperty(CJS_Runtime* pRuntime,
-                                   const wchar_t* propname) {
-  auto it = m_MapGlobal.find(WideString(propname).ToDefANSI());
+                                   const ByteString& propname) {
+  auto it = m_MapGlobal.find(propname);
   if (it == m_MapGlobal.end())
     return CJS_Result::Success();
 
@@ -219,60 +213,71 @@ CJS_Result CJS_Global::GetProperty(CJS_Runtime* pRuntime,
     case CFX_Value::DataType::kBoolean:
       return CJS_Result::Success(pRuntime->NewBoolean(pData->bData));
     case CFX_Value::DataType::kString:
-      return CJS_Result::Success(pRuntime->NewString(
-          WideString::FromDefANSI(pData->sData.AsStringView()).AsStringView()));
+      return CJS_Result::Success(
+          pRuntime->NewString(pData->sData.AsStringView()));
     case CFX_Value::DataType::kObject:
       return CJS_Result::Success(
           v8::Local<v8::Object>::New(pRuntime->GetIsolate(), pData->pData));
     case CFX_Value::DataType::kNull:
       return CJS_Result::Success(pRuntime->NewNull());
-    default:
-      break;
   }
-  return CJS_Result::Failure(JSMessage::kObjectTypeError);
 }
 
 CJS_Result CJS_Global::SetProperty(CJS_Runtime* pRuntime,
-                                   const wchar_t* propname,
+                                   const ByteString& propname,
                                    v8::Local<v8::Value> vp) {
-  ByteString sPropName = WideString(propname).ToDefANSI();
   if (vp->IsNumber()) {
-    return SetGlobalVariables(sPropName, CFX_Value::DataType::kNumber,
+    return SetGlobalVariables(propname, CFX_Value::DataType::kNumber,
                               pRuntime->ToDouble(vp), false, ByteString(),
                               v8::Local<v8::Object>(), false);
   }
   if (vp->IsBoolean()) {
-    return SetGlobalVariables(sPropName, CFX_Value::DataType::kBoolean, 0,
+    return SetGlobalVariables(propname, CFX_Value::DataType::kBoolean, 0,
                               pRuntime->ToBoolean(vp), ByteString(),
                               v8::Local<v8::Object>(), false);
   }
   if (vp->IsString()) {
-    return SetGlobalVariables(sPropName, CFX_Value::DataType::kString, 0, false,
-                              pRuntime->ToWideString(vp).ToDefANSI(),
+    return SetGlobalVariables(propname, CFX_Value::DataType::kString, 0, false,
+                              pRuntime->ToByteString(vp),
                               v8::Local<v8::Object>(), false);
   }
   if (vp->IsObject()) {
-    return SetGlobalVariables(sPropName, CFX_Value::DataType::kObject, 0, false,
+    return SetGlobalVariables(propname, CFX_Value::DataType::kObject, 0, false,
                               ByteString(), pRuntime->ToObject(vp), false);
   }
   if (vp->IsNull()) {
-    return SetGlobalVariables(sPropName, CFX_Value::DataType::kNull, 0, false,
+    return SetGlobalVariables(propname, CFX_Value::DataType::kNull, 0, false,
                               ByteString(), v8::Local<v8::Object>(), false);
   }
   if (vp->IsUndefined()) {
-    DelProperty(pRuntime, propname);
+    DelProperty(propname);
     return CJS_Result::Success();
   }
   return CJS_Result::Failure(JSMessage::kObjectTypeError);
 }
 
+void CJS_Global::EnumProperties(
+    CJS_Runtime* pRuntime,
+    const v8::PropertyCallbackInfo<v8::Array>& info) {
+  v8::Local<v8::Array> result = pRuntime->NewArray();
+  int idx = 0;
+  for (const auto& it : m_MapGlobal) {
+    if (it.second->bDeleted)
+      continue;
+    v8::Local<v8::Name> name = pRuntime->NewString(it.first.AsStringView());
+    pRuntime->PutArrayElement(result, idx, name);
+    ++idx;
+  }
+  info.GetReturnValue().Set(result);
+}
+
 CJS_Result CJS_Global::setPersistent(
     CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 2)
     return CJS_Result::Failure(JSMessage::kParamError);
 
-  auto it = m_MapGlobal.find(pRuntime->ToWideString(params[0]).ToDefANSI());
+  auto it = m_MapGlobal.find(pRuntime->ToByteString(params[0]));
   if (it == m_MapGlobal.end() || it->second->bDeleted)
     return CJS_Result::Failure(JSMessage::kGlobalNotFoundError);
 
@@ -291,7 +296,7 @@ void CJS_Global::UpdateGlobalPersistentVariables() {
       case CFX_Value::DataType::kNumber:
         SetGlobalVariables(pData->data.sKey, CFX_Value::DataType::kNumber,
                            pData->data.dData, false, ByteString(),
-                           v8::Local<v8::Object>(), pData->bPersistent == 1);
+                           v8::Local<v8::Object>(), pData->bPersistent);
         pRuntime->PutObjectProperty(ToV8Object(),
                                     pData->data.sKey.AsStringView(),
                                     pRuntime->NewNumber(pData->data.dData));
@@ -299,7 +304,7 @@ void CJS_Global::UpdateGlobalPersistentVariables() {
       case CFX_Value::DataType::kBoolean:
         SetGlobalVariables(pData->data.sKey, CFX_Value::DataType::kBoolean, 0,
                            pData->data.bData == 1, ByteString(),
-                           v8::Local<v8::Object>(), pData->bPersistent == 1);
+                           v8::Local<v8::Object>(), pData->bPersistent);
         pRuntime->PutObjectProperty(
             ToV8Object(), pData->data.sKey.AsStringView(),
             pRuntime->NewBoolean(pData->data.bData == 1));
@@ -307,20 +312,17 @@ void CJS_Global::UpdateGlobalPersistentVariables() {
       case CFX_Value::DataType::kString:
         SetGlobalVariables(pData->data.sKey, CFX_Value::DataType::kString, 0,
                            false, pData->data.sData, v8::Local<v8::Object>(),
-                           pData->bPersistent == 1);
+                           pData->bPersistent);
         pRuntime->PutObjectProperty(
             ToV8Object(), pData->data.sKey.AsStringView(),
-            pRuntime->NewString(
-                WideString::FromUTF8(pData->data.sData.AsStringView())
-                    .AsStringView()));
+            pRuntime->NewString(pData->data.sData.AsStringView()));
         break;
       case CFX_Value::DataType::kObject: {
         v8::Local<v8::Object> pObj = pRuntime->NewObject();
         if (!pObj.IsEmpty()) {
           PutObjectProperty(pObj, &pData->data);
           SetGlobalVariables(pData->data.sKey, CFX_Value::DataType::kObject, 0,
-                             false, ByteString(), pObj,
-                             pData->bPersistent == 1);
+                             false, ByteString(), pObj, pData->bPersistent);
           pRuntime->PutObjectProperty(ToV8Object(),
                                       pData->data.sKey.AsStringView(), pObj);
         }
@@ -328,7 +330,7 @@ void CJS_Global::UpdateGlobalPersistentVariables() {
       case CFX_Value::DataType::kNull:
         SetGlobalVariables(pData->data.sKey, CFX_Value::DataType::kNull, 0,
                            false, ByteString(), v8::Local<v8::Object>(),
-                           pData->bPersistent == 1);
+                           pData->bPersistent);
         pRuntime->PutObjectProperty(
             ToV8Object(), pData->data.sKey.AsStringView(), pRuntime->NewNull());
         break;
@@ -336,7 +338,11 @@ void CJS_Global::UpdateGlobalPersistentVariables() {
   }
 }
 
-void CJS_Global::CommitGlobalPersisitentVariables(CJS_Runtime* pRuntime) {
+void CJS_Global::CommitGlobalPersisitentVariables() {
+  CJS_Runtime* pRuntime = GetRuntime();
+  if (!pRuntime)
+    return;
+
   for (const auto& iter : m_MapGlobal) {
     ByteString name = iter.first;
     JSGlobalData* pData = iter.second.get();
@@ -359,7 +365,7 @@ void CJS_Global::CommitGlobalPersisitentVariables(CJS_Runtime* pRuntime) {
         break;
       case CFX_Value::DataType::kObject: {
         v8::Local<v8::Object> obj =
-            v8::Local<v8::Object>::New(GetIsolate(), pData->pData);
+            v8::Local<v8::Object>::New(pRuntime->GetIsolate(), pData->pData);
         m_pGlobalData->SetGlobalVariableObject(name,
                                                ObjectToArray(pRuntime, obj));
         m_pGlobalData->SetGlobalVariablePersistent(name, pData->bPersistent);
@@ -398,7 +404,7 @@ std::vector<std::unique_ptr<CFX_KeyValue>> CJS_Global::ObjectToArray(
       continue;
     }
     if (v->IsString()) {
-      ByteString sValue = pRuntime->ToWideString(v).ToDefANSI();
+      ByteString sValue = pRuntime->ToByteString(v);
       auto pObjElement = std::make_unique<CFX_KeyValue>();
       pObjElement->nType = CFX_Value::DataType::kString;
       pObjElement->sKey = sKey;
@@ -444,9 +450,7 @@ void CJS_Global::PutObjectProperty(v8::Local<v8::Object> pObj,
       case CFX_Value::DataType::kString:
         pRuntime->PutObjectProperty(
             pObj, pObjData->sKey.AsStringView(),
-            pRuntime->NewString(
-                WideString::FromUTF8(pObjData->sData.AsStringView())
-                    .AsStringView()));
+            pRuntime->NewString(pObjData->sData.AsStringView()));
         break;
       case CFX_Value::DataType::kObject: {
         v8::Local<v8::Object> pNewObj = pRuntime->NewObject();
@@ -483,7 +487,7 @@ CJS_Result CJS_Global::SetGlobalVariables(const ByteString& propname,
     JSGlobalData* pTemp = it->second.get();
     if (pTemp->bDeleted || pTemp->nType != nType) {
       pTemp->dData = 0;
-      pTemp->bData = 0;
+      pTemp->bData = false;
       pTemp->sData.clear();
       pTemp->nType = nType;
     }
@@ -503,8 +507,6 @@ CJS_Result CJS_Global::SetGlobalVariables(const ByteString& propname,
         break;
       case CFX_Value::DataType::kNull:
         break;
-      default:
-        return CJS_Result::Failure(JSMessage::kObjectTypeError);
     }
     return CJS_Result::Success();
   }
@@ -535,8 +537,6 @@ CJS_Result CJS_Global::SetGlobalVariables(const ByteString& propname,
       pNewData->nType = CFX_Value::DataType::kNull;
       pNewData->bPersistent = bDefaultPersistent;
       break;
-    default:
-      return CJS_Result::Failure(JSMessage::kObjectTypeError);
   }
   m_MapGlobal[propname] = std::move(pNewData);
   return CJS_Result::Success();

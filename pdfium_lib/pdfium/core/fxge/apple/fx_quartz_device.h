@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,11 @@
 #ifndef CORE_FXGE_APPLE_FX_QUARTZ_DEVICE_H_
 #define CORE_FXGE_APPLE_FX_QUARTZ_DEVICE_H_
 
-#include <Carbon/Carbon.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_system.h"
-#include "core/fxge/cfx_gemodule.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxge/dib/fx_dib.h"
 
 class CFX_DIBitmap;
@@ -21,15 +22,14 @@ class CQuartz2D {
   void* CreateGraphics(const RetainPtr<CFX_DIBitmap>& bitmap);
   void DestroyGraphics(void* graphics);
 
-  void* CreateFont(const uint8_t* pFontData, uint32_t dwFontSize);
-  void DestroyFont(void* pFont);
+  void* CreateFont(pdfium::span<const uint8_t> font_data);
+  void DestroyFont(void* font);
   void SetGraphicsTextMatrix(void* graphics, const CFX_Matrix& matrix);
   bool DrawGraphicsString(void* graphics,
                           void* font,
-                          float fontSize,
-                          uint16_t* glyphIndices,
-                          CGPoint* glyphPositions,
-                          int32_t chars,
+                          float font_size,
+                          pdfium::span<uint16_t> glyph_indices,
+                          pdfium::span<CGPoint> glyph_positions,
                           FX_ARGB argb);
 };
 

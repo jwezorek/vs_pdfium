@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,14 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_PSENGINE_H_
 #define CORE_FPDFAPI_PAGE_CPDF_PSENGINE_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 #include <vector>
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/bytestring.h"
+#include "core/fxcrt/span.h"
 
 class CPDF_PSEngine;
 class CPDF_PSProc;
@@ -72,8 +74,9 @@ class CPDF_PSOP {
   explicit CPDF_PSOP(float value);
   ~CPDF_PSOP();
 
+  bool Parse(CPDF_SimpleParser* parser, int depth);
+  void Execute(CPDF_PSEngine* pEngine);
   float GetFloatValue() const;
-  CPDF_PSProc* GetProc() const;
   PDF_PSOP GetOp() const { return m_op; }
 
  private:
@@ -92,7 +95,6 @@ class CPDF_PSProc {
 
   // These methods are exposed for testing.
   void AddOperatorForTesting(ByteStringView word);
-  size_t num_operators() const { return m_Operators.size(); }
   const std::unique_ptr<CPDF_PSOP>& last_operator() {
     return m_Operators.back();
   }
@@ -124,7 +126,7 @@ class CPDF_PSEngine {
 
   uint32_t m_StackCount = 0;
   CPDF_PSProc m_MainProc;
-  float m_Stack[kPSEngineStackSize];
+  std::array<float, kPSEngineStackSize> m_Stack = {};
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_PSENGINE_H_

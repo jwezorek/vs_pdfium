@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,28 +7,31 @@
 #ifndef FXBARCODE_PDF417_BC_PDF417WRITER_H_
 #define FXBARCODE_PDF417_BC_PDF417WRITER_H_
 
-#include <vector>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/widestring.h"
 #include "fxbarcode/BC_TwoDimWriter.h"
 
 class CBC_PDF417Writer final : public CBC_TwoDimWriter {
  public:
+  struct EncodeResult {
+    EncodeResult(DataVector<uint8_t> data, int32_t width, int32_t height);
+    ~EncodeResult();
+
+    DataVector<uint8_t> data;
+    int32_t width;
+    int32_t height;
+  };
+
   CBC_PDF417Writer();
   ~CBC_PDF417Writer() override;
 
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>>
-  Encode(WideStringView contents, int32_t* pOutWidth, int32_t* pOutHeight);
+  EncodeResult Encode(WideStringView contents) const;
 
   // CBC_TwoDimWriter
   bool SetErrorCorrectionLevel(int32_t level) override;
-
- private:
-  void RotateArray(std::vector<uint8_t, FxAllocAllocator<uint8_t>>* bitarray,
-                   int32_t width,
-                   int32_t height);
 };
 
 #endif  // FXBARCODE_PDF417_BC_PDF417WRITER_H_

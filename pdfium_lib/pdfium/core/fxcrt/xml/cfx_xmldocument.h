@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,7 +19,7 @@ class CFX_XMLDocument {
   CFX_XMLDocument();
   ~CFX_XMLDocument();
 
-  CFX_XMLElement* GetRoot() const { return root_.Get(); }
+  CFX_XMLElement* GetRoot() const { return root_; }
 
   template <typename T, typename... Args>
   T* CreateNode(Args&&... args) {

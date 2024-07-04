@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -23,7 +23,7 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/fx_coordinates.h"
 #include "fxbarcode/oned/BC_OnedCode128Writer.h"
 
 CBC_Code128::CBC_Code128(BC_TYPE type)
@@ -36,29 +36,24 @@ bool CBC_Code128::Encode(WideStringView contents) {
   if (!pWriter->CheckContentValidity(contents))
     return false;
 
-  BCFORMAT format = BCFORMAT_CODE_128;
-  int32_t outWidth = 0;
-  int32_t outHeight = 0;
   WideString content(contents);
-  if (contents.GetLength() % 2 && pWriter->GetType() == BC_CODE128_C)
+  if (contents.GetLength() % 2 && pWriter->GetType() == BC_TYPE::kCode128C)
     content += '0';
 
   m_renderContents = pWriter->FilterContents(content.AsStringView());
   ByteString byteString = m_renderContents.ToUTF8();
-  std::unique_ptr<uint8_t, FxFreeDeleter> data(
-      pWriter->Encode(byteString, format, outWidth, outHeight));
-  return data && pWriter->RenderResult(m_renderContents.AsStringView(),
-                                       data.get(), outWidth);
+  return pWriter->RenderResult(m_renderContents.AsStringView(),
+                               pWriter->Encode(byteString));
 }
 
 bool CBC_Code128::RenderDevice(CFX_RenderDevice* device,
-                               const CFX_Matrix* matrix) {
+                               const CFX_Matrix& matrix) {
   return GetOnedCode128Writer()->RenderDeviceResult(
       device, matrix, m_renderContents.AsStringView());
 }
 
 BC_TYPE CBC_Code128::GetType() {
-  return BC_CODE128;
+  return BC_TYPE::kCode128;
 }
 
 CBC_OnedCode128Writer* CBC_Code128::GetOnedCode128Writer() {

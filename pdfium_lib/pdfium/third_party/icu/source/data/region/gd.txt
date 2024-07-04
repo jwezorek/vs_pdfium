@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 gd{
     Countries{
         001{"An Saoghal"}
@@ -84,6 +85,7 @@ gd{
         CN{"An t-Sìn"}
         CO{"Coloimbia"}
         CP{"Eilean Clipperton"}
+        CQ{"Sarc"}
         CR{"Costa Rìcea"}
         CU{"Cùba"}
         CV{"An Ceap Uaine"}
@@ -110,7 +112,7 @@ gd{
         EZ{"Raon an Eòro"}
         FI{"An Fhionnlann"}
         FJ{"Fìdi"}
-        FK{"Na h-Eileanan Fàclannach (Islas Malvinas)"}
+        FK{"Na h-Eileanan Fàclannach"}
         FM{"Na Meanbh-eileanan"}
         FO{"Na h-Eileanan Fàro"}
         FR{"An Fhraing"}
@@ -133,7 +135,7 @@ gd{
         GU{"Guam"}
         GW{"Gini-Bioso"}
         GY{"Guidheàna"}
-        HK{"Hong Kong"}
+        HK{"Hong Kong SAR na Sìne"}
         HM{"Eilean Heard is MhicDhòmhnaill"}
         HN{"Hondùras"}
         HR{"A’ Chròthais"}
@@ -183,11 +185,11 @@ gd{
         MF{"Naomh Màrtainn"}
         MG{"Madagasgar"}
         MH{"Eileanan Mharshall"}
-        MK{"A’ Mhasadon (FYROM)"}
+        MK{"A’ Mhasadon a Tuath"}
         ML{"Màili"}
         MM{"Miànmar"}
         MN{"Dùthaich nam Mongol"}
-        MO{"Macàthu"}
+        MO{"Macàthu SAR na Sìne"}
         MP{"Na h-Eileanan Mairianach a Tuath"}
         MQ{"Mairtinic"}
         MR{"Moratàinea"}
@@ -222,7 +224,7 @@ gd{
         PM{"Saint Pierre agus Miquelon"}
         PN{"Eileanan Pheit a’ Chàirn"}
         PR{"Porto Rìceo"}
-        PS{"Palastain"}
+        PS{"Ùghdarras nam Palastaineach"}
         PT{"A’ Phortagail"}
         PW{"Palabh"}
         PY{"Paraguaidh"}
@@ -241,7 +243,7 @@ gd{
         SG{"Singeapòr"}
         SH{"Eilean Naomh Eilidh"}
         SI{"An t-Slòbhain"}
-        SJ{"Svalbard agus Jan Mayen"}
+        SJ{"Svalbard is Jan Mayen"}
         SK{"An t-Slòbhac"}
         SL{"Siarra Leòmhann"}
         SM{"San Marino"}
@@ -253,7 +255,7 @@ gd{
         SV{"An Salbhador"}
         SX{"Sint Maarten"}
         SY{"Siridhea"}
-        SZ{"Dùthaich nan Suasaidh"}
+        SZ{"eSwatini"}
         TA{"Tristan da Cunha"}
         TC{"Na h-Eileanan Turcach is Caiceo"}
         TD{"An t-Seàd"}
@@ -287,6 +289,8 @@ gd{
         VU{"Vanuatu"}
         WF{"Uallas agus Futuna"}
         WS{"Samotha"}
+        XA{"Sràcan fuadain"}
+        XB{"Dà-chomhaireach fuadain"}
         XK{"A’ Chosobho"}
         YE{"An Eaman"}
         YT{"Mayotte"}
@@ -295,8 +299,14 @@ gd{
         ZW{"An t-Sìombab"}
         ZZ{"Roinn-dùthcha neo-aithnichte"}
     }
+    Countries%chagos{
+        IO{"Innis-mhuir Chagos"}
+    }
     Countries%short{
         GB{"RA"}
+        HK{"Hong Kong"}
+        MO{"Macàthu"}
+        PS{"Palastain"}
         US{"SA"}
     }
     Countries%variant{
@@ -304,7 +314,9 @@ gd{
         CG{"A’ Chongo"}
         CI{"An Costa Ìbhri"}
         CZ{"Poblachd na Seice"}
+        FK{"Na h-Eileanan Fàclannach (Islas Malvinas)"}
+        NZ{"Aotearoa Sealainn Nuadh"}
+        SZ{"Dùthaich nan Suasaidh"}
         TL{"Tìomor an Ear"}
     }
-    Version{"2.1.44.91"}
 }

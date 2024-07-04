@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,15 +7,19 @@
 #include "core/fpdfapi/parser/cpdf_seekablemultistream.h"
 
 #include <algorithm>
+#include <utility>
 
+#include "core/fpdfapi/parser/cpdf_stream.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
-#include "third_party/base/notreached.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/notreached.h"
+#include "core/fxcrt/span_util.h"
+#include "core/fxcrt/stl_util.h"
 
 CPDF_SeekableMultiStream::CPDF_SeekableMultiStream(
-    const std::vector<const CPDF_Stream*>& streams) {
-  for (const CPDF_Stream* pStream : streams) {
-    m_Data.push_back(pdfium::MakeRetain<CPDF_StreamAcc>(pStream));
+    std::vector<RetainPtr<const CPDF_Stream>> streams) {
+  for (auto& pStream : streams) {
+    m_Data.push_back(pdfium::MakeRetain<CPDF_StreamAcc>(std::move(pStream)));
     m_Data.back()->LoadAllDataFiltered();
   }
 }
@@ -23,16 +27,15 @@ CPDF_SeekableMultiStream::CPDF_SeekableMultiStream(
 CPDF_SeekableMultiStream::~CPDF_SeekableMultiStream() = default;
 
 FX_FILESIZE CPDF_SeekableMultiStream::GetSize() {
-  uint32_t dwSize = 0;
+  FX_SAFE_FILESIZE dwSize = 0;
   for (const auto& acc : m_Data)
     dwSize += acc->GetSize();
-  return dwSize;
+  return dwSize.ValueOrDie();
 }
 
-bool CPDF_SeekableMultiStream::ReadBlockAtOffset(void* buffer,
-                                                 FX_FILESIZE offset,
-                                                 size_t size) {
-  int32_t iCount = pdfium::CollectionSize<int32_t>(m_Data);
+bool CPDF_SeekableMultiStream::ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                                                 FX_FILESIZE offset) {
+  int32_t iCount = fxcrt::CollectionSize<int32_t>(m_Data);
   int32_t index = 0;
   while (index < iCount) {
     const auto& acc = m_Data[index];
@@ -44,24 +47,20 @@ bool CPDF_SeekableMultiStream::ReadBlockAtOffset(void* buffer,
     index++;
   }
   while (index < iCount) {
-    const auto& acc = m_Data[index];
-    uint32_t dwSize = acc->GetSize();
-    size_t dwRead = std::min(size, static_cast<size_t>(dwSize - offset));
-    memcpy(buffer, acc->GetSpan().subspan(offset, dwRead).data(), dwRead);
-    size -= dwRead;
-    if (size == 0)
+    auto acc_span = m_Data[index]->GetSpan();
+    size_t dwRead = std::min<size_t>(buffer.size(), acc_span.size() - offset);
+    buffer = fxcrt::spancpy(buffer, acc_span.subspan(offset, dwRead));
+    if (buffer.empty())
       return true;
 
-    buffer = static_cast<uint8_t*>(buffer) + dwRead;
     offset = 0;
     index++;
   }
   return false;
 }
 
-size_t CPDF_SeekableMultiStream::ReadBlock(void* buffer, size_t size) {
-  NOTREACHED();
-  return 0;
+size_t CPDF_SeekableMultiStream::ReadBlock(pdfium::span<uint8_t> buffer) {
+  NOTREACHED_NORETURN();
 }
 
 FX_FILESIZE CPDF_SeekableMultiStream::GetPosition() {
@@ -73,13 +72,11 @@ bool CPDF_SeekableMultiStream::IsEOF() {
 }
 
 bool CPDF_SeekableMultiStream::Flush() {
-  NOTREACHED();
-  return false;
+  NOTREACHED_NORETURN();
 }
 
-bool CPDF_SeekableMultiStream::WriteBlockAtOffset(const void* pData,
-                                                  FX_FILESIZE offset,
-                                                  size_t size) {
-  NOTREACHED();
-  return false;
+bool CPDF_SeekableMultiStream::WriteBlockAtOffset(
+    pdfium::span<const uint8_t> buffer,
+    FX_FILESIZE offset) {
+  NOTREACHED_NORETURN();
 }

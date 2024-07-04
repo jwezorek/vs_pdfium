@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,6 +11,7 @@
 
 #include "core/fxcrt/cfx_timer.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "fpdfsdk/pwl/cpwl_sbbutton.h"
 #include "fpdfsdk/pwl/cpwl_wnd.h"
 
 struct PWL_SCROLL_INFO {
@@ -36,32 +37,6 @@ struct PWL_SCROLL_INFO {
   float fPlateWidth;
   float fBigStep;
   float fSmallStep;
-};
-
-enum PWL_SCROLLBAR_TYPE { SBT_HSCROLL, SBT_VSCROLL };
-
-enum PWL_SBBUTTON_TYPE { PSBT_MIN, PSBT_MAX, PSBT_POS };
-
-class CPWL_SBButton final : public CPWL_Wnd {
- public:
-  CPWL_SBButton(
-      const CreateParams& cp,
-      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData,
-      PWL_SCROLLBAR_TYPE eScrollBarType,
-      PWL_SBBUTTON_TYPE eButtonType);
-  ~CPWL_SBButton() override;
-
-  // CPWL_Wnd
-  void DrawThisAppearance(CFX_RenderDevice* pDevice,
-                          const CFX_Matrix& mtUser2Device) override;
-  bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point) override;
-  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point) override;
-  bool OnMouseMove(uint32_t nFlag, const CFX_PointF& point) override;
-
- private:
-  PWL_SCROLLBAR_TYPE m_eScrollBarType;
-  PWL_SBBUTTON_TYPE m_eSBButtonType;
-  bool m_bMouseDown = false;
 };
 
 struct PWL_FLOATRANGE {
@@ -116,19 +91,22 @@ struct PWL_SCROLL_PRIVATEDATA {
 
 class CPWL_ScrollBar final : public CPWL_Wnd, public CFX_Timer::CallbackIface {
  public:
+  static constexpr float kWidth = 12.0f;
+  static constexpr uint8_t kTransparency = 150;
+
   CPWL_ScrollBar(
       const CreateParams& cp,
-      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData,
-      PWL_SCROLLBAR_TYPE sbType);
+      std::unique_ptr<IPWL_FillerNotify::PerWindowData> pAttachedData);
   ~CPWL_ScrollBar() override;
 
   // CPWL_Wnd:
   void OnDestroy() override;
-  bool RePosChildWnd() override;
+  bool RepositionChildWnd() override;
   void DrawThisAppearance(CFX_RenderDevice* pDevice,
                           const CFX_Matrix& mtUser2Device) override;
-  bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point) override;
-  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point) override;
+  bool OnLButtonDown(Mask<FWL_EVENTFLAG> nFlag,
+                     const CFX_PointF& point) override;
+  bool OnLButtonUp(Mask<FWL_EVENTFLAG> nFlag, const CFX_PointF& point) override;
   void SetScrollInfo(const PWL_SCROLL_INFO& info) override;
   void SetScrollPosition(float pos) override;
   void NotifyLButtonDown(CPWL_Wnd* child, const CFX_PointF& pos) override;
@@ -140,16 +118,13 @@ class CPWL_ScrollBar final : public CPWL_Wnd, public CFX_Timer::CallbackIface {
   void OnTimerFired() override;
 
   float GetScrollBarWidth() const;
-  PWL_SCROLLBAR_TYPE GetScrollBarType() const { return m_sbType; }
-
-  void SetNotifyForever(bool bForever) { m_bNotifyForever = bForever; }
 
  private:
   void SetScrollRange(float fMin, float fMax, float fClientWidth);
   void SetScrollPos(float fPos);
 
   // Returns |true| iff this instance is still allocated.
-  bool MovePosButton(bool bRefresh);
+  [[nodiscard]] bool MovePosButton(bool bRefresh);
   void SetScrollStep(float fBigStep, float fSmallStep);
   void NotifyScrollWindow();
   CFX_FloatRect GetScrollArea() const;
@@ -171,7 +146,6 @@ class CPWL_ScrollBar final : public CPWL_Wnd, public CFX_Timer::CallbackIface {
   float TrueToFace(float);
   float FaceToTrue(float);
 
-  PWL_SCROLLBAR_TYPE m_sbType;
   PWL_SCROLL_INFO m_OriginInfo;
   UnownedPtr<CPWL_SBButton> m_pMinButton;
   UnownedPtr<CPWL_SBButton> m_pMaxButton;
@@ -180,7 +154,6 @@ class CPWL_ScrollBar final : public CPWL_Wnd, public CFX_Timer::CallbackIface {
   PWL_SCROLL_PRIVATEDATA m_sData;
   bool m_bMouseDown = false;
   bool m_bMinOrMax = false;
-  bool m_bNotifyForever = true;
   float m_nOldPos = 0.0f;
   float m_fOldPosButton = 0.0f;
 };

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 se{
     Countries{
         001{"máilbmi"}
@@ -179,7 +180,6 @@ se{
         MF{"Frankriikka Saint Martin"}
         MG{"Madagaskar"}
         MH{"Marshallsullot"}
-        MK{"Makedonia"}
         ML{"Mali"}
         MM{"Burma"}
         MN{"Mongolia"}
@@ -288,8 +288,6 @@ se{
         ZZ{"dovdameahttun guovlu"}
     }
     Countries%short{
-        GB{"Stuorra-Británnia"}
         US{"USA"}
     }
-    Version{"2.1.43.94"}
 }

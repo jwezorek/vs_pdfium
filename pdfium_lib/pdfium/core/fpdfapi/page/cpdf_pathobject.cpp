@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -14,7 +14,7 @@ CPDF_PathObject::CPDF_PathObject() : CPDF_PathObject(kNoContentStream) {}
 CPDF_PathObject::~CPDF_PathObject() = default;
 
 CPDF_PageObject::Type CPDF_PathObject::GetType() const {
-  return PATH;
+  return Type::kPath;
 }
 
 void CPDF_PathObject::Transform(const CFX_Matrix& matrix) {
@@ -39,9 +39,10 @@ void CPDF_PathObject::CalcBoundingBox() {
   if (!m_Path.HasRef())
     return;
   CFX_FloatRect rect;
-  float width = m_GraphState.GetLineWidth();
+  float width = graph_state().GetLineWidth();
   if (m_bStroke && width != 0) {
-    rect = m_Path.GetBoundingBox(width, m_GraphState.GetMiterLimit());
+    rect = m_Path.GetBoundingBoxForStrokePath(width,
+                                              graph_state().GetMiterLimit());
   } else {
     rect = m_Path.GetBoundingBox();
   }
@@ -50,4 +51,9 @@ void CPDF_PathObject::CalcBoundingBox() {
   if (width == 0 && m_bStroke)
     rect.Inflate(0.5f, 0.5f);
   SetRect(rect);
+}
+
+void CPDF_PathObject::SetPathMatrix(const CFX_Matrix& matrix) {
+  m_Matrix = matrix;
+  CalcBoundingBox();
 }

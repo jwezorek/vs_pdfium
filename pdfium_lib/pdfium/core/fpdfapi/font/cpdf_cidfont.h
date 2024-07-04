@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,15 @@
 #ifndef CORE_FPDFAPI_FONT_CPDF_CIDFONT_H_
 #define CORE_FPDFAPI_FONT_CPDF_CIDFONT_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "core/fpdfapi/font/cpdf_font.h"
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 
@@ -27,8 +29,17 @@ enum CIDSet : uint8_t {
   CIDSET_NUM_SETS
 };
 
+struct CIDTransform {
+  uint16_t cid;
+  uint8_t a;
+  uint8_t b;
+  uint8_t c;
+  uint8_t d;
+  uint8_t e;
+  uint8_t f;
+};
+
 class CFX_CTTGSUBTable;
-class CPDF_Array;
 class CPDF_CID2UnicodeMap;
 class CPDF_CMap;
 class CPDF_StreamAcc;
@@ -49,7 +60,7 @@ class CPDF_CIDFont final : public CPDF_Font {
   FX_RECT GetCharBBox(uint32_t charcode) override;
   uint32_t GetNextChar(ByteStringView pString, size_t* pOffset) const override;
   size_t CountChar(ByteStringView pString) const override;
-  int AppendChar(char* str, uint32_t charcode) const override;
+  void AppendChar(ByteString* str, uint32_t charcode) const override;
   bool IsVertWriting() const override;
   bool IsUnicodeCompatible() const override;
   bool Load() override;
@@ -57,13 +68,18 @@ class CPDF_CIDFont final : public CPDF_Font {
   uint32_t CharCodeFromUnicode(wchar_t Unicode) const override;
 
   uint16_t CIDFromCharCode(uint32_t charcode) const;
-  const uint8_t* GetCIDTransform(uint16_t cid) const;
+  const CIDTransform* GetCIDTransform(uint16_t cid) const;
   int16_t GetVertWidth(uint16_t cid) const;
   CFX_Point16 GetVertOrigin(uint16_t cid) const;
   int GetCharSize(uint32_t charcode) const;
 
  private:
-  CPDF_CIDFont(CPDF_Document* pDocument, CPDF_Dictionary* pFontDict);
+  enum class CIDFontType : bool {
+    kType1,    // CIDFontType0
+    kTrueType  // CIDFontType2
+  };
+
+  CPDF_CIDFont(CPDF_Document* pDocument, RetainPtr<CPDF_Dictionary> pFontDict);
 
   void LoadGB2312();
   int GetGlyphIndex(uint32_t unicodeb, bool* pVertGlyph);
@@ -75,7 +91,7 @@ class CPDF_CIDFont final : public CPDF_Font {
   UnownedPtr<const CPDF_CID2UnicodeMap> m_pCID2UnicodeMap;
   RetainPtr<CPDF_StreamAcc> m_pStreamAcc;
   std::unique_ptr<CFX_CTTGSUBTable> m_pTTGSUBTable;
-  bool m_bType1 = false;
+  CIDFontType m_FontType = CIDFontType::kTrueType;
   bool m_bCIDIsGID = false;
   bool m_bAnsiWidthsFixed = false;
   bool m_bAdobeCourierStd = false;
@@ -85,7 +101,7 @@ class CPDF_CIDFont final : public CPDF_Font {
   int16_t m_DefaultW1 = -1000;
   std::vector<int> m_WidthList;
   std::vector<int> m_VertMetrics;
-  FX_RECT m_CharBBox[256];
+  std::array<FX_RECT, 256> m_CharBBox;
 };
 
 #endif  // CORE_FPDFAPI_FONT_CPDF_CIDFONT_H_

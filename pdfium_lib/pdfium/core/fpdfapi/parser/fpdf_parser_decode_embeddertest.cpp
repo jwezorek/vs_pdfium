@@ -1,10 +1,9 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "build/build_config.h"
 #include "core/fpdfapi/parser/fpdf_parser_decode.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
 #include "public/cpp/fpdf_scopers.h"
 #include "testing/embedder_test.h"
 #include "testing/embedder_test_constants.h"
@@ -14,7 +13,7 @@
 using FPDFParserDecodeEmbedderTest = EmbedderTest;
 using pdfium::kBlankPage612By792Checksum;
 
-TEST_F(FPDFParserDecodeEmbedderTest, Bug_552046) {
+TEST_F(FPDFParserDecodeEmbedderTest, Bug552046) {
   // Tests specifying multiple image filters for a stream. Should not cause a
   // crash when rendered.
   ASSERT_TRUE(OpenDocument("bug_552046.pdf"));
@@ -25,7 +24,7 @@ TEST_F(FPDFParserDecodeEmbedderTest, Bug_552046) {
   UnloadPage(page);
 }
 
-TEST_F(FPDFParserDecodeEmbedderTest, Bug_555784) {
+TEST_F(FPDFParserDecodeEmbedderTest, Bug555784) {
   // Tests bad input to the run length decoder that caused a heap overflow.
   // Should not cause a crash when rendered.
   ASSERT_TRUE(OpenDocument("bug_555784.pdf"));
@@ -36,7 +35,7 @@ TEST_F(FPDFParserDecodeEmbedderTest, Bug_555784) {
   UnloadPage(page);
 }
 
-TEST_F(FPDFParserDecodeEmbedderTest, Bug_455199) {
+TEST_F(FPDFParserDecodeEmbedderTest, Bug455199) {
   // Tests object numbers with a value > 01000000.
   // Should open successfully.
   ASSERT_TRUE(OpenDocument("bug_455199.pdf"));
@@ -44,6 +43,6 @@ TEST_F(FPDFParserDecodeEmbedderTest, Bug_455199) {
   ASSERT_TRUE(page);
   ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
 
-  CompareBitmap(bitmap.get(), 200, 200, pdfium::kHelloWorldChecksum);
+  CompareBitmap(bitmap.get(), 200, 200, pdfium::HelloWorldChecksum());
   UnloadPage(page);
 }

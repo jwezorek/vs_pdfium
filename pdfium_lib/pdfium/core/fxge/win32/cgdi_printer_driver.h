@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,13 +21,13 @@ class CGdiPrinterDriver final : public CGdiDeviceDriver {
  private:
   // CGdiPrinterDriver:
   int GetDeviceCaps(int caps_id) const override;
-  bool SetDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
+  bool SetDIBits(RetainPtr<const CFX_DIBBase> bitmap,
                  uint32_t color,
                  const FX_RECT& src_rect,
                  int left,
                  int top,
                  BlendMode blend_type) override;
-  bool StretchDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
+  bool StretchDIBits(RetainPtr<const CFX_DIBBase> bitmap,
                      uint32_t color,
                      int dest_left,
                      int dest_top,
@@ -36,15 +36,14 @@ class CGdiPrinterDriver final : public CGdiDeviceDriver {
                      const FX_RECT* pClipRect,
                      const FXDIB_ResampleOptions& options,
                      BlendMode blend_type) override;
-  bool StartDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
-                   int bitmap_alpha,
+  bool StartDIBits(RetainPtr<const CFX_DIBBase> bitmap,
+                   float alpha,
                    uint32_t color,
                    const CFX_Matrix& matrix,
                    const FXDIB_ResampleOptions& options,
                    std::unique_ptr<CFX_ImageRenderer>* handle,
                    BlendMode blend_type) override;
-  bool DrawDeviceText(int nChars,
-                      const TextCharPos* pCharPos,
+  bool DrawDeviceText(pdfium::span<const TextCharPos> pCharPos,
                       CFX_Font* pFont,
                       const CFX_Matrix& mtObject2Device,
                       float font_size,

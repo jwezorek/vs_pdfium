@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -29,9 +29,8 @@ CFXJSE_ScopeUtil_IsolateHandleContext::
 
 CFXJSE_ScopeUtil_RootContext::CFXJSE_ScopeUtil_RootContext(
     v8::Isolate* pIsolate)
-    : context_scope_(v8::Local<v8::Context>::New(
-          pIsolate,
-          CFXJSE_RuntimeData::Get(pIsolate)->m_hRootContext)) {}
+    : context_scope_(
+          CFXJSE_RuntimeData::Get(pIsolate)->GetRootContext(pIsolate)) {}
 
 CFXJSE_ScopeUtil_RootContext::~CFXJSE_ScopeUtil_RootContext() = default;
 

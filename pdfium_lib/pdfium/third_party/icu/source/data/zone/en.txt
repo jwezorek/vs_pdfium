@@ -1,22 +1,10 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 en{
-    Version{"2.1.44.91"}
     zoneStrings{
-        "Africa:Sao_Tome"{
-            ec{"São Tomé"}
-        }
-        "America:Asuncion"{
-            ec{"Asunción"}
-        }
-        "America:Curacao"{
-            ec{"Curaçao"}
-        }
-        "America:St_Barthelemy"{
-            ec{"St. Barthélemy"}
-        }
-        "Antarctica:DumontDUrville"{
-            ec{"Dumont d’Urville"}
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
         }
         "Asia:Saigon"{
             ec{"Ho Chi Minh City"}
@@ -32,12 +20,6 @@ en{
         }
         "Europe:London"{
             ld{"British Summer Time"}
-        }
-        "Europe:Uzhgorod"{
-            ec{"Uzhhorod"}
-        }
-        "Indian:Reunion"{
-            ec{"Réunion"}
         }
         "Pacific:Honolulu"{
             sd{"HDT"}
@@ -334,6 +316,11 @@ en{
         "meta:Gilbert_Islands"{
             ls{"Gilbert Islands Time"}
         }
+        "meta:Greenland"{
+            ld{"Greenland Summer Time"}
+            lg{"Greenland Time"}
+            ls{"Greenland Standard Time"}
+        }
         "meta:Greenland_Eastern"{
             ld{"East Greenland Summer Time"}
             lg{"East Greenland Time"}
@@ -414,6 +401,9 @@ en{
             lg{"Petropavlovsk-Kamchatski Time"}
             ls{"Petropavlovsk-Kamchatski Standard Time"}
         }
+        "meta:Kazakhstan"{
+            ls{"Kazakhstan Time"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"East Kazakhstan Time"}
         }
@@ -448,12 +438,9 @@ en{
             ls{"Lord Howe Standard Time"}
         }
         "meta:Macau"{
-            ld{"Macau Summer Time"}
-            lg{"Macau Time"}
-            ls{"Macau Standard Time"}
-        }
-        "meta:Macquarie"{
-            ls{"Macquarie Island Time"}
+            ld{"Macao Summer Time"}
+            lg{"Macao Time"}
+            ls{"Macao Standard Time"}
         }
         "meta:Magadan"{
             ld{"Magadan Summer Time"}
@@ -479,11 +466,6 @@ en{
         }
         "meta:Mawson"{
             ls{"Mawson Time"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"Northwest Mexico Daylight Time"}
-            lg{"Northwest Mexico Time"}
-            ls{"Northwest Mexico Standard Time"}
         }
         "meta:Mexico_Pacific"{
             ld{"Mexican Pacific Daylight Time"}
@@ -528,7 +510,9 @@ en{
             ls{"Niue Time"}
         }
         "meta:Norfolk"{
-            ls{"Norfolk Island Time"}
+            ld{"Norfolk Island Daylight Time"}
+            lg{"Norfolk Island Time"}
+            ls{"Norfolk Island Standard Time"}
         }
         "meta:Noronha"{
             ld{"Fernando de Noronha Summer Time"}
@@ -711,6 +695,9 @@ en{
             ld{"Yekaterinburg Summer Time"}
             lg{"Yekaterinburg Time"}
             ls{"Yekaterinburg Standard Time"}
+        }
+        "meta:Yukon"{
+            ls{"Yukon Time"}
         }
         fallbackFormat{"{1} ({0})"}
         gmtFormat{"GMT{0}"}

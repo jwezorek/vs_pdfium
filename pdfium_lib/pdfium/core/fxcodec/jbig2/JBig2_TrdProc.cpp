@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,33 +7,34 @@
 #include "core/fxcodec/jbig2/JBig2_TrdProc.h"
 
 #include <memory>
+#include <optional>
 
 #include "core/fxcodec/jbig2/JBig2_ArithDecoder.h"
 #include "core/fxcodec/jbig2/JBig2_ArithIntDecoder.h"
 #include "core/fxcodec/jbig2/JBig2_GrrdProc.h"
 #include "core/fxcodec/jbig2/JBig2_HuffmanDecoder.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/maybe_owned.h"
-#include "third_party/base/optional.h"
 
 namespace {
 
-Optional<uint32_t> CheckTRDDimension(uint32_t dimension, int32_t delta) {
+std::optional<uint32_t> CheckTRDDimension(uint32_t dimension, int32_t delta) {
   FX_SAFE_UINT32 result = dimension;
   result += delta;
   if (!result.IsValid())
-    return {};
-  return {result.ValueOrDie()};
+    return std::nullopt;
+  return result.ValueOrDie();
 }
 
-Optional<int32_t> CheckTRDReferenceDimension(int32_t dimension,
-                                             uint32_t shift,
-                                             int32_t offset) {
+std::optional<int32_t> CheckTRDReferenceDimension(int32_t dimension,
+                                                  uint32_t shift,
+                                                  int32_t offset) {
   FX_SAFE_INT32 result = offset;
   result += dimension >> shift;
   if (!result.IsValid())
-    return {};
-  return {result.ValueOrDie()};
+    return std::nullopt;
+  return result.ValueOrDie();
 }
 
 }  // namespace
@@ -48,7 +49,7 @@ CJBig2_TRDProc::~CJBig2_TRDProc() = default;
 
 std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
     CJBig2_BitStream* pStream,
-    JBig2ArithCtx* grContext) {
+    pdfium::span<JBig2ArithCtx> grContexts) {
   auto SBREG = std::make_unique<CJBig2_Image>(SBW, SBH);
   if (!SBREG->data())
     return nullptr;
@@ -56,7 +57,7 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
   SBREG->Fill(SBDEFPIXEL);
   int32_t INITIAL_STRIPT;
   auto pHuffmanDecoder = std::make_unique<CJBig2_HuffmanDecoder>(pStream);
-  if (pHuffmanDecoder->DecodeAValue(SBHUFFDT.Get(), &INITIAL_STRIPT) != 0)
+  if (pHuffmanDecoder->DecodeAValue(SBHUFFDT, &INITIAL_STRIPT) != 0)
     return nullptr;
 
   FX_SAFE_INT32 STRIPT = INITIAL_STRIPT;
@@ -66,7 +67,7 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
   uint32_t NINSTANCES = 0;
   while (NINSTANCES < SBNUMINSTANCES) {
     int32_t INITIAL_DT;
-    if (pHuffmanDecoder->DecodeAValue(SBHUFFDT.Get(), &INITIAL_DT) != 0)
+    if (pHuffmanDecoder->DecodeAValue(SBHUFFDT, &INITIAL_DT) != 0)
       return nullptr;
 
     FX_SAFE_INT32 DT = INITIAL_DT;
@@ -77,7 +78,7 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
     for (;;) {
       if (bFirst) {
         int32_t DFS;
-        if (pHuffmanDecoder->DecodeAValue(SBHUFFFS.Get(), &DFS) != 0)
+        if (pHuffmanDecoder->DecodeAValue(SBHUFFFS, &DFS) != 0)
           return nullptr;
 
         FIRSTS += DFS;
@@ -85,8 +86,8 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
         bFirst = false;
       } else {
         int32_t IDS;
-        int32_t nVal = pHuffmanDecoder->DecodeAValue(SBHUFFDS.Get(), &IDS);
-        if (nVal == JBIG2_OOB)
+        int32_t nVal = pHuffmanDecoder->DecodeAValue(SBHUFFDS, &IDS);
+        if (nVal == kJBig2OOB)
           break;
 
         if (nVal != 0)
@@ -133,43 +134,42 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
         if (IDI < SBNUMSYMS)
           break;
       }
-      bool RI = 0;
+      bool RI = false;
       if (SBREFINE != 0 && pStream->read1Bit(&RI) != 0)
         return nullptr;
 
       MaybeOwned<CJBig2_Image> IBI;
       if (RI == 0) {
-        IBI = SBSYMS[IDI];
+        IBI = UNSAFE_TODO(SBSYMS[IDI]);
       } else {
         int32_t RDWI;
         int32_t RDHI;
         int32_t RDXI;
         int32_t RDYI;
         int32_t HUFFRSIZE;
-        if ((pHuffmanDecoder->DecodeAValue(SBHUFFRDW.Get(), &RDWI) != 0) ||
-            (pHuffmanDecoder->DecodeAValue(SBHUFFRDH.Get(), &RDHI) != 0) ||
-            (pHuffmanDecoder->DecodeAValue(SBHUFFRDX.Get(), &RDXI) != 0) ||
-            (pHuffmanDecoder->DecodeAValue(SBHUFFRDY.Get(), &RDYI) != 0) ||
-            (pHuffmanDecoder->DecodeAValue(SBHUFFRSIZE.Get(), &HUFFRSIZE) !=
-             0)) {
+        if ((pHuffmanDecoder->DecodeAValue(SBHUFFRDW, &RDWI) != 0) ||
+            (pHuffmanDecoder->DecodeAValue(SBHUFFRDH, &RDHI) != 0) ||
+            (pHuffmanDecoder->DecodeAValue(SBHUFFRDX, &RDXI) != 0) ||
+            (pHuffmanDecoder->DecodeAValue(SBHUFFRDY, &RDYI) != 0) ||
+            (pHuffmanDecoder->DecodeAValue(SBHUFFRSIZE, &HUFFRSIZE) != 0)) {
           return nullptr;
         }
         pStream->alignByte();
         uint32_t nTmp = pStream->getOffset();
-        CJBig2_Image* IBOI = SBSYMS[IDI];
+        CJBig2_Image* IBOI = UNSAFE_TODO(SBSYMS[IDI]);
         if (!IBOI)
           return nullptr;
 
-        Optional<uint32_t> WOI = CheckTRDDimension(IBOI->width(), RDWI);
-        Optional<uint32_t> HOI = CheckTRDDimension(IBOI->height(), RDHI);
-        if (!WOI || !HOI)
+        std::optional<uint32_t> WOI = CheckTRDDimension(IBOI->width(), RDWI);
+        std::optional<uint32_t> HOI = CheckTRDDimension(IBOI->height(), RDHI);
+        if (!WOI.has_value() || !HOI.has_value())
           return nullptr;
 
-        Optional<int32_t> GRREFERENCEDX =
+        std::optional<int32_t> GRREFERENCEDX =
             CheckTRDReferenceDimension(RDWI, 2, RDXI);
-        Optional<int32_t> GRREFERENCEDY =
+        std::optional<int32_t> GRREFERENCEDY =
             CheckTRDReferenceDimension(RDHI, 2, RDYI);
-        if (!GRREFERENCEDX || !GRREFERENCEDY)
+        if (!GRREFERENCEDX.has_value() || !GRREFERENCEDY.has_value())
           return nullptr;
 
         auto pGRRD = std::make_unique<CJBig2_GRRDProc>();
@@ -179,19 +179,19 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
         pGRRD->GRREFERENCE = IBOI;
         pGRRD->GRREFERENCEDX = GRREFERENCEDX.value();
         pGRRD->GRREFERENCEDY = GRREFERENCEDY.value();
-        pGRRD->TPGRON = 0;
+        pGRRD->TPGRON = false;
         pGRRD->GRAT[0] = SBRAT[0];
         pGRRD->GRAT[1] = SBRAT[1];
         pGRRD->GRAT[2] = SBRAT[2];
         pGRRD->GRAT[3] = SBRAT[3];
 
         auto pArithDecoder = std::make_unique<CJBig2_ArithDecoder>(pStream);
-        IBI = pGRRD->Decode(pArithDecoder.get(), grContext);
+        IBI = pGRRD->Decode(pArithDecoder.get(), grContexts);
         if (!IBI)
           return nullptr;
 
         pStream->alignByte();
-        pStream->offset(2);
+        pStream->addOffset(2);
         if (static_cast<uint32_t>(HUFFRSIZE) != (pStream->getOffset() - nTmp))
           return nullptr;
       }
@@ -223,7 +223,7 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeHuffman(
 
 std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeArith(
     CJBig2_ArithDecoder* pArithDecoder,
-    JBig2ArithCtx* grContext,
+    pdfium::span<JBig2ArithCtx> grContexts,
     JBig2IntDecoderState* pIDS) {
   auto SBREG = std::make_unique<CJBig2_Image>(SBW, SBH);
   if (!SBREG->data())
@@ -326,7 +326,7 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeArith(
 
       MaybeOwned<CJBig2_Image> pIBI;
       if (RI == 0) {
-        pIBI = SBSYMS[IDI];
+        pIBI = UNSAFE_TODO(SBSYMS[IDI]);
       } else {
         int32_t RDWI;
         int32_t RDHI;
@@ -336,20 +336,20 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeArith(
         pIARDH->Decode(pArithDecoder, &RDHI);
         pIARDX->Decode(pArithDecoder, &RDXI);
         pIARDY->Decode(pArithDecoder, &RDYI);
-        CJBig2_Image* IBOI = SBSYMS[IDI];
+        CJBig2_Image* IBOI = UNSAFE_TODO(SBSYMS[IDI]);
         if (!IBOI)
           return nullptr;
 
-        Optional<uint32_t> WOI = CheckTRDDimension(IBOI->width(), RDWI);
-        Optional<uint32_t> HOI = CheckTRDDimension(IBOI->height(), RDHI);
-        if (!WOI || !HOI)
+        std::optional<uint32_t> WOI = CheckTRDDimension(IBOI->width(), RDWI);
+        std::optional<uint32_t> HOI = CheckTRDDimension(IBOI->height(), RDHI);
+        if (!WOI.has_value() || !HOI.has_value())
           return nullptr;
 
-        Optional<int32_t> GRREFERENCEDX =
+        std::optional<int32_t> GRREFERENCEDX =
             CheckTRDReferenceDimension(RDWI, 1, RDXI);
-        Optional<int32_t> GRREFERENCEDY =
+        std::optional<int32_t> GRREFERENCEDY =
             CheckTRDReferenceDimension(RDHI, 1, RDYI);
-        if (!GRREFERENCEDX || !GRREFERENCEDY)
+        if (!GRREFERENCEDX.has_value() || !GRREFERENCEDY.has_value())
           return nullptr;
 
         auto pGRRD = std::make_unique<CJBig2_GRRDProc>();
@@ -359,12 +359,12 @@ std::unique_ptr<CJBig2_Image> CJBig2_TRDProc::DecodeArith(
         pGRRD->GRREFERENCE = IBOI;
         pGRRD->GRREFERENCEDX = GRREFERENCEDX.value();
         pGRRD->GRREFERENCEDY = GRREFERENCEDY.value();
-        pGRRD->TPGRON = 0;
+        pGRRD->TPGRON = false;
         pGRRD->GRAT[0] = SBRAT[0];
         pGRRD->GRAT[1] = SBRAT[1];
         pGRRD->GRAT[2] = SBRAT[2];
         pGRRD->GRAT[3] = SBRAT[3];
-        pIBI = pGRRD->Decode(pArithDecoder, grContext);
+        pIBI = pGRRD->Decode(pArithDecoder, grContexts);
       }
       if (!pIBI)
         return nullptr;

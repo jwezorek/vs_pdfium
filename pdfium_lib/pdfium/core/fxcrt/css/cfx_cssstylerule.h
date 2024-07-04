@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,7 +19,7 @@ class CFX_CSSStyleRule {
   ~CFX_CSSStyleRule();
 
   size_t CountSelectorLists() const;
-  CFX_CSSSelector* GetSelectorList(int32_t index) const;
+  CFX_CSSSelector* GetSelectorList(size_t index) const;
   CFX_CSSDeclaration* GetDeclaration();
 
   void SetSelector(std::vector<std::unique_ptr<CFX_CSSSelector>>* list);

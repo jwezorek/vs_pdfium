@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,7 @@
 #define CORE_FPDFAPI_FONT_CPDF_CID2UNICODEMAP_H_
 
 #include "core/fpdfapi/font/cpdf_cidfont.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/raw_span.h"
 
 class CPDF_CID2UnicodeMap {
  public:
@@ -20,7 +20,7 @@ class CPDF_CID2UnicodeMap {
 
  private:
   const CIDSet m_Charset;
-  const pdfium::span<const uint16_t> m_pEmbeddedMap;
+  const pdfium::raw_span<const uint16_t> m_pEmbeddedMap;
 };
 
 #endif  // CORE_FPDFAPI_FONT_CPDF_CID2UNICODEMAP_H_

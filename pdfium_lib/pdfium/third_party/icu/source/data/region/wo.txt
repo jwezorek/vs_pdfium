@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 wo{
     Countries{
         AD{"Andoor"}
@@ -40,9 +41,11 @@ wo{
         BZ{"Belis"}
         CA{"Kanadaa"}
         CC{"Duni Koko (Kilin)"}
+        CD{"Kongo (R K D)"}
         CF{"Repiblik Sàntar Afrik"}
+        CG{"Réewum Kongo"}
         CH{"Siwis"}
-        CI{"Kodiwaar (Côte d’Ivoire)"}
+        CI{"Kodiwaar"}
         CK{"Duni Kuuk"}
         CL{"Sili"}
         CM{"Kamerun"}
@@ -103,7 +106,6 @@ wo{
         IL{"Israyel"}
         IM{"Dunu Maan"}
         IN{"End"}
-        IO{"Terituwaaru Brëtaañ ci Oseyaa Enjeŋ"}
         IQ{"Irag"}
         IR{"Iraŋ"}
         IS{"Islànd"}
@@ -140,7 +142,7 @@ wo{
         MF{"Saŋ Marteŋ"}
         MG{"Madagaskaar"}
         MH{"Duni Marsaal"}
-        MK{"Maseduwaan (Réewum yugoslawi gu yàgg ga)"}
+        MK{"Maseduwaan bëj Gànnaar"}
         ML{"Mali"}
         MM{"Miyanmaar"}
         MN{"Mongoli"}
@@ -248,9 +250,4 @@ wo{
         ZW{"Simbabwe"}
         ZZ{"Gox buñ xamul"}
     }
-    Countries%variant{
-        CD{"Kongo (R K D)"}
-        CG{"Réewum Kongo"}
-    }
-    Version{"2.1.43.94"}
 }

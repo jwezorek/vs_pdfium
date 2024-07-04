@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,14 @@
 #ifndef FXJS_CJS_RESULT_H_
 #define FXJS_CJS_RESULT_H_
 
+#include <optional>
+
 #include "fxjs/js_resources.h"
-#include "third_party/base/optional.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 class CJS_Result {
  public:
-  // Wrap constructors with static methods so we can apply WARN_UNUSED_RESULT,
+  // Wrap constructors with static methods so we can apply [[nodiscard]],
   // otherwise we can't catch places where someone mistakenly writes:
   //
   //     if (error)
@@ -24,14 +25,14 @@ class CJS_Result {
   //     if (error)
   //       return CJS_Result(JS_ERROR_CODE);
   //
-  static CJS_Result Success() WARN_UNUSED_RESULT { return CJS_Result(); }
-  static CJS_Result Success(v8::Local<v8::Value> value) WARN_UNUSED_RESULT {
+  [[nodiscard]] static CJS_Result Success() { return CJS_Result(); }
+  [[nodiscard]] static CJS_Result Success(v8::Local<v8::Value> value) {
     return CJS_Result(value);
   }
-  static CJS_Result Failure(const WideString& str) WARN_UNUSED_RESULT {
+  [[nodiscard]] static CJS_Result Failure(const WideString& str) {
     return CJS_Result(str);
   }
-  static CJS_Result Failure(JSMessage id) WARN_UNUSED_RESULT {
+  [[nodiscard]] static CJS_Result Failure(JSMessage id) {
     return CJS_Result(id);
   }
 
@@ -39,7 +40,7 @@ class CJS_Result {
   ~CJS_Result();
 
   bool HasError() const { return error_.has_value(); }
-  WideString Error() const { return error_.value(); }
+  const WideString& Error() const { return error_.value(); }
 
   bool HasReturn() const { return !return_.IsEmpty(); }
   v8::Local<v8::Value> Return() const { return return_; }
@@ -50,7 +51,7 @@ class CJS_Result {
   explicit CJS_Result(const WideString&);     // Error with custom message.
   explicit CJS_Result(JSMessage id);          // Error with stock message.
 
-  Optional<WideString> error_;
+  std::optional<WideString> error_;
   v8::Local<v8::Value> return_;
 };
 

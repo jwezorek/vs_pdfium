@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,17 +7,20 @@
 #ifndef FXJS_XFA_CFXJSE_FORMCALC_CONTEXT_H_
 #define FXJS_XFA_CFXJSE_FORMCALC_CONTEXT_H_
 
-#include <functional>
-#include <memory>
-#include <vector>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_system.h"
+#include <functional>
+#include <optional>
+
+#include "core/fxcrt/bytestring.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/widetext_buffer.h"
 #include "fxjs/xfa/fxjse.h"
-#include "third_party/base/optional.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-forward.h"
+#include "v8/include/v8-persistent-handle.h"
 
 class CFXJSE_Context;
-class CFX_WideTextBuf;
 class CXFA_Document;
 
 namespace cppgc {
@@ -265,21 +268,40 @@ class CFXJSE_FormCalcContext final : public CFXJSE_HostObject {
   static void concat_fm_object(CFXJSE_HostObject* pThis,
                                const v8::FunctionCallbackInfo<v8::Value>& info);
 
+  static std::optional<WideTextBuffer> Translate(cppgc::Heap* pHeap,
+                                                 WideStringView wsFormcalc);
+
+  v8::Local<v8::Value> GlobalPropertyGetter();
+  v8::Isolate* GetIsolate() const { return m_pIsolate; }
+  CXFA_Document* GetDocument() const { return m_pDocument.Get(); }
+
+ private:
+  friend class FormCalcContextTest_GenerateSomExpression_Test;
+  friend class FormCalcContextTest_IsIsoDateFormat_Test;
+  friend class FormCalcContextTest_IsIsoTimeFormat_Test;
+
   static ByteString GenerateSomExpression(ByteStringView bsName,
                                           int32_t iIndexFlags,
                                           int32_t iIndexValue,
                                           bool bIsStar);
-  static Optional<CFX_WideTextBuf> Translate(cppgc::Heap* pHeap,
-                                             WideStringView wsFormcalc);
 
-  v8::Local<v8::Value> GlobalPropertyGetter();
-  v8::Isolate* GetIsolate() const { return m_pIsolate.Get(); }
-  CXFA_Document* GetDocument() const { return m_pDocument.Get(); }
-
- private:
   static void DotAccessorCommon(CFXJSE_HostObject* pThis,
                                 const v8::FunctionCallbackInfo<v8::Value>& info,
                                 bool bDotAccessor);
+
+  static bool IsIsoDateTimeFormat(ByteStringView bsData,
+                                  int32_t* pYear,
+                                  int32_t* pMonth,
+                                  int32_t* pDay);
+
+  static bool IsIsoDateFormat(ByteStringView bsData,
+                              int32_t* pYear,
+                              int32_t* pMonth,
+                              int32_t* pDay);
+
+  static bool IsIsoTimeFormat(ByteStringView bsData);
+
+  static int32_t DateString2Num(ByteStringView bsDate);
 
   bool ApplyToExpansion(
       std::function<void(v8::Isolate*, v8::Local<v8::Value>)> fn,
@@ -299,14 +321,14 @@ class CFXJSE_FormCalcContext final : public CFXJSE_HostObject {
   void ThrowCompilerErrorException() const;
   void ThrowDivideByZeroException() const;
   void ThrowServerDeniedException() const;
-  void ThrowPropertyNotInObjectException(const WideString& name,
-                                         const WideString& exp) const;
-  void ThrowParamCountMismatchException(const WideString& method) const;
-  void ThrowException(const WideString& str) const;
+  void ThrowPropertyNotInObjectException(ByteStringView name,
+                                         ByteStringView exp) const;
+  void ThrowParamCountMismatchException(ByteStringView method) const;
+  void ThrowException(ByteStringView str) const;
 
   UnownedPtr<v8::Isolate> const m_pIsolate;
   v8::Global<v8::Value> m_Value;
-  UnownedPtr<CXFA_Document> const m_pDocument;
+  cppgc::WeakPersistent<CXFA_Document> const m_pDocument;
 };
 
 #endif  // FXJS_XFA_CFXJSE_FORMCALC_CONTEXT_H_

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -23,7 +23,7 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/fx_coordinates.h"
 #include "fxbarcode/oned/BC_OnedCodaBarWriter.h"
 
 CBC_Codabar::CBC_Codabar()
@@ -36,19 +36,14 @@ bool CBC_Codabar::Encode(WideStringView contents) {
   if (!pWriter->CheckContentValidity(contents))
     return false;
 
-  BCFORMAT format = BCFORMAT_CODABAR;
-  int32_t outWidth = 0;
-  int32_t outHeight = 0;
   m_renderContents = pWriter->FilterContents(contents);
   ByteString byteString = m_renderContents.ToUTF8();
-  std::unique_ptr<uint8_t, FxFreeDeleter> data(
-      pWriter->Encode(byteString, format, outWidth, outHeight));
-  return data && pWriter->RenderResult(m_renderContents.AsStringView(),
-                                       data.get(), outWidth);
+  return pWriter->RenderResult(m_renderContents.AsStringView(),
+                               pWriter->Encode(byteString));
 }
 
 bool CBC_Codabar::RenderDevice(CFX_RenderDevice* device,
-                               const CFX_Matrix* matrix) {
+                               const CFX_Matrix& matrix) {
   auto* pWriter = GetOnedCodaBarWriter();
   WideString renderCon =
       pWriter->encodedContents(m_renderContents.AsStringView());
@@ -56,7 +51,7 @@ bool CBC_Codabar::RenderDevice(CFX_RenderDevice* device,
 }
 
 BC_TYPE CBC_Codabar::GetType() {
-  return BC_CODABAR;
+  return BC_TYPE::kCodabar;
 }
 
 CBC_OnedCodaBarWriter* CBC_Codabar::GetOnedCodaBarWriter() {

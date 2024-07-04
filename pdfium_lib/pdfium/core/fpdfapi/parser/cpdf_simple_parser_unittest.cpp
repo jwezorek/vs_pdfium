@@ -1,14 +1,16 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fpdfapi/parser/cpdf_simple_parser.h"
 
+#include <iterator>
+
 #include "core/fpdfapi/parser/fpdf_parser_utility.h"
+#include "core/fxcrt/fx_memcpy_wrappers.h"
+#include "core/fxcrt/span.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "testing/test_support.h"
-#include "third_party/base/span.h"
-#include "third_party/base/stl_util.h"
 
 TEST(SimpleParserTest, GetWord) {
   static const pdfium::StrFuncTestData test_data[] = {
@@ -49,15 +51,11 @@ TEST(SimpleParserTest, GetWord) {
       STR_IN_OUT_CASE(" $^&&*\t\0sdff ", "$^&&*"),
       STR_IN_OUT_CASE("\n\r+3.5656 -11.0", "+3.5656"),
   };
-  for (size_t i = 0; i < pdfium::size(test_data); ++i) {
-    const pdfium::StrFuncTestData& data = test_data[i];
-    CPDF_SimpleParser parser(pdfium::make_span(data.input, data.input_size));
-    ByteStringView word = parser.GetWord();
-    EXPECT_EQ(data.expected_size, word.GetLength()) << " for case " << i;
-    if (data.expected_size != word.GetLength())
-      continue;
-    EXPECT_EQ(
-        0, memcmp(data.expected, word.unterminated_c_str(), data.expected_size))
+  size_t i = 0;
+  for (const pdfium::StrFuncTestData& data : test_data) {
+    CPDF_SimpleParser parser(data.input_span());
+    EXPECT_EQ(parser.GetWord(), ByteStringView(data.expected_span()))
         << " for case " << i;
+    ++i;
   }
 }

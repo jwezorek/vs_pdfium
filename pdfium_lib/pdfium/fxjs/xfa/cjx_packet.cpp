@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,12 +9,14 @@
 #include <utility>
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/xml/cfx_xmldocument.h"
 #include "core/fxcrt/xml/cfx_xmlelement.h"
 #include "core/fxcrt/xml/cfx_xmltext.h"
 #include "fxjs/cfx_v8.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/js_resources.h"
+#include "v8/include/v8-primitive.h"
 #include "xfa/fxfa/cxfa_ffdoc.h"
 #include "xfa/fxfa/cxfa_ffnotify.h"
 #include "xfa/fxfa/parser/cxfa_packet.h"
@@ -34,9 +36,8 @@ bool CJX_Packet::DynamicTypeIs(TypeTag eType) const {
   return eType == static_type__ || ParentType__::DynamicTypeIs(eType);
 }
 
-CJS_Result CJX_Packet::getAttribute(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Packet::getAttribute(CFXJSE_Engine* runtime,
+                                    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -49,9 +50,8 @@ CJS_Result CJX_Packet::getAttribute(
       runtime->NewString(attributeValue.ToUTF8().AsStringView()));
 }
 
-CJS_Result CJX_Packet::setAttribute(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Packet::setAttribute(CFXJSE_Engine* runtime,
+                                    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 2)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -64,17 +64,15 @@ CJS_Result CJX_Packet::setAttribute(
 }
 
 CJS_Result CJX_Packet::removeAttribute(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
   CFX_XMLElement* pElement = ToXMLElement(GetXFANode()->GetXMLMappingNode());
-  if (pElement) {
-    WideString name = runtime->ToWideString(params[0]);
-    if (pElement->HasAttribute(name))
-      pElement->RemoveAttribute(name);
-  }
+  if (pElement)
+    pElement->RemoveAttribute(runtime->ToWideString(params[0]));
+
   return CJS_Result::Success(runtime->NewNull());
 }
 

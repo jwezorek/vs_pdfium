@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,6 @@
 #define CORE_FPDFAPI_PAGE_CPDF_STITCHFUNC_H_
 
 #include <memory>
-#include <set>
 #include <vector>
 
 #include "core/fpdfapi/page/cpdf_function.h"
@@ -18,10 +17,10 @@ class CPDF_StitchFunc final : public CPDF_Function {
   CPDF_StitchFunc();
   ~CPDF_StitchFunc() override;
 
-  // CPDF_Function
-  bool v_Init(const CPDF_Object* pObj,
-              std::set<const CPDF_Object*>* pVisited) override;
-  bool v_Call(const float* inputs, float* results) const override;
+  // CPDF_Function:
+  bool v_Init(const CPDF_Object* pObj, VisitedSet* pVisited) override;
+  bool v_Call(pdfium::span<const float> inputs,
+              pdfium::span<float> results) const override;
 
   const std::vector<std::unique_ptr<CPDF_Function>>& GetSubFunctions() const {
     return m_pSubFunctions;

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 fy{
     Countries{
         001{"Wrâld"}
@@ -108,7 +109,7 @@ fy{
         EU{"Europeeske Unie"}
         FI{"Finlân"}
         FJ{"Fiji"}
-        FK{"Falklâneilannen (Islas Malvinas)"}
+        FK{"Falklâneilannen"}
         FM{"Micronesië"}
         FO{"Faeröer"}
         FR{"Frankrijk"}
@@ -131,7 +132,7 @@ fy{
         GU{"Guam"}
         GW{"Guinee-Bissau"}
         GY{"Guyana"}
-        HK{"Hongkong"}
+        HK{"Hongkong SAR van Sina"}
         HM{"Heard- en McDonaldeilannen"}
         HN{"Honduras"}
         HR{"Kroatië"}
@@ -143,7 +144,6 @@ fy{
         IL{"Israël"}
         IM{"Isle of Man"}
         IN{"India"}
-        IO{"Britse Gebieden yn de Indyske Oseaan"}
         IQ{"Irak"}
         IR{"Iran"}
         IS{"Yslân"}
@@ -181,11 +181,10 @@ fy{
         MF{"Saint-Martin"}
         MG{"Madeiaskar"}
         MH{"Marshalleilannen"}
-        MK{"Macedonië (FYROM)"}
         ML{"Mali"}
         MM{"Myanmar (Birma)"}
         MN{"Mongolië"}
-        MO{"Macao"}
+        MO{"Macao SAR van Sina"}
         MP{"Noardlike Marianeneilannen"}
         MQ{"Martinique"}
         MR{"Mauritanië"}
@@ -220,7 +219,7 @@ fy{
         PM{"Saint-Pierre en Miquelon"}
         PN{"Pitcairneilannen"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Palestynske gebieten"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -294,11 +293,14 @@ fy{
     }
     Countries%short{
         GB{"VK"}
+        HK{"Hongkong"}
+        MO{"Macao"}
+        PS{"Palestina"}
         US{"VS"}
     }
     Countries%variant{
         CD{"Congo (DRC)"}
         CG{"Congo (Republyk)"}
+        FK{"Falklâneilannen (Islas Malvinas)"}
     }
-    Version{"2.1.41.34"}
 }

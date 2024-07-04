@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,13 +11,18 @@
 #include <vector>
 
 #include "build/build_config.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/renderdevicedriver_iface.h"
+
+#if BUILDFLAG(IS_APPLE)
+#include "core/fxcrt/unowned_ptr_exclusion.h"
+#endif
 
 class CFX_ClipRgn;
 class CFX_GraphStateData;
 class CFX_Matrix;
-class CFX_PathData;
+class CFX_Path;
 
 namespace pdfium {
 
@@ -27,9 +32,9 @@ class rasterizer_scanline_aa;
 
 class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
  public:
-  CFX_AggDeviceDriver(const RetainPtr<CFX_DIBitmap>& pBitmap,
+  CFX_AggDeviceDriver(RetainPtr<CFX_DIBitmap> pBitmap,
                       bool bRgbByteOrder,
-                      const RetainPtr<CFX_DIBitmap>& pBackdropBitmap,
+                      RetainPtr<CFX_DIBitmap> pBackdropBitmap,
                       bool bGroupKnockout);
   ~CFX_AggDeviceDriver() override;
 
@@ -41,13 +46,13 @@ class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
   int GetDeviceCaps(int caps_id) const override;
   void SaveState() override;
   void RestoreState(bool bKeepSaved) override;
-  bool SetClip_PathFill(const CFX_PathData* pPathData,
+  bool SetClip_PathFill(const CFX_Path& path,
                         const CFX_Matrix* pObject2Device,
                         const CFX_FillRenderOptions& fill_options) override;
-  bool SetClip_PathStroke(const CFX_PathData* pPathData,
+  bool SetClip_PathStroke(const CFX_Path& path,
                           const CFX_Matrix* pObject2Device,
                           const CFX_GraphStateData* pGraphState) override;
-  bool DrawPath(const CFX_PathData* pPathData,
+  bool DrawPath(const CFX_Path& path,
                 const CFX_Matrix* pObject2Device,
                 const CFX_GraphStateData* pGraphState,
                 uint32_t fill_color,
@@ -57,18 +62,18 @@ class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
   bool FillRectWithBlend(const FX_RECT& rect,
                          uint32_t fill_color,
                          BlendMode blend_type) override;
-  bool GetClipBox(FX_RECT* pRect) override;
-  bool GetDIBits(const RetainPtr<CFX_DIBitmap>& pBitmap,
+  FX_RECT GetClipBox() const override;
+  bool GetDIBits(RetainPtr<CFX_DIBitmap> bitmap,
                  int left,
-                 int top) override;
-  RetainPtr<CFX_DIBitmap> GetBackDrop() override;
-  bool SetDIBits(const RetainPtr<CFX_DIBBase>& pBitmap,
+                 int top) const override;
+  RetainPtr<const CFX_DIBitmap> GetBackDrop() const override;
+  bool SetDIBits(RetainPtr<const CFX_DIBBase> bitmap,
                  uint32_t argb,
                  const FX_RECT& src_rect,
                  int left,
                  int top,
                  BlendMode blend_type) override;
-  bool StretchDIBits(const RetainPtr<CFX_DIBBase>& pSource,
+  bool StretchDIBits(RetainPtr<const CFX_DIBBase> bitmap,
                      uint32_t argb,
                      int dest_left,
                      int dest_top,
@@ -77,8 +82,8 @@ class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
                      const FX_RECT* pClipRect,
                      const FXDIB_ResampleOptions& options,
                      BlendMode blend_type) override;
-  bool StartDIBits(const RetainPtr<CFX_DIBBase>& pSource,
-                   int bitmap_alpha,
+  bool StartDIBits(RetainPtr<const CFX_DIBBase> bitmap,
+                   float alpha,
                    uint32_t argb,
                    const CFX_Matrix& matrix,
                    const FXDIB_ResampleOptions& options,
@@ -86,14 +91,17 @@ class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
                    BlendMode blend_type) override;
   bool ContinueDIBits(CFX_ImageRenderer* handle,
                       PauseIndicatorIface* pPause) override;
-  bool DrawDeviceText(int nChars,
-                      const TextCharPos* pCharPos,
+  bool DrawDeviceText(pdfium::span<const TextCharPos> pCharPos,
                       CFX_Font* pFont,
                       const CFX_Matrix& mtObject2Device,
                       float font_size,
                       uint32_t color,
                       const CFX_TextRenderOptions& options) override;
   int GetDriverType() const override;
+  bool MultiplyAlpha(float alpha) override;
+  bool MultiplyAlphaMask(RetainPtr<const CFX_DIBitmap> mask) override;
+
+  void Clear(uint32_t color);
 
  private:
   void RenderRasterizer(pdfium::agg::rasterizer_scanline_aa& rasterizer,
@@ -106,8 +114,8 @@ class CFX_AggDeviceDriver final : public RenderDeviceDriverIface {
   RetainPtr<CFX_DIBitmap> const m_pBitmap;
   std::unique_ptr<CFX_ClipRgn> m_pClipRgn;
   std::vector<std::unique_ptr<CFX_ClipRgn>> m_StateStack;
-#if defined(OS_APPLE)
-  void* m_pPlatformGraphics = nullptr;
+#if BUILDFLAG(IS_APPLE)
+  UNOWNED_PTR_EXCLUSION void* m_pPlatformGraphics = nullptr;
 #endif
   CFX_FillRenderOptions m_FillOptions;
   const bool m_bRgbByteOrder;

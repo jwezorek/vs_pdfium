@@ -1,12 +1,10 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
 #include "fxjs/js_resources.h"
-
-#include "third_party/base/notreached.h"
 
 WideString JSGetStringFromID(JSMessage msg) {
   const char* msg_string = "";
@@ -83,14 +81,14 @@ WideString JSGetStringFromID(JSMessage msg) {
     case JSMessage::kUserGestureRequiredError:
       msg_string = "User gesture required.";
       break;
-    case JSMessage::kTooManyOccurances:
-      msg_string = "Too many occurances.";
+    case JSMessage::kTooManyOccurrences:
+      msg_string = "Too many occurrences.";
       break;
     case JSMessage::kUnknownMethod:
       msg_string = "Unknown method.";
       break;
-    default:
-      NOTREACHED();
+    case JSMessage::kWouldBeCyclic:
+      msg_string = "Operation would create a cycle.";
       break;
   }
   return WideString::FromASCII(msg_string);
@@ -99,10 +97,10 @@ WideString JSGetStringFromID(JSMessage msg) {
 WideString JSFormatErrorString(const char* class_name,
                                const char* property_name,
                                const WideString& details) {
-  WideString result = WideString::FromDefANSI(class_name);
+  WideString result = WideString::FromUTF8(class_name);
   if (property_name) {
     result += L".";
-    result += WideString::FromDefANSI(property_name);
+    result += WideString::FromUTF8(property_name);
   }
   result += L": ";
   result += details;

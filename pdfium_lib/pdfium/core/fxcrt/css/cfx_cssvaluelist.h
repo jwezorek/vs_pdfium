@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core/fxcrt/css/cfx_cssvalue.h"
+#include "core/fxcrt/retain_ptr.h"
 
 class CFX_CSSValueList final : public CFX_CSSValue {
  public:

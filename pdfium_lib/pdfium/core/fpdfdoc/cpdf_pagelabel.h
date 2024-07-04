@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,21 +7,22 @@
 #ifndef CORE_FPDFDOC_CPDF_PAGELABEL_H_
 #define CORE_FPDFDOC_CPDF_PAGELABEL_H_
 
-#include "core/fxcrt/fx_string.h"
+#include <optional>
+
 #include "core/fxcrt/unowned_ptr.h"
-#include "third_party/base/optional.h"
+#include "core/fxcrt/widestring.h"
 
 class CPDF_Document;
 
 class CPDF_PageLabel {
  public:
-  explicit CPDF_PageLabel(CPDF_Document* pDocument);
+  explicit CPDF_PageLabel(CPDF_Document* doc);
   ~CPDF_PageLabel();
 
-  Optional<WideString> GetLabel(int nPage) const;
+  std::optional<WideString> GetLabel(int page_index) const;
 
  private:
-  UnownedPtr<CPDF_Document> const m_pDocument;
+  UnownedPtr<CPDF_Document> const doc_;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_PAGELABEL_H_

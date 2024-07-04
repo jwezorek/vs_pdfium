@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,14 +13,14 @@
 
 class CFFL_PushButton final : public CFFL_Button {
  public:
-  CFFL_PushButton(CPDFSDK_FormFillEnvironment* pApp, CPDFSDK_Widget* pWidget);
+  CFFL_PushButton(CFFL_InteractiveFormFiller* pFormFiller,
+                  CPDFSDK_Widget* pWidget);
   ~CFFL_PushButton() override;
 
   // CFFL_Button:
   std::unique_ptr<CPWL_Wnd> NewPWLWindow(
       const CPWL_Wnd::CreateParams& cp,
-      std::unique_ptr<IPWL_SystemHandler::PerWindowData> pAttachedData)
-      override;
+      std::unique_ptr<IPWL_FillerNotify::PerWindowData> pAttachedData) override;
 };
 
 #endif  // FPDFSDK_FORMFILLER_CFFL_PUSHBUTTON_H_

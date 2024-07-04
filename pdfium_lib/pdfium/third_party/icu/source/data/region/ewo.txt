@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 ewo{
     Countries{
         AD{"Andór"}
@@ -92,7 +93,6 @@ ewo{
         IE{"Irəlándə"}
         IL{"Isəraɛ́l"}
         IN{"ɛ́ndə"}
-        IO{"ǹnam ɛngəlís yá Máŋ mə́ ɛ́ndə"}
         IQ{"Irág"}
         IR{"Irán"}
         IS{"Isəlándə"}
@@ -127,7 +127,6 @@ ewo{
         MD{"Molədaví"}
         MG{"Madagasəkárə"}
         MH{"Minlán Mí Maresál"}
-        MK{"Masedónia"}
         ML{"Malí"}
         MM{"Mianəmár"}
         MN{"Mɔngɔ́lia"}
@@ -227,5 +226,4 @@ ewo{
         ZM{"Zambí"}
         ZW{"Zimbabwé"}
     }
-    Version{"2.1.39.11"}
 }

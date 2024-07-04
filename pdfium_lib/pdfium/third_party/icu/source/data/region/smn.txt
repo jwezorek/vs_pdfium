@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 smn{
     Countries{
         AC{"Ascension-suálui"}
@@ -41,7 +42,9 @@ smn{
         BZ{"Belize"}
         CA{"Kanada"}
         CC{"Kookossuolluuh (Keelingsuolluuh)"}
+        CD{"Kongo demokraattisâš täsiväldi"}
         CF{"Koskâ-Afrika täsiväldi"}
+        CG{"Kongo täsiväldi"}
         CH{"Sveitsi"}
         CI{"Côte d’Ivoire"}
         CK{"Cooksuolluuh"}
@@ -73,7 +76,7 @@ smn{
         ET{"Etiopia"}
         FI{"Suomâ"}
         FJ{"Fidži"}
-        FK{"Falklandsuolluuh (Malvinassuolluuh)"}
+        FK{"Falklandsuolluuh"}
         FM{"Mikronesia littoväldi"}
         FO{"Färsuolluuh"}
         FR{"Ranska"}
@@ -96,7 +99,7 @@ smn{
         GU{"Guam"}
         GW{"Guinea-Bissau"}
         GY{"Guyana"}
-        HK{"Hong Kong"}
+        HK{"Hongkong – Kiina e.h.k."}
         HM{"Heard já McDonaldsuolluuh"}
         HN{"Honduras"}
         HR{"Kroatia"}
@@ -108,7 +111,6 @@ smn{
         IL{"Israel"}
         IM{"Mansuálui"}
         IN{"India"}
-        IO{"Brittilâš India väldimeerâ kuávlu"}
         IQ{"Irak"}
         IR{"Iran"}
         IS{"Island"}
@@ -146,11 +148,10 @@ smn{
         MF{"St. Martin"}
         MG{"Madagaskar"}
         MH{"Marshallsuolluuh"}
-        MK{"OJT Makedonia"}
         ML{"Mali"}
         MM{"Myanmar (Burma)"}
         MN{"Mongolia"}
-        MO{"Macao"}
+        MO{"Macao - – Kiina e.h.k."}
         MP{"Tave-Marianeh"}
         MQ{"Martinique"}
         MR{"Mauritania"}
@@ -256,11 +257,11 @@ smn{
     }
     Countries%short{
         GB{"OK"}
+        HK{"Hong Kong"}
+        MO{"Macao"}
         US{"USA"}
     }
     Countries%variant{
-        CD{"Kongo demokraattisâš täsiväldi"}
-        CG{"Kongo täsiväldi"}
+        FK{"Falklandsuolluuh (Malvinassuolluuh)"}
     }
-    Version{"2.1.38.69"}
 }

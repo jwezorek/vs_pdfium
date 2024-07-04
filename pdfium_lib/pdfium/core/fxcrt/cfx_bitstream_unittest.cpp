@@ -1,18 +1,26 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fxcrt/cfx_bitstream.h"
+
+#include <limits>
+
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/span.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace {
 
 uint32_t ReferenceGetBits32(const uint8_t* pData, int bitpos, int nbits) {
   int result = 0;
-  for (int i = 0; i < nbits; i++) {
-    if (pData[(bitpos + i) / 8] & (1 << (7 - (bitpos + i) % 8)))
-      result |= 1 << (nbits - i - 1);
-  }
+  UNSAFE_TODO({
+    for (int i = 0; i < nbits; i++) {
+      if (pData[(bitpos + i) / 8] & (1 << (7 - (bitpos + i) % 8))) {
+        result |= 1 << (nbits - i - 1);
+      }
+    }
+  });
   return result;
 }
 
@@ -116,6 +124,67 @@ TEST(fxcrt, BitStream) {
   EXPECT_TRUE(bitstream.IsEOF());
   EXPECT_EQ(1063U, bitstream.GetPos());
   EXPECT_EQ(0U, bitstream.BitsRemaining());
+  EXPECT_EQ(0u, bitstream.GetBits(4));
+
+  // Align past the end.
+  bitstream.ByteAlign();
+  EXPECT_TRUE(bitstream.IsEOF());
+  EXPECT_EQ(1064U, bitstream.GetPos());
+  EXPECT_EQ(0U, bitstream.BitsRemaining());
+  EXPECT_EQ(0u, bitstream.GetBits(4));
+}
+
+TEST(fxcrt, BitStreamEmpty) {
+  CFX_BitStream bitstream({});
+  EXPECT_TRUE(bitstream.IsEOF());
+  EXPECT_EQ(0U, bitstream.GetPos());
+  EXPECT_EQ(0U, bitstream.BitsRemaining());
+
+  // Getting bits returns zero and doesn't advance.
+  EXPECT_EQ(0u, bitstream.GetBits(4));
+  EXPECT_EQ(0U, bitstream.GetPos());
+
+  // Skip past the end.
+  bitstream.SkipBits(63);
+  EXPECT_TRUE(bitstream.IsEOF());
+  EXPECT_EQ(63U, bitstream.GetPos());
+  EXPECT_EQ(0U, bitstream.BitsRemaining());
+  EXPECT_EQ(0u, bitstream.GetBits(4));
+
+  // Align past the end.
+  bitstream.ByteAlign();
+  EXPECT_TRUE(bitstream.IsEOF());
+  EXPECT_EQ(64U, bitstream.GetPos());
+  EXPECT_EQ(0U, bitstream.BitsRemaining());
+  EXPECT_EQ(0u, bitstream.GetBits(4));
+}
+
+TEST(fxcrt, BitStreamBig) {
+  // We can't actually allocate enough memory to test the limits of
+  // the bitstream arithmetic, but as long as we don't try to extract
+  // any bits, the calculations should be unaffected.
+  const uint8_t kNotReallyBigEnough[32] = {};
+  constexpr size_t kAllocationBytes = std::numeric_limits<size_t>::max() / 8;
+  constexpr size_t kAllocationBits = kAllocationBytes * 8;
+
+  // SAFETY: intentionally not safe, see above.
+  CFX_BitStream bitstream(
+      UNSAFE_BUFFERS(pdfium::make_span(kNotReallyBigEnough, kAllocationBytes)));
+  EXPECT_FALSE(bitstream.IsEOF());
+  EXPECT_EQ(0U, bitstream.GetPos());
+  EXPECT_EQ(kAllocationBits, bitstream.BitsRemaining());
+
+  // Skip some bits.
+  bitstream.SkipBits(kAllocationBits - 1023);
+  EXPECT_FALSE(bitstream.IsEOF());
+  EXPECT_EQ(kAllocationBits - 1023, bitstream.GetPos());
+  EXPECT_EQ(1023u, bitstream.BitsRemaining());
+
+  // Align to byte.
+  bitstream.ByteAlign();
+  EXPECT_FALSE(bitstream.IsEOF());
+  EXPECT_EQ(kAllocationBits - 1016, bitstream.GetPos());
+  EXPECT_EQ(1016u, bitstream.BitsRemaining());
 }
 
 TEST(fxcrt, BitStreamSameAsReferenceGetBits32) {

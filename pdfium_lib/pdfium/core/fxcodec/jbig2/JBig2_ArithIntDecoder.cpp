@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,10 +6,11 @@
 
 #include "core/fxcodec/jbig2/JBig2_ArithIntDecoder.h"
 
+#include <array>
 #include <vector>
 
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/stl_util.h"
 
 namespace {
 
@@ -17,18 +18,25 @@ int ShiftOr(int val, int bitwise_or_val) {
   return (val << 1) | bitwise_or_val;
 }
 
-const struct ArithIntDecodeData {
+struct ArithIntDecodeData {
   int nNeedBits;
   int nValue;
-} g_ArithIntDecodeData[] = {
-    {2, 0}, {4, 4}, {6, 20}, {8, 84}, {12, 340}, {32, 4436},
 };
+
+constexpr auto kArithIntDecodeData = fxcrt::ToArray<ArithIntDecodeData>({
+    {2, 0},
+    {4, 4},
+    {6, 20},
+    {8, 84},
+    {12, 340},
+    {32, 4436},
+});
 
 size_t RecursiveDecode(CJBig2_ArithDecoder* decoder,
                        std::vector<JBig2ArithCtx>* context,
                        int* prev,
                        size_t depth) {
-  static const size_t kDepthEnd = pdfium::size(g_ArithIntDecodeData) - 1;
+  static const size_t kDepthEnd = std::size(kArithIntDecodeData) - 1;
   if (depth == kDepthEnd)
     return kDepthEnd;
 
@@ -61,14 +69,14 @@ bool CJBig2_ArithIntDecoder::Decode(CJBig2_ArithDecoder* pArithDecoder,
       RecursiveDecode(pArithDecoder, &m_IAx, &PREV, 0);
 
   int nTemp = 0;
-  for (int i = 0; i < g_ArithIntDecodeData[nDecodeDataIndex].nNeedBits; ++i) {
+  for (int i = 0; i < kArithIntDecodeData[nDecodeDataIndex].nNeedBits; ++i) {
     int D = pArithDecoder->Decode(&m_IAx[PREV]);
     PREV = ShiftOr(PREV, D);
     if (PREV >= 256)
       PREV = (PREV & 511) | 256;
     nTemp = ShiftOr(nTemp, D);
   }
-  FX_SAFE_INT32 safeValue = g_ArithIntDecodeData[nDecodeDataIndex].nValue;
+  FX_SAFE_INT32 safeValue = kArithIntDecodeData[nDecodeDataIndex].nValue;
   safeValue += nTemp;
 
   // Value does not fit in int.

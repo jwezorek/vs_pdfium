@@ -18,6 +18,7 @@
 #include "unicode/localpointer.h"
 #include "numparse_validators.h"
 #include "number_multiplier.h"
+#include "string_segment.h"
 
 U_NAMESPACE_BEGIN
 
@@ -28,8 +29,7 @@ U_NAMESPACE_BEGIN
 template class U_I18N_API MaybeStackArray<const numparse::impl::NumberParseMatcher*, 10>;
 #endif
 
-namespace numparse {
-namespace impl {
+namespace numparse::impl {
 
 // Exported as U_I18N_API for tests
 class U_I18N_API NumberParserImpl : public MutableMatcherCollection, public UMemory {
@@ -95,14 +95,14 @@ class U_I18N_API NumberParserImpl : public MutableMatcherCollection, public UMem
 
     explicit NumberParserImpl(parse_flags_t parseFlags);
 
-    void parseGreedyRecursive(StringSegment& segment, ParsedNumber& result, UErrorCode& status) const;
+    void parseGreedy(StringSegment& segment, ParsedNumber& result, UErrorCode& status) const;
 
-    void parseLongestRecursive(StringSegment& segment, ParsedNumber& result, UErrorCode& status) const;
+    void parseLongestRecursive(
+        StringSegment& segment, ParsedNumber& result, int32_t recursionLevels, UErrorCode& status) const;
 };
 
+} // namespace numparse::impl
 
-} // namespace impl
-} // namespace numparse
 U_NAMESPACE_END
 
 #endif //__NUMPARSE_IMPL_H__

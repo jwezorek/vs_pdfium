@@ -91,14 +91,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WCHAR_T_IS_16_BIT;IS_WIN;BUILDFLAG=defined;OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\pdfium\third_party\abseil-cpp;.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /wd4244 /wd4996 /wd4267 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,14 +124,15 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WCHAR_T_IS_16_BIT;IS_WIN;BUILDFLAG=defined;OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\pdfium\third_party\abseil-cpp;.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /wd4244 /wd4996 /wd4267 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -157,13 +159,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WCHAR_T_IS_16_BIT;IS_WIN;BUILDFLAG=defined;OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\pdfium\third_party\abseil-cpp;.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /wd4244 /wd4996 /wd4267 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -192,14 +195,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WCHAR_T_IS_16_BIT;IS_WIN;BUILDFLAG=defined;OPJ_STATIC;ICU_UTIL_DATA_IMPL=ICU_UTIL_DATA_FILE;WIN32_LEAN_AND_MEAN;U_I18N_IMPLEMENTATION;U_ICUDATAENTRY_IN_COMMON;U_COMMON_IMPLEMENTATION;U_STATIC_IMPLEMENTATION;FT2_BUILD_LIBRARY;NOMINMAX;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\pdfium\third_party\abseil-cpp;.\pdfium\third_party\zlib;.\pdfium\third_party\libjpeg_turbo;.\pdfium\third_party\freetype\include;.\pdfium; .\pdfium\third_party\freetype\src\include; .\pdfium\third_party\icu\source\common</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <AdditionalOptions>/utf-8 /wd4244 /wd4996 /wd4267 %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -296,7 +300,6 @@
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_cid2unicodemap.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_cidfont.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_cmap.cpp" />
-    <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_cmapmanager.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_cmapparser.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_font.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\font\cpdf_fontencoding.cpp" />
@@ -388,10 +391,7 @@
     <ClCompile Include="pdfium\core\fpdfapi\render\charposlist.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_devicebuffer.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_docrenderdata.cpp" />
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_imagecacheentry.cpp" />
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_imageloader.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_imagerenderer.cpp" />
-    <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_pagerendercache.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_pagerendercontext.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_progressiverenderer.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_rendercontext.cpp" />
@@ -404,8 +404,6 @@
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_type3cache.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_type3glyphmap.cpp" />
     <ClCompile Include="pdfium\core\fpdfapi\render\cpdf_windowsrenderdevice.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\cba_fontmap.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\cline.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_aaction.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_action.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_annot.cpp" />
@@ -430,13 +428,9 @@
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_pagelabel.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_structelement.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_structtree.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\cpdf_variabletext.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpdf_viewerpreferences.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpvt_fontmap.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\cpvt_generateap.cpp" />
     <ClCompile Include="pdfium\core\fpdfdoc\cpvt_wordinfo.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\csection.cpp" />
-    <ClCompile Include="pdfium\core\fpdfdoc\ctypeset.cpp" />
     <ClCompile Include="pdfium\core\fpdftext\cpdf_linkextract.cpp" />
     <ClCompile Include="pdfium\core\fpdftext\cpdf_textpage.cpp" />
     <ClCompile Include="pdfium\core\fpdftext\cpdf_textpagefind.cpp" />
@@ -446,7 +440,6 @@
     <ClCompile Include="pdfium\core\fxcodec\fax\faxmodule.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\flate\flatemodule.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\fx_codec.cpp" />
-    <ClCompile Include="pdfium\core\fxcodec\icc\iccmodule.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\jbig2\JBig2_ArithDecoder.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\jbig2\JBig2_ArithIntDecoder.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\jbig2\JBig2_BitStream.cpp" />
@@ -470,18 +463,18 @@
     <ClCompile Include="pdfium\core\fxcodec\jpx\cjpx_decoder.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\jpx\jpx_decode_utils.cpp" />
     <ClCompile Include="pdfium\core\fxcodec\scanlinedecoder.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\binary_buffer.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\bytestring.cpp" />
-    <ClCompile Include="pdfium\core\fxcrt\cfx_binarybuf.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_bitstream.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_datetime.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_fileaccess_windows.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_memorystream.cpp" />
-    <ClCompile Include="pdfium\core\fxcrt\cfx_readonlymemorystream.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\cfx_read_only_span_stream.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\cfx_read_only_string_stream.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\cfx_read_only_vector_stream.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_seekablestreamproxy.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\cfx_timer.cpp" />
-    <ClCompile Include="pdfium\core\fxcrt\cfx_utf8decoder.cpp" />
-    <ClCompile Include="pdfium\core\fxcrt\cfx_utf8encoder.cpp" />
-    <ClCompile Include="pdfium\core\fxcrt\cfx_widetextbuf.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\code_point_view.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_csscolorvalue.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_csscomputedstyle.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\css\cfx_csscustomproperty.cpp" />
@@ -504,7 +497,9 @@
     <ClCompile Include="pdfium\core\fxcrt\fx_codepage.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_coordinates.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_extension.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\fx_folder_windows.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_memory.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\fx_memory_malloc.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_number.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_random.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\fx_stream.cpp" />
@@ -513,7 +508,10 @@
     <ClCompile Include="pdfium\core\fxcrt\fx_unicode.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\observed_ptr.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\string_data_template.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\string_template.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\string_test_support.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\widestring.cpp" />
+    <ClCompile Include="pdfium\core\fxcrt\widetext_buffer.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\xml\cfx_xmlchardata.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\xml\cfx_xmldocument.cpp" />
     <ClCompile Include="pdfium\core\fxcrt\xml\cfx_xmlelement.cpp" />
@@ -536,7 +534,6 @@
     <ClCompile Include="pdfium\core\fxge\cfx_glyphcache.cpp" />
     <ClCompile Include="pdfium\core\fxge\cfx_graphstate.cpp" />
     <ClCompile Include="pdfium\core\fxge\cfx_graphstatedata.cpp" />
-    <ClCompile Include="pdfium\core\fxge\cfx_pathdata.cpp" />
     <ClCompile Include="pdfium\core\fxge\cfx_renderdevice.cpp" />
     <ClCompile Include="pdfium\core\fxge\cfx_substfont.cpp" />
     <ClCompile Include="pdfium\core\fxge\cfx_unicodeencoding.cpp" />
@@ -546,7 +543,6 @@
     <ClCompile Include="pdfium\core\fxge\dib\cfx_bitmapstorer.cpp" />
     <ClCompile Include="pdfium\core\fxge\dib\cfx_cmyk_to_srgb.cpp" />
     <ClCompile Include="pdfium\core\fxge\dib\cfx_dibbase.cpp" />
-    <ClCompile Include="pdfium\core\fxge\dib\cfx_dibextractor.cpp" />
     <ClCompile Include="pdfium\core\fxge\dib\cfx_dibitmap.cpp" />
     <ClCompile Include="pdfium\core\fxge\dib\cfx_imagerenderer.cpp" />
     <ClCompile Include="pdfium\core\fxge\dib\cfx_imagestretcher.cpp" />
@@ -585,16 +581,12 @@
     <ClCompile Include="pdfium\core\fxge\win32\cps_printer_driver.cpp" />
     <ClCompile Include="pdfium\core\fxge\win32\ctext_only_printer_driver.cpp" />
     <ClCompile Include="pdfium\core\fxge\win32\cwin32_platform.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_actionhandler.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_annot.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_annothandlermgr.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_annotiteration.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_annotiterator.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_appstream.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_baannot.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_baannothandler.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_customaccess.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_fieldaction.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_filewriteadapter.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_formfillenvironment.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_helpers.cpp" />
@@ -603,14 +595,11 @@
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_pauseadapter.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_renderpage.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_widget.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\cpdfsdk_widgethandler.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_button.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_checkbox.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_combobox.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_formfiller.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_interactiveformfiller.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_listbox.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_privatedata.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_pushbutton.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_radiobutton.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\formfiller\cffl_textfield.cpp" />
@@ -646,9 +635,7 @@
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_cblistbox.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_combo_box.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_edit.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_edit_ctrl.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_edit_impl.cpp" />
-    <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_icon.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_list_box.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_list_ctrl.cpp" />
     <ClCompile Include="pdfium\fpdfsdk\pwl\cpwl_scroll_bar.cpp" />
@@ -657,24 +644,11 @@
     <ClCompile Include="pdfium\fxjs\cjs_event_context_stub.cpp" />
     <ClCompile Include="pdfium\fxjs\cjs_runtimestub.cpp" />
     <ClCompile Include="pdfium\fxjs\ijs_runtime.cpp" />
-    <ClCompile Include="pdfium\skia\ext\google_logging.cc" />
     <ClCompile Include="pdfium\third_party\agg23\agg_curves.cpp" />
     <ClCompile Include="pdfium\third_party\agg23\agg_path_storage.cpp" />
     <ClCompile Include="pdfium\third_party\agg23\agg_rasterizer_scanline_aa.cpp" />
     <ClCompile Include="pdfium\third_party\agg23\agg_vcgen_dash.cpp" />
     <ClCompile Include="pdfium\third_party\agg23\agg_vcgen_stroke.cpp" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\address_space_randomization.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\oom_callback.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\partition_alloc.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\partition_bucket.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\partition_oom.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\partition_page.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\partition_root_base.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\random.cc" />
-    <ClCompile Include="pdfium\third_party\base\allocator\partition_allocator\spin_lock.cc" />
-    <ClCompile Include="pdfium\third_party\base\debug\alias.cc" />
-    <ClCompile Include="pdfium\third_party\base\win\win_util.cc" />
     <ClCompile Include="pdfium\third_party\freetype\src\src\autofit\autofit.c" />
     <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftbase.c" />
     <ClCompile Include="pdfium\third_party\freetype\src\src\base\ftbbox.c" />
@@ -941,10 +915,8 @@
     <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-bignum-dtoa.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-bignum.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-cached-powers.cpp" />
-    <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-diy-fp.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-fast-dtoa.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion-strtod.cpp" />
-    <ClCompile Include="pdfium\third_party\icu\source\i18n\double-conversion.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\dtfmtsym.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\dtitvfmt.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\dtitvinf.cpp" />
@@ -977,7 +949,6 @@
     <ClCompile Include="pdfium\third_party\icu\source\i18n\nfrule.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\nfsubs.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\nortrans.cpp" />
-    <ClCompile Include="pdfium\third_party\icu\source\i18n\nounit.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\nultrans.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_affixutils.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_asformat.cpp" />
@@ -1001,7 +972,6 @@
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_rounding.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_scientific.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_skeletons.cpp" />
-    <ClCompile Include="pdfium\third_party\icu\source\i18n\number_stringbuilder.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\number_utils.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numfmt.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_affixes.cpp" />
@@ -1011,7 +981,6 @@
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_impl.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_parsednumber.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_scientific.cpp" />
-    <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_stringsegment.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_symbols.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numparse_validators.cpp" />
     <ClCompile Include="pdfium\third_party\icu\source\i18n\numrange_fluent.cpp" />
@@ -1158,7 +1127,6 @@
     <ClCompile Include="pdfium\third_party\libopenjpeg20\tcd.c" />
     <ClCompile Include="pdfium\third_party\libopenjpeg20\tgt.c" />
     <ClCompile Include="pdfium\third_party\libopenjpeg20\thread.c" />
-    <ClCompile Include="pdfium\third_party\skia_shared\SkFloatToDecimal.cpp" />
     <ClCompile Include="pdfium\third_party\zlib\adler32.c" />
     <ClCompile Include="pdfium\third_party\zlib\compress.c" />
     <ClCompile Include="pdfium\third_party\zlib\crc32.c" />
@@ -1201,7 +1169,6 @@
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_cid2unicodemap.h" />
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_cidfont.h" />
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_cmap.h" />
-    <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_cmapmanager.h" />
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_cmapparser.h" />
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_font.h" />
     <ClInclude Include="pdfium\core\fpdfapi\font\cpdf_fontencoding.h" />
@@ -1294,10 +1261,7 @@
     <ClInclude Include="pdfium\core\fpdfapi\render\charposlist.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_devicebuffer.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_docrenderdata.h" />
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_imagecacheentry.h" />
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_imageloader.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_imagerenderer.h" />
-    <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_pagerendercache.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_pagerendercontext.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_progressiverenderer.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_rendercontext.h" />
@@ -1310,8 +1274,6 @@
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_type3cache.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_type3glyphmap.h" />
     <ClInclude Include="pdfium\core\fpdfapi\render\cpdf_windowsrenderdevice.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\cba_fontmap.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\cline.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_aaction.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_action.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_annot.h" />
@@ -1336,19 +1298,15 @@
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_pagelabel.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_structelement.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_structtree.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\cpdf_variabletext.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpdf_viewerpreferences.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_floatrect.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_fontmap.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\cpvt_generateap.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_line.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_lineinfo.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_word.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_wordinfo.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_wordplace.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\cpvt_wordrange.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\csection.h" />
-    <ClInclude Include="pdfium\core\fpdfdoc\ctypeset.h" />
     <ClInclude Include="pdfium\core\fpdfdoc\ipvt_fontmap.h" />
     <ClInclude Include="pdfium\core\fpdftext\cpdf_linkextract.h" />
     <ClInclude Include="pdfium\core\fpdftext\cpdf_textpage.h" />
@@ -1360,7 +1318,6 @@
     <ClInclude Include="pdfium\core\fxcodec\flate\flatemodule.h" />
     <ClInclude Include="pdfium\core\fxcodec\fx_codec.h" />
     <ClInclude Include="pdfium\core\fxcodec\fx_codec_def.h" />
-    <ClInclude Include="pdfium\core\fxcodec\icc\iccmodule.h" />
     <ClInclude Include="pdfium\core\fxcodec\jbig2\JBig2_ArithDecoder.h" />
     <ClInclude Include="pdfium\core\fxcodec\jbig2\JBig2_ArithIntDecoder.h" />
     <ClInclude Include="pdfium\core\fxcodec\jbig2\JBig2_BitStream.h" />
@@ -1388,20 +1345,23 @@
     <ClInclude Include="pdfium\core\fxcodec\scanlinedecoder.h" />
     <ClInclude Include="pdfium\core\fxcrt\autonuller.h" />
     <ClInclude Include="pdfium\core\fxcrt\autorestorer.h" />
+    <ClInclude Include="pdfium\core\fxcrt\binary_buffer.h" />
     <ClInclude Include="pdfium\core\fxcrt\byteorder.h" />
     <ClInclude Include="pdfium\core\fxcrt\bytestring.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_binarybuf.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_bitstream.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_datetime.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_fileaccess_windows.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_fixedbufgrow.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_memorystream.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_readonlymemorystream.h" />
+    <ClInclude Include="pdfium\core\fxcrt\cfx_read_only_span_stream.h" />
+    <ClInclude Include="pdfium\core\fxcrt\cfx_read_only_string_stream.h" />
+    <ClInclude Include="pdfium\core\fxcrt\cfx_read_only_vector_stream.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_seekablestreamproxy.h" />
     <ClInclude Include="pdfium\core\fxcrt\cfx_timer.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_utf8decoder.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_utf8encoder.h" />
-    <ClInclude Include="pdfium\core\fxcrt\cfx_widetextbuf.h" />
+    <ClInclude Include="pdfium\core\fxcrt\check.h" />
+    <ClInclude Include="pdfium\core\fxcrt\check_op.h" />
+    <ClInclude Include="pdfium\core\fxcrt\code_point_view.h" />
+    <ClInclude Include="pdfium\core\fxcrt\compiler_specific.h" />
+    <ClInclude Include="pdfium\core\fxcrt\component_export.h" />
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_css.h" />
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_csscolorvalue.h" />
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_csscomputedstyle.h" />
@@ -1421,11 +1381,17 @@
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssvalue.h" />
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssvaluelist.h" />
     <ClInclude Include="pdfium\core\fxcrt\css\cfx_cssvaluelistparser.h" />
+    <ClInclude Include="pdfium\core\fxcrt\data_vector.h" />
     <ClInclude Include="pdfium\core\fxcrt\fileaccess_iface.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fixed_size_data_vector.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_2d_size.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_bidi.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_codepage.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_codepage_forward.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_coordinates.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_extension.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_folder.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_memcpy_wrappers.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_memory.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_memory_wrappers.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_number.h" />
@@ -1433,28 +1399,43 @@
     <ClInclude Include="pdfium\core\fxcrt\fx_safe_types.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_stream.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_string.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_string_wrappers.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_system.h" />
+    <ClInclude Include="pdfium\core\fxcrt\fx_types.h" />
     <ClInclude Include="pdfium\core\fxcrt\fx_unicode.h" />
+    <ClInclude Include="pdfium\core\fxcrt\immediate_crash.h" />
+    <ClInclude Include="pdfium\core\fxcrt\mask.h" />
     <ClInclude Include="pdfium\core\fxcrt\maybe_owned.h" />
+    <ClInclude Include="pdfium\core\fxcrt\notreached.h" />
     <ClInclude Include="pdfium\core\fxcrt\observable.h" />
     <ClInclude Include="pdfium\core\fxcrt\observed_ptr.h" />
     <ClInclude Include="pdfium\core\fxcrt\pauseindicator_iface.h" />
-    <ClInclude Include="pdfium\core\fxcrt\retained_tree_node.h" />
+    <ClInclude Include="pdfium\core\fxcrt\ptr_util.h" />
+    <ClInclude Include="pdfium\core\fxcrt\raw_span.h" />
     <ClInclude Include="pdfium\core\fxcrt\retain_ptr.h" />
+    <ClInclude Include="pdfium\core\fxcrt\scoped_set_insertion.h" />
     <ClInclude Include="pdfium\core\fxcrt\shared_copy_on_write.h" />
+    <ClInclude Include="pdfium\core\fxcrt\span_util.h" />
+    <ClInclude Include="pdfium\core\fxcrt\stl_util.h" />
     <ClInclude Include="pdfium\core\fxcrt\string_data_template.h" />
     <ClInclude Include="pdfium\core\fxcrt\string_pool_template.h" />
+    <ClInclude Include="pdfium\core\fxcrt\string_template.h" />
     <ClInclude Include="pdfium\core\fxcrt\string_view_template.h" />
+    <ClInclude Include="pdfium\core\fxcrt\template_util.h" />
     <ClInclude Include="pdfium\core\fxcrt\tree_node.h" />
     <ClInclude Include="pdfium\core\fxcrt\unowned_ptr.h" />
+    <ClInclude Include="pdfium\core\fxcrt\unowned_ptr_exclusion.h" />
+    <ClInclude Include="pdfium\core\fxcrt\utf16.h" />
     <ClInclude Include="pdfium\core\fxcrt\weak_ptr.h" />
     <ClInclude Include="pdfium\core\fxcrt\widestring.h" />
+    <ClInclude Include="pdfium\core\fxcrt\widetext_buffer.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmlchardata.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmldocument.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmlelement.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmlinstruction.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmlnode.h" />
     <ClInclude Include="pdfium\core\fxcrt\xml\cfx_xmlparser.h" />
+    <ClInclude Include="pdfium\core\fxcrt\zip.h" />
     <ClInclude Include="pdfium\core\fxge\agg\fx_agg_driver.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_cliprgn.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_color.h" />
@@ -1472,7 +1453,6 @@
     <ClInclude Include="pdfium\core\fxge\cfx_glyphcache.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_graphstate.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_graphstatedata.h" />
-    <ClInclude Include="pdfium\core\fxge\cfx_pathdata.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_renderdevice.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_substfont.h" />
     <ClInclude Include="pdfium\core\fxge\cfx_textrenderoptions.h" />
@@ -1483,7 +1463,6 @@
     <ClInclude Include="pdfium\core\fxge\dib\cfx_bitmapstorer.h" />
     <ClInclude Include="pdfium\core\fxge\dib\cfx_cmyk_to_srgb.h" />
     <ClInclude Include="pdfium\core\fxge\dib\cfx_dibbase.h" />
-    <ClInclude Include="pdfium\core\fxge\dib\cfx_dibextractor.h" />
     <ClInclude Include="pdfium\core\fxge\dib\cfx_dibitmap.h" />
     <ClInclude Include="pdfium\core\fxge\dib\cfx_imagerenderer.h" />
     <ClInclude Include="pdfium\core\fxge\dib\cfx_imagestretcher.h" />
@@ -1494,7 +1473,6 @@
     <ClInclude Include="pdfium\core\fxge\dib\scanlinecomposer_iface.h" />
     <ClInclude Include="pdfium\core\fxge\fontdata\chromefontdata\chromefontdata.h" />
     <ClInclude Include="pdfium\core\fxge\fx_font.h" />
-    <ClInclude Include="pdfium\core\fxge\fx_freetype.h" />
     <ClInclude Include="pdfium\core\fxge\renderdevicedriver_iface.h" />
     <ClInclude Include="pdfium\core\fxge\render_defines.h" />
     <ClInclude Include="pdfium\core\fxge\scoped_font_transform.h" />
@@ -1510,16 +1488,12 @@
     <ClInclude Include="pdfium\core\fxge\win32\cps_printer_driver.h" />
     <ClInclude Include="pdfium\core\fxge\win32\ctext_only_printer_driver.h" />
     <ClInclude Include="pdfium\core\fxge\win32\cwin32_platform.h" />
-    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_actionhandler.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_annot.h" />
-    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_annothandlermgr.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_annotiteration.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_annotiterator.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_appstream.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_baannot.h" />
-    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_baannothandler.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_customaccess.h" />
-    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_fieldaction.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_filewriteadapter.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_formfillenvironment.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_helpers.h" />
@@ -1528,36 +1502,29 @@
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_pauseadapter.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_renderpage.h" />
     <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_widget.h" />
-    <ClInclude Include="pdfium\fpdfsdk\cpdfsdk_widgethandler.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_button.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_checkbox.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_combobox.h" />
-    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_formfiller.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_interactiveformfiller.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_listbox.h" />
-    <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_privatedata.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_pushbutton.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_radiobutton.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_textfield.h" />
     <ClInclude Include="pdfium\fpdfsdk\formfiller\cffl_textobject.h" />
     <ClInclude Include="pdfium\fpdfsdk\fpdf_view_c_api_test.h" />
-    <ClInclude Include="pdfium\fpdfsdk\ipdfsdk_annothandler.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_button.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_caret.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_cbbutton.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_cblistbox.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_combo_box.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_edit.h" />
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_edit_ctrl.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_edit_impl.h" />
-    <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_icon.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_list_box.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_list_ctrl.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_scroll_bar.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_special_button.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\cpwl_wnd.h" />
     <ClInclude Include="pdfium\fpdfsdk\pwl\ipwl_fillernotify.h" />
-    <ClInclude Include="pdfium\fpdfsdk\pwl\ipwl_systemhandler.h" />
     <ClInclude Include="pdfium\fxjs\cjs_event_context_stub.h" />
     <ClInclude Include="pdfium\fxjs\cjs_runtimestub.h" />
     <ClInclude Include="pdfium\fxjs\ijs_event_context.h" />
@@ -1583,7 +1550,6 @@
     <ClInclude Include="pdfium\public\fpdf_sysfontinfo.h" />
     <ClInclude Include="pdfium\public\fpdf_text.h" />
     <ClInclude Include="pdfium\public\fpdf_transformpage.h" />
-    <ClInclude Include="pdfium\skia\config\SkUserConfig.h" />
     <ClInclude Include="pdfium\third_party\agg23\agg_array.h" />
     <ClInclude Include="pdfium\third_party\agg23\agg_basics.h" />
     <ClInclude Include="pdfium\third_party\agg23\agg_clip_liang_barsky.h" />
@@ -1606,42 +1572,8 @@
     <ClInclude Include="pdfium\third_party\agg23\agg_vcgen_dash.h" />
     <ClInclude Include="pdfium\third_party\agg23\agg_vcgen_stroke.h" />
     <ClInclude Include="pdfium\third_party\agg23\agg_vertex_sequence.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\address_space_randomization.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\oom.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\oom_callback.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator_constants.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator_internal.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator_internals_posix.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\page_allocator_internals_win.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_alloc.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_alloc_check.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_alloc_constants.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_bucket.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_cookie.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_direct_map_extent.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_freelist_entry.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_oom.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_page.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\partition_root_base.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\random.h" />
-    <ClInclude Include="pdfium\third_party\base\allocator\partition_allocator\spin_lock.h" />
-    <ClInclude Include="pdfium\third_party\base\base_export.h" />
-    <ClInclude Include="pdfium\third_party\base\bits.h" />
-    <ClInclude Include="pdfium\third_party\base\compiler_specific.h" />
-    <ClInclude Include="pdfium\third_party\base\debug\alias.h" />
     <ClInclude Include="pdfium\third_party\base\logging.h" />
-    <ClInclude Include="pdfium\third_party\base\numerics\safe_conversions.h" />
-    <ClInclude Include="pdfium\third_party\base\numerics\safe_conversions_impl.h" />
-    <ClInclude Include="pdfium\third_party\base\numerics\safe_math.h" />
     <ClInclude Include="pdfium\third_party\base\numerics\safe_math_impl.h" />
-    <ClInclude Include="pdfium\third_party\base\optional.h" />
-    <ClInclude Include="pdfium\third_party\base\ptr_util.h" />
-    <ClInclude Include="pdfium\third_party\base\span.h" />
-    <ClInclude Include="pdfium\third_party\base\stl_util.h" />
-    <ClInclude Include="pdfium\third_party\base\sys_byteorder.h" />
-    <ClInclude Include="pdfium\third_party\base\template_util.h" />
-    <ClInclude Include="pdfium\third_party\base\win\win_util.h" />
     <ClInclude Include="pdfium\third_party\freetype\include\pstables.h" />
     <ClInclude Include="pdfium\third_party\freetype\src\include\freetype\config\ftconfig.h" />
     <ClInclude Include="pdfium\third_party\freetype\src\include\freetype\config\ftheader.h" />
@@ -2033,7 +1965,6 @@
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_roundingutils.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_scientific.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_skeletons.h" />
-    <ClInclude Include="pdfium\third_party\icu\source\i18n\number_stringbuilder.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_types.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_utils.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\number_utypes.h" />
@@ -2043,7 +1974,6 @@
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_decimal.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_impl.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_scientific.h" />
-    <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_stringsegment.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_symbols.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_types.h" />
     <ClInclude Include="pdfium\third_party\icu\source\i18n\numparse_utils.h" />
@@ -2196,7 +2126,6 @@
     <ClInclude Include="pdfium\third_party\libjpeg\jmorecfg.h" />
     <ClInclude Include="pdfium\third_party\libjpeg\jpeglib.h" />
     <ClInclude Include="pdfium\third_party\libjpeg\turbojpeg.h" />
-    <ClInclude Include="pdfium\third_party\skia_shared\SkFloatToDecimal.h" />
     <ClInclude Include="pdfium\third_party\zlib\crc32.h" />
     <ClInclude Include="pdfium\third_party\zlib\deflate.h" />
     <ClInclude Include="pdfium\third_party\zlib\gzguts.h" />

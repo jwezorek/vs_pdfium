@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,6 +8,7 @@
 
 #include <utility>
 
+#include "core/fxcrt/fx_system.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
 #include "core/fxge/dib/fx_dib.h"
 
@@ -48,7 +49,7 @@ bool CPDF_Type3Char::LoadBitmapFromSoleImageOfForm() {
 }
 
 void CPDF_Type3Char::InitializeFromStreamData(bool bColored,
-                                              const float* pData) {
+                                              pdfium::span<const float> pData) {
   m_bColored = bColored;
   m_Width = FXSYS_roundf(TextUnitToGlyphUnit(pData[0]));
   m_BBox.left = FXSYS_roundf(TextUnitToGlyphUnit(pData[2]));
@@ -82,9 +83,5 @@ void CPDF_Type3Char::SetForm(std::unique_ptr<CPDF_Font::FormIface> pForm) {
 }
 
 RetainPtr<CFX_DIBitmap> CPDF_Type3Char::GetBitmap() {
-  return m_pBitmap;
-}
-
-const RetainPtr<CFX_DIBitmap>& CPDF_Type3Char::GetBitmap() const {
   return m_pBitmap;
 }

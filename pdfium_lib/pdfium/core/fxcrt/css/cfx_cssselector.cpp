@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,8 +8,8 @@
 
 #include <utility>
 
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_extension.h"
-#include "third_party/base/check.h"
 
 namespace {
 
@@ -26,8 +26,7 @@ size_t GetCSSNameLen(WideStringView str) {
 
 CFX_CSSSelector::CFX_CSSSelector(WideStringView str,
                                  std::unique_ptr<CFX_CSSSelector> next)
-    : name_hash_(FX_HashCode_GetW(str, /*bIgnoreCase=*/true)),
-      next_(std::move(next)) {}
+    : name_hash_(FX_HashCode_GetLoweredW(str)), next_(std::move(next)) {}
 
 CFX_CSSSelector::~CFX_CSSSelector() = default;
 

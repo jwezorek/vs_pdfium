@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 fa{
-    Version{"2.1.43.65"}
     zoneStrings{
         "Africa:Abidjan"{
             ec{"آبیجان"}
@@ -154,7 +154,7 @@ fa{
             ec{"طرابلس"}
         }
         "Africa:Tunis"{
-            ec{"شهر تونس"}
+            ec{"تونس"}
         }
         "Africa:Windhoek"{
             ec{"ویندهوک"}
@@ -257,6 +257,9 @@ fa{
         }
         "America:Chihuahua"{
             ec{"چیواوا"}
+        }
+        "America:Ciudad_Juarez"{
+            ec{"سیوداد خوارز"}
         }
         "America:Coral_Harbour"{
             ec{"اتکوکان"}
@@ -462,9 +465,6 @@ fa{
         "America:New_York"{
             ec{"نیویورک"}
         }
-        "America:Nipigon"{
-            ec{"نیپیگان"}
-        }
         "America:Nome"{
             ec{"نوم"}
         }
@@ -485,9 +485,6 @@ fa{
         }
         "America:Panama"{
             ec{"پاناما"}
-        }
-        "America:Pangnirtung"{
-            ec{"پانگنیرتونگ"}
         }
         "America:Paramaribo"{
             ec{"پاراماریبو"}
@@ -510,9 +507,6 @@ fa{
         "America:Punta_Arenas"{
             ec{"پونتا آرناس"}
         }
-        "America:Rainy_River"{
-            ec{"رینی‌ریور"}
-        }
         "America:Rankin_Inlet"{
             ec{"خلیجک رنکین"}
         }
@@ -527,9 +521,6 @@ fa{
         }
         "America:Rio_Branco"{
             ec{"ریوبرانکو"}
-        }
-        "America:Santa_Isabel"{
-            ec{"سانتا ایزابل"}
         }
         "America:Santarem"{
             ec{"سنتارم"}
@@ -576,9 +567,6 @@ fa{
         "America:Thule"{
             ec{"تول"}
         }
-        "America:Thunder_Bay"{
-            ec{"تاندربی"}
-        }
         "America:Tijuana"{
             ec{"تیخوانا"}
         }
@@ -599,9 +587,6 @@ fa{
         }
         "America:Yakutat"{
             ec{"یاکوتات"}
-        }
-        "America:Yellowknife"{
-            ec{"یلونایف"}
         }
         "Antarctica:Casey"{
             ec{"کیسی"}
@@ -646,7 +631,7 @@ fa{
             ec{"آلماتی"}
         }
         "Asia:Amman"{
-            ec{"عمّان"}
+            ec{"عَمان"}
         }
         "Asia:Anadyr"{
             ec{"آنادیر"}
@@ -810,6 +795,9 @@ fa{
         "Asia:Qatar"{
             ec{"قطر"}
         }
+        "Asia:Qostanay"{
+            ec{"قوستانای"}
+        }
         "Asia:Qyzylorda"{
             ec{"قیزیل‌اوردا"}
         }
@@ -923,9 +911,6 @@ fa{
         }
         "Australia:Broken_Hill"{
             ec{"بروکن‌هیل"}
-        }
-        "Australia:Currie"{
-            ec{"کوری"}
         }
         "Australia:Darwin"{
             ec{"داروین"}
@@ -1109,9 +1094,6 @@ fa{
         "Europe:Ulyanovsk"{
             ec{"اولیانوفسک"}
         }
-        "Europe:Uzhgorod"{
-            ec{"اوژگورود"}
-        }
         "Europe:Vaduz"{
             ec{"فادوتس"}
         }
@@ -1132,9 +1114,6 @@ fa{
         }
         "Europe:Zagreb"{
             ec{"زاگرب"}
-        }
-        "Europe:Zaporozhye"{
-            ec{"زاپوروژیا"}
         }
         "Europe:Zurich"{
             ec{"زوریخ"}
@@ -1217,8 +1196,8 @@ fa{
         "Pacific:Honolulu"{
             ec{"هونولولو"}
         }
-        "Pacific:Johnston"{
-            ec{"جانستون"}
+        "Pacific:Kanton"{
+            ec{"کانتون"}
         }
         "Pacific:Kiritimati"{
             ec{"کریتیماتی"}
@@ -1293,7 +1272,7 @@ fa{
             ls{"وقت افغانستان"}
         }
         "meta:Africa_Central"{
-            ls{"وقت مرکز افریقا"}
+            ls{"وقت مرکز آفریقا"}
         }
         "meta:Africa_Eastern"{
             ls{"وقت شرق افریقا"}
@@ -1657,9 +1636,6 @@ fa{
             lg{"وقت ماکائو"}
             ls{"وقت عادی ماکائو"}
         }
-        "meta:Macquarie"{
-            ls{"وقت جزیرهٔ مکواری"}
-        }
         "meta:Magadan"{
             ld{"وقت تابستانی ماگادان"}
             lg{"وقت ماگادان"}
@@ -1684,11 +1660,6 @@ fa{
         }
         "meta:Mawson"{
             ls{"وقت ماوسون"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"وقت تابستانی شمال غرب مکزیک"}
-            lg{"وقت شمال غرب مکزیک"}
-            ls{"وقت عادی شمال غرب مکزیک"}
         }
         "meta:Mexico_Pacific"{
             ld{"وقت تابستانی شرق مکزیک"}
@@ -1720,9 +1691,9 @@ fa{
             ls{"وقت عادی کالدونیای جدید"}
         }
         "meta:New_Zealand"{
-            ld{"وقت تابستانی زلاند نو"}
-            lg{"وقت زلاند نو"}
-            ls{"وقت عادی زلاند نو"}
+            ld{"وقت تابستانی نیوزیلند"}
+            lg{"وقت نیوزیلند"}
+            ls{"وقت عادی نیوزیلند"}
         }
         "meta:Newfoundland"{
             ld{"وقت تابستانی نیوفاندلند"}
@@ -1733,7 +1704,9 @@ fa{
             ls{"وقت نیوئه"}
         }
         "meta:Norfolk"{
-            ls{"وقت جزایر نورفولک"}
+            ld{"وقت تابستانی جزیرهٔ نورفولک"}
+            lg{"وقت جزیرهٔ نورفولک"}
+            ls{"وقت عادی جزیرهٔ نورفولک"}
         }
         "meta:Noronha"{
             ld{"وقت تابستانی فرناندو دی نورونیا"}
@@ -1802,7 +1775,7 @@ fa{
             ls{"وقت عادی قیزیل‌اوردا"}
         }
         "meta:Reunion"{
-            ls{"وقت ریونیون"}
+            ls{"وقت رئونیون"}
         }
         "meta:Rothera"{
             ls{"وقت روترا"}
@@ -1917,7 +1890,9 @@ fa{
             lg{"وقت یکاترینبورگ"}
             ls{"وقت عادی یکاترینبورگ"}
         }
-        fallbackFormat{"{1} ({0})"}
+        "meta:Yukon"{
+            ls{"وقت یوکان"}
+        }
         gmtFormat{"{0} گرینویچ"}
         gmtZeroFormat{"گرینویچ"}
         hourFormat{"‎+HH:mm;‎−HH:mm"}

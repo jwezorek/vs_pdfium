@@ -1,12 +1,15 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "fxjs/cfx_globaldata.h"
 
+#include <stdint.h>
+
 #include <utility>
 #include <vector>
 
+#include "core/fxcrt/data_vector.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace {
@@ -14,41 +17,40 @@ namespace {
 class TestDelegate : public CFX_GlobalData::Delegate {
  public:
   TestDelegate() = default;
-  ~TestDelegate() override {}
+  ~TestDelegate() override = default;
 
   bool StoreBuffer(pdfium::span<const uint8_t> buffer) override {
-    last_buffer_ = std::vector<uint8_t, FxAllocAllocator<uint8_t>>(
-        buffer.begin(), buffer.end());
+    last_buffer_ = DataVector<uint8_t>(buffer.begin(), buffer.end());
     return true;
   }
-  Optional<pdfium::span<uint8_t>> LoadBuffer() override {
+  std::optional<pdfium::span<uint8_t>> LoadBuffer() override {
     return pdfium::span<uint8_t>(last_buffer_);
   }
   void BufferDone() override {
     // Catch misuse after done.
-    last_buffer_ = std::vector<uint8_t, FxAllocAllocator<uint8_t>>();
+    last_buffer_ = DataVector<uint8_t>();
   }
 
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> last_buffer_;
+  DataVector<uint8_t> last_buffer_;
 };
 
 }  // namespace
 
 TEST(CFXGlobalData, GetSafety) {
   CFX_GlobalData* pInstance = CFX_GlobalData::GetRetainedInstance(nullptr);
-  EXPECT_EQ(nullptr, pInstance->GetGlobalVariable("nonesuch"));
-  EXPECT_EQ(nullptr, pInstance->GetAt(-1));
-  EXPECT_EQ(nullptr, pInstance->GetAt(0));
-  EXPECT_EQ(nullptr, pInstance->GetAt(1));
+  EXPECT_FALSE(pInstance->GetGlobalVariable("nonesuch"));
+  EXPECT_FALSE(pInstance->GetAt(-1));
+  EXPECT_FALSE(pInstance->GetAt(0));
+  EXPECT_FALSE(pInstance->GetAt(1));
 
   pInstance->SetGlobalVariableNumber("double", 2.0);
   pInstance->SetGlobalVariableString("string", "clams");
 
-  EXPECT_EQ(nullptr, pInstance->GetGlobalVariable("nonesuch"));
-  EXPECT_EQ(nullptr, pInstance->GetAt(-1));
+  EXPECT_FALSE(pInstance->GetGlobalVariable("nonesuch"));
+  EXPECT_FALSE(pInstance->GetAt(-1));
   EXPECT_EQ(pInstance->GetGlobalVariable("double"), pInstance->GetAt(0));
   EXPECT_EQ(pInstance->GetGlobalVariable("string"), pInstance->GetAt(1));
-  EXPECT_EQ(nullptr, pInstance->GetAt(2));
+  EXPECT_FALSE(pInstance->GetAt(2));
 
   ASSERT_TRUE(pInstance->Release());
 }

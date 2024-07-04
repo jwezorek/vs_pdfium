@@ -1,7 +1,7 @@
 /*************************************************************************
 *
 *   © 2016 and later: Unicode, Inc. and others.
-*   License & terms of use: http://www.unicode.org/copyright.html#License
+*   License & terms of use: http://www.unicode.org/copyright.html
 *
 **************************************************************************
 **************************************************************************
@@ -40,10 +40,10 @@ using namespace icu;
 //
 //  The following variables contain parameters that may be set from the command line.
 //
-const char *pattern = NULL;     // The regular expression
+const char *pattern = nullptr;     // The regular expression
 int        firstFileNum;        //  argv index of the first file name
-UBool      displayFileName = FALSE;
-UBool      displayLineNum  = FALSE;
+UBool      displayFileName = false;
+UBool      displayLineNum  = false;
 
 
 //
@@ -52,11 +52,10 @@ UBool      displayLineNum  = FALSE;
 const char *fileName;      
 int         fileLen;              // Length, in UTF-16 Code Units.  
 
-UChar      *ucharBuf = 0;         // Buffer, holds converted file.  (Simple minded program, always reads
-                                  //   the whole file at once.
+char16_t *ucharBuf = nullptr; // Buffer, holds converted file.  (Simple minded program, always reads
+                              //   the whole file at once.
 
-char       *charBuf = 0;          // Buffer, for original, unconverted file data.
-
+char *charBuf = nullptr; // Buffer, for original, unconverted file data.
 
 //
 //  Info regarding the line currently being processed
@@ -69,7 +68,7 @@ int      lineNum;
 //  Converter, used on output to convert Unicode data back to char *
 //             so that it will display in non-Unicode terminal windows.
 //
-UConverter  *outConverter = 0;
+UConverter *outConverter = nullptr;
 
 //
 //  Function forward declarations
@@ -93,7 +92,7 @@ void readFile(const char *name);
 //
 //------------------------------------------------------------------------------------------
 int main(int argc, const char** argv) {
-    UBool     matchFound = FALSE;
+    UBool     matchFound = false;
 
     //
     //  Process the command line options.
@@ -141,10 +140,10 @@ int main(int argc, const char** argv) {
         //  Loop through the lines of a file, trying to match the regex pattern on each.
         //
         for (nextLine(0); lineStart<fileLen; nextLine(lineEnd)) {
-            UnicodeString s(FALSE, ucharBuf+lineStart, lineEnd-lineStart);
+            UnicodeString s(false, ucharBuf+lineStart, lineEnd-lineStart);
             matcher->reset(s);
             if (matcher->find()) {
-                matchFound = TRUE;
+                matchFound = true;
                 printMatch();
             }
         }
@@ -177,8 +176,8 @@ int main(int argc, const char** argv) {
 //------------------------------------------------------------------------------------------
 void processOptions(int argc, const char **argv) {
     int            optInd;
-    UBool          doUsage   = FALSE;
-    UBool          doVersion = FALSE;
+    UBool          doUsage   = false;
+    UBool          doVersion = false;
     const char    *arg;
 
 
@@ -187,14 +186,14 @@ void processOptions(int argc, const char **argv) {
         
         /* version info */
         if(strcmp(arg, "-V") == 0 || strcmp(arg, "--version") == 0) {
-            doVersion = TRUE;
+            doVersion = true;
         }
         /* usage info */
         else if(strcmp(arg, "--help") == 0) {
-            doUsage = TRUE;
+            doUsage = true;
         }
         else if(strcmp(arg, "-n") == 0 || strcmp(arg, "--line-number") == 0) {
-            displayLineNum = TRUE;
+            displayLineNum = true;
         }
         /* POSIX.1 says all arguments after -- are not options */
         else if(strcmp(arg, "--") == 0) {
@@ -205,7 +204,7 @@ void processOptions(int argc, const char **argv) {
         /* unrecognized option */
         else if(strncmp(arg, "-", strlen("-")) == 0) {
             printf("ugrep: invalid option -- %s\n", arg+1);
-            doUsage = TRUE;
+            doUsage = true;
         }
         /* done with options */
         else {
@@ -234,7 +233,7 @@ void processOptions(int argc, const char **argv) {
 
     if (remainingArgs > 2) {
         // More than one file to be processed.   Display file names with match output.
-        displayFileName = TRUE;
+        displayFileName = true;
     }
 
     pattern      = argv[optInd];
@@ -278,7 +277,7 @@ void readFile(const char *name) {
     //  Open the file and determine its size.
     //
     FILE *file = fopen(name, "rb");
-    if (file == 0 ) {
+    if (file == nullptr) {
         fprintf(stderr, "ugrep: Could not open file \"%s\"\n", fileName);
         return;
     }
@@ -313,7 +312,7 @@ void readFile(const char *name) {
             u_errorName(status));
         return;
     }
-    if(encoding!=NULL ){
+    if(encoding!=nullptr ){
         charDataStart  += signatureLength;
         rawFileLen     -= signatureLength;
     }
@@ -329,11 +328,11 @@ void readFile(const char *name) {
     }
 
     //
-    // Convert the file data to UChar.
+    // Convert the file data to char16_t.
     //  Preflight first to determine required buffer size.
     //
     uint32_t destCap = ucnv_toUChars(conv,
-                       NULL,           //  dest,
+                       nullptr,           //  dest,
                        0,              //  destCapacity,
                        charDataStart,
                        rawFileLen,
@@ -344,7 +343,7 @@ void readFile(const char *name) {
     };
     
     status = U_ZERO_ERROR;
-    ucharBuf = (UChar *)realloc(ucharBuf, (destCap+1) * sizeof(UChar));
+    ucharBuf = (char16_t *)realloc(ucharBuf, (destCap+1) * sizeof(char16_t));
     ucnv_toUChars(conv,
         ucharBuf,           //  dest,
         destCap+1,
@@ -390,7 +389,7 @@ void nextLine(int  startPos) {
         if (lineEnd >= fileLen) {
             return;
         }
-        UChar c = ucharBuf[lineEnd];
+        char16_t c = ucharBuf[lineEnd];
         lineEnd++;
         if (c == 0x0a   ||       // Line Feed
             c == 0x0c   ||       // Form Feed
@@ -425,8 +424,8 @@ void printMatch() {
     UErrorCode         status       = U_ZERO_ERROR;
 
     // If we haven't already created a converter for output, do it now.
-    if (outConverter == 0) {
-        outConverter = ucnv_open(NULL, &status);
+    if (outConverter == nullptr) {
+        outConverter = ucnv_open(nullptr, &status);
         if (U_FAILURE(status)) {
             fprintf(stderr, "ugrep:  Error opening default converter: \"%s\"\n",
                 u_errorName(status));

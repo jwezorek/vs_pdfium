@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,15 +6,18 @@
 
 #include "core/fpdfapi/font/cpdf_tounicodemap.h"
 
+#include <limits>
+#include <set>
 #include <utility>
 
 #include "core/fpdfapi/font/cpdf_cid2unicodemap.h"
 #include "core/fpdfapi/font/cpdf_fontglobals.h"
 #include "core/fpdfapi/parser/cpdf_simple_parser.h"
 #include "core/fpdfapi/parser/cpdf_stream.h"
+#include "core/fpdfapi/parser/fpdf_parser_utility.h"
+#include "core/fxcrt/containers/contains.h"
 #include "core/fxcrt/fx_extension.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/numerics/safe_conversions.h"
 
 namespace {
 
@@ -37,8 +40,8 @@ WideString StringDataAdd(WideString str) {
 
 }  // namespace
 
-CPDF_ToUnicodeMap::CPDF_ToUnicodeMap(const CPDF_Stream* pStream) {
-  Load(pStream);
+CPDF_ToUnicodeMap::CPDF_ToUnicodeMap(RetainPtr<const CPDF_Stream> pStream) {
+  Load(std::move(pStream));
 }
 
 CPDF_ToUnicodeMap::~CPDF_ToUnicodeMap() = default;
@@ -48,45 +51,70 @@ WideString CPDF_ToUnicodeMap::Lookup(uint32_t charcode) const {
   if (it == m_Multimap.end()) {
     if (!m_pBaseMap)
       return WideString();
-    return m_pBaseMap->UnicodeFromCID(static_cast<uint16_t>(charcode));
+    return WideString(
+        m_pBaseMap->UnicodeFromCID(static_cast<uint16_t>(charcode)));
   }
 
-  uint32_t value = it->second;
+  uint32_t value = *it->second.begin();
   wchar_t unicode = static_cast<wchar_t>(value & 0xffff);
   if (unicode != 0xffff)
-    return unicode;
+    return WideString(unicode);
 
-  WideStringView buf = m_MultiCharBuf.AsStringView();
   size_t index = value >> 16;
-  if (!buf.IsValidIndex(index))
-    return WideString();
-  return WideString(buf.Substr(index + 1, buf[index]));
+  return index < m_MultiCharVec.size() ? m_MultiCharVec[index] : WideString();
 }
 
 uint32_t CPDF_ToUnicodeMap::ReverseLookup(wchar_t unicode) const {
   for (const auto& pair : m_Multimap) {
-    if (pair.second == static_cast<uint32_t>(unicode))
+    if (pdfium::Contains(pair.second, static_cast<uint32_t>(unicode)))
       return pair.first;
   }
   return 0;
 }
 
+size_t CPDF_ToUnicodeMap::GetUnicodeCountByCharcodeForTesting(
+    uint32_t charcode) const {
+  auto it = m_Multimap.find(charcode);
+  return it != m_Multimap.end() ? it->second.size() : 0u;
+}
+
 // static
-pdfium::Optional<uint32_t> CPDF_ToUnicodeMap::StringToCode(ByteStringView str) {
+std::optional<uint32_t> CPDF_ToUnicodeMap::StringToCode(ByteStringView input) {
+  // Ignore whitespaces within `input`. See https://crbug.com/pdfium/2065.
+  std::set<char> seen_whitespace_chars;
+  for (char c : input) {
+    if (PDFCharIsWhitespace(c)) {
+      seen_whitespace_chars.insert(c);
+    }
+  }
+  ByteString str_without_whitespace_chars;  // Must outlive `str`.
+  ByteStringView str;
+  if (seen_whitespace_chars.empty()) {
+    str = input;
+  } else {
+    str_without_whitespace_chars.Reserve(input.GetLength());
+    for (char c : input) {
+      if (!pdfium::Contains(seen_whitespace_chars, c)) {
+        str_without_whitespace_chars += c;
+      }
+    }
+    str = str_without_whitespace_chars.AsStringView();
+  }
+
   size_t len = str.GetLength();
   if (len <= 2 || str[0] != '<' || str[len - 1] != '>')
-    return pdfium::nullopt;
+    return std::nullopt;
 
   FX_SAFE_UINT32 code = 0;
   for (char c : str.Substr(1, len - 2)) {
     if (!FXSYS_IsHexDigit(c))
-      return pdfium::nullopt;
+      return std::nullopt;
 
     code = code * 16 + FXSYS_HexCharToInt(c);
     if (!code.IsValid())
-      return pdfium::nullopt;
+      return std::nullopt;
   }
-  return pdfium::Optional<uint32_t>(code.ValueOrDie());
+  return std::optional<uint32_t>(code.ValueOrDie());
 }
 
 // static
@@ -113,12 +141,12 @@ WideString CPDF_ToUnicodeMap::StringToWideString(ByteStringView str) {
   return result;
 }
 
-void CPDF_ToUnicodeMap::Load(const CPDF_Stream* pStream) {
+void CPDF_ToUnicodeMap::Load(RetainPtr<const CPDF_Stream> pStream) {
   CIDSet cid_set = CIDSET_UNKNOWN;
-  auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(pStream);
+  auto pAcc = pdfium::MakeRetain<CPDF_StreamAcc>(std::move(pStream));
   pAcc->LoadAllDataFiltered();
   CPDF_SimpleParser parser(pAcc->GetSpan());
-  while (1) {
+  while (true) {
     ByteStringView word = parser.GetWord();
     if (word.IsEmpty())
       break;
@@ -136,19 +164,18 @@ void CPDF_ToUnicodeMap::Load(const CPDF_Stream* pStream) {
     else if (word == "/Adobe-GB1-UCS2")
       cid_set = CIDSET_GB1;
   }
-  if (cid_set) {
-    auto* manager = CPDF_FontGlobals::GetInstance()->GetCMapManager();
-    m_pBaseMap = manager->GetCID2UnicodeMap(cid_set);
+  if (cid_set != CIDSET_UNKNOWN) {
+    m_pBaseMap = CPDF_FontGlobals::GetInstance()->GetCID2UnicodeMap(cid_set);
   }
 }
 
 void CPDF_ToUnicodeMap::HandleBeginBFChar(CPDF_SimpleParser* pParser) {
-  while (1) {
+  while (true) {
     ByteStringView word = pParser->GetWord();
     if (word.IsEmpty() || word == "endbfchar")
       return;
 
-    pdfium::Optional<uint32_t> code = StringToCode(word);
+    std::optional<uint32_t> code = StringToCode(word);
     if (!code.has_value())
       return;
 
@@ -157,17 +184,17 @@ void CPDF_ToUnicodeMap::HandleBeginBFChar(CPDF_SimpleParser* pParser) {
 }
 
 void CPDF_ToUnicodeMap::HandleBeginBFRange(CPDF_SimpleParser* pParser) {
-  while (1) {
+  while (true) {
     ByteStringView lowcode_str = pParser->GetWord();
     if (lowcode_str.IsEmpty() || lowcode_str == "endbfrange")
       return;
 
-    pdfium::Optional<uint32_t> lowcode_opt = StringToCode(lowcode_str);
+    std::optional<uint32_t> lowcode_opt = StringToCode(lowcode_str);
     if (!lowcode_opt.has_value())
       return;
 
     ByteStringView highcode_str = pParser->GetWord();
-    pdfium::Optional<uint32_t> highcode_opt = StringToCode(highcode_str);
+    std::optional<uint32_t> highcode_opt = StringToCode(highcode_str);
     if (!highcode_opt.has_value())
       return;
 
@@ -176,36 +203,46 @@ void CPDF_ToUnicodeMap::HandleBeginBFRange(CPDF_SimpleParser* pParser) {
 
     ByteStringView start = pParser->GetWord();
     if (start == "[") {
-      for (uint32_t code = lowcode; code <= highcode; code++)
+      for (uint32_t code = lowcode; code <= highcode; ++code) {
         SetCode(code, StringToWideString(pParser->GetWord()));
+        if (code == std::numeric_limits<uint32_t>::max()) {
+          break;
+        }
+      }
       pParser->GetWord();
       continue;
     }
 
     WideString destcode = StringToWideString(start);
     if (destcode.GetLength() == 1) {
-      pdfium::Optional<uint32_t> value_or_error = StringToCode(start);
+      std::optional<uint32_t> value_or_error = StringToCode(start);
       if (!value_or_error.has_value())
         return;
 
       uint32_t value = value_or_error.value();
-      for (uint32_t code = lowcode; code <= highcode; code++)
-        m_Multimap.emplace(code, value++);
+      for (uint32_t code = lowcode; code <= highcode; ++code) {
+        InsertIntoMultimap(code, value++);
+        if (code == std::numeric_limits<uint32_t>::max()) {
+          break;
+        }
+      }
     } else {
-      for (uint32_t code = lowcode; code <= highcode; code++) {
+      for (uint32_t code = lowcode; code <= highcode; ++code) {
         WideString retcode =
             code == lowcode ? destcode : StringDataAdd(destcode);
-        m_Multimap.emplace(code, GetUnicode());
-        m_MultiCharBuf.AppendChar(retcode.GetLength());
-        m_MultiCharBuf << retcode;
+        InsertIntoMultimap(code, GetMultiCharIndexIndicator());
+        m_MultiCharVec.push_back(retcode);
         destcode = std::move(retcode);
+        if (code == std::numeric_limits<uint32_t>::max()) {
+          break;
+        }
       }
     }
   }
 }
 
-uint32_t CPDF_ToUnicodeMap::GetUnicode() const {
-  FX_SAFE_UINT32 uni = m_MultiCharBuf.GetLength();
+uint32_t CPDF_ToUnicodeMap::GetMultiCharIndexIndicator() const {
+  FX_SAFE_UINT32 uni = m_MultiCharVec.size();
   uni = uni * 0x10000 + 0xffff;
   return uni.ValueOrDefault(0);
 }
@@ -216,10 +253,19 @@ void CPDF_ToUnicodeMap::SetCode(uint32_t srccode, WideString destcode) {
     return;
 
   if (len == 1) {
-    m_Multimap.emplace(srccode, destcode[0]);
+    InsertIntoMultimap(srccode, destcode[0]);
   } else {
-    m_Multimap.emplace(srccode, GetUnicode());
-    m_MultiCharBuf.AppendChar(len);
-    m_MultiCharBuf << destcode;
+    InsertIntoMultimap(srccode, GetMultiCharIndexIndicator());
+    m_MultiCharVec.push_back(destcode);
   }
+}
+
+void CPDF_ToUnicodeMap::InsertIntoMultimap(uint32_t code, uint32_t destcode) {
+  auto it = m_Multimap.find(code);
+  if (it == m_Multimap.end()) {
+    m_Multimap.emplace(code, std::set<uint32_t>{destcode});
+    return;
+  }
+
+  it->second.emplace(destcode);
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,8 @@
 
 #ifndef CORE_FPDFDOC_CPDF_NAMETREE_H_
 #define CORE_FPDFDOC_CPDF_NAMETREE_H_
+
+#include <stddef.h>
 
 #include <memory>
 
@@ -36,24 +38,25 @@ class CPDF_NameTree {
   static std::unique_ptr<CPDF_NameTree> CreateForTesting(
       CPDF_Dictionary* pRoot);
 
-  static CPDF_Array* LookupNamedDest(CPDF_Document* doc,
-                                     const ByteString& name);
+  static RetainPtr<const CPDF_Array> LookupNamedDest(CPDF_Document* doc,
+                                                     const ByteString& name);
 
   bool AddValueAndName(RetainPtr<CPDF_Object> pObj, const WideString& name);
-  bool DeleteValueAndName(int nIndex);
+  bool DeleteValueAndName(size_t nIndex);
 
-  CPDF_Object* LookupValueAndName(int nIndex, WideString* csName) const;
-  CPDF_Object* LookupValue(const WideString& csName) const;
+  RetainPtr<CPDF_Object> LookupValueAndName(size_t nIndex,
+                                            WideString* csName) const;
+  RetainPtr<const CPDF_Object> LookupValue(const WideString& csName) const;
 
   size_t GetCount() const;
   CPDF_Dictionary* GetRootForTesting() const { return m_pRoot.Get(); }
 
  private:
-  explicit CPDF_NameTree(CPDF_Dictionary* pRoot);
+  explicit CPDF_NameTree(RetainPtr<CPDF_Dictionary> pRoot);
 
-  CPDF_Array* LookupNewStyleNamedDest(const ByteString& name);
+  RetainPtr<const CPDF_Array> LookupNewStyleNamedDest(const ByteString& name);
 
-  const RetainPtr<CPDF_Dictionary> m_pRoot;
+  RetainPtr<CPDF_Dictionary> const m_pRoot;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_NAMETREE_H_

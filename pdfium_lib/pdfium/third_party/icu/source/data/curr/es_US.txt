@@ -1,23 +1,28 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es_US{
     %%Parent{"es_419"}
     Currencies{
-        AMD{
-            "AMD",
-            "dram",
+        BDT{
+            "BDT",
+            "taka bangladesí",
+        }
+        BTN{
+            "BTN",
+            "ngultrum butanés",
+        }
+        ETB{
+            "ETB",
+            "birr",
         }
         JPY{
             "¥",
             "yen",
         }
-        MYR{
-            "MYR",
-            "ringit",
-        }
-        STN{
-            "STN",
-            "dobra santotomense",
+        LAK{
+            "LAK",
+            "kip laosiano",
         }
         THB{
             "THB",
@@ -31,13 +36,17 @@ es_US{
             "UZS",
             "sum",
         }
+        VND{
+            "VND",
+            "dong vietnamita",
+        }
         XAF{
             "XAF",
             "franco CFA de África central",
         }
-        XOF{
-            "XOF",
-            "franco CFA de África Occidental",
+        ZMW{
+            "ZMW",
+            "kwacha zambiano",
         }
     }
     Currencies%narrow{
@@ -48,16 +57,21 @@ es_US{
         VEF{"Bs"}
     }
     CurrencyPlurals{
-        KGS{
-            one{"som"}
+        BDT{
+            one{"taka bangladesí"}
+            other{"takas bangladesíes"}
         }
-        MYR{
-            one{"ringit"}
-            other{"ringits"}
+        BTN{
+            one{"ngultrum butanés"}
+            other{"gultrums bultaneses"}
         }
-        STN{
-            one{"dobra santotomense"}
-            other{"dobra santotomense"}
+        ETB{
+            one{"birr"}
+            other{"birres"}
+        }
+        LAK{
+            one{"kip laosiano"}
+            other{"kips laosianos"}
         }
         THB{
             one{"bat"}
@@ -67,14 +81,17 @@ es_US{
             one{"sum"}
             other{"sums"}
         }
+        VND{
+            one{"dong vietnamita"}
+            other{"dongs vietnamitas"}
+        }
         XAF{
             one{"franco CFA de África central"}
             other{"francos CFA de África central"}
         }
-        XOF{
-            one{"franco CFA de África Occidental"}
-            other{"francos CFA de África Occidental"}
+        ZMW{
+            one{"kwacha zambiano"}
+            other{"kwachas zambianos"}
         }
     }
-    Version{"2.1.43.65"}
 }

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,7 +22,7 @@ CFX_XMLNode* CFX_XMLCharData::Clone(CFX_XMLDocument* doc) {
 }
 
 void CFX_XMLCharData::Save(
-    const RetainPtr<IFX_SeekableWriteStream>& pXMLStream) {
+    const RetainPtr<IFX_RetainableWriteStream>& pXMLStream) {
   pXMLStream->WriteString("<![CDATA[");
   pXMLStream->WriteString(GetText().ToUTF8().AsStringView());
   pXMLStream->WriteString("]]>");

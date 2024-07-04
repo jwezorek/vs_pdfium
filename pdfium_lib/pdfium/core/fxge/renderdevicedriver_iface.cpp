@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,13 @@
 #include "core/fxge/renderdevicedriver_iface.h"
 
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxge/cfx_pathdata.h"
+#include "core/fxge/cfx_path.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
 
 RenderDeviceDriverIface::~RenderDeviceDriverIface() = default;
 
 bool RenderDeviceDriverIface::SetClip_PathStroke(
-    const CFX_PathData* pPathData,
+    const CFX_Path& path,
     const CFX_Matrix* pObject2Device,
     const CFX_GraphStateData* pGraphState) {
   return false;
@@ -34,13 +34,13 @@ bool RenderDeviceDriverIface::DrawCosmeticLine(const CFX_PointF& ptMoveTo,
   return false;
 }
 
-bool RenderDeviceDriverIface::GetDIBits(const RetainPtr<CFX_DIBitmap>& pBitmap,
+bool RenderDeviceDriverIface::GetDIBits(RetainPtr<CFX_DIBitmap> bitmap,
                                         int left,
-                                        int top) {
+                                        int top) const {
   return false;
 }
 
-RetainPtr<CFX_DIBitmap> RenderDeviceDriverIface::GetBackDrop() {
+RetainPtr<const CFX_DIBitmap> RenderDeviceDriverIface::GetBackDrop() const {
   return RetainPtr<CFX_DIBitmap>();
 }
 
@@ -50,8 +50,7 @@ bool RenderDeviceDriverIface::ContinueDIBits(CFX_ImageRenderer* handle,
 }
 
 bool RenderDeviceDriverIface::DrawDeviceText(
-    int nChars,
-    const TextCharPos* pCharPos,
+    pdfium::span<const TextCharPos> pCharPos,
     CFX_Font* pFont,
     const CFX_Matrix& mtObject2Device,
     float font_size,
@@ -72,18 +71,20 @@ bool RenderDeviceDriverIface::DrawShading(const CPDF_ShadingPattern* pPattern,
   return false;
 }
 
-#if defined(_SKIA_SUPPORT_)
+#if defined(PDF_USE_SKIA)
 bool RenderDeviceDriverIface::SetBitsWithMask(
-    const RetainPtr<CFX_DIBBase>& pBitmap,
-    const RetainPtr<CFX_DIBBase>& pMask,
+    RetainPtr<const CFX_DIBBase> bitmap,
+    RetainPtr<const CFX_DIBBase> mask,
     int left,
     int top,
-    int bitmap_alpha,
+    float alpha,
     BlendMode blend_type) {
   return false;
 }
-#endif
 
-#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
-void RenderDeviceDriverIface::Flush() {}
+void RenderDeviceDriverIface::SetGroupKnockout(bool group_knockout) {}
+
+bool RenderDeviceDriverIface::SyncInternalBitmaps() {
+  return true;
+}
 #endif

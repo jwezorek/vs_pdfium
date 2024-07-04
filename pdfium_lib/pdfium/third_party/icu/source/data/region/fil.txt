@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 fil{
     Countries{
         001{"Mundo"}
@@ -110,7 +111,7 @@ fil{
         EZ{"Eurozone"}
         FI{"Finland"}
         FJ{"Fiji"}
-        FK{"Falkland Islands (Islas Malvinas)"}
+        FK{"Falkland Islands"}
         FM{"Micronesia"}
         FO{"Faroe Islands"}
         FR{"France"}
@@ -133,7 +134,7 @@ fil{
         GU{"Guam"}
         GW{"Guinea-Bissau"}
         GY{"Guyana"}
-        HK{"Hong Kong"}
+        HK{"Hong Kong SAR China"}
         HM{"Heard & McDonald Islands"}
         HN{"Honduras"}
         HR{"Croatia"}
@@ -145,7 +146,7 @@ fil{
         IL{"Israel"}
         IM{"Isle of Man"}
         IN{"India"}
-        IO{"British Indian Ocean Territory"}
+        IO{"Teritoryo sa Karagatan ng British Indian"}
         IQ{"Iraq"}
         IR{"Iran"}
         IS{"Iceland"}
@@ -183,11 +184,11 @@ fil{
         MF{"Saint Martin"}
         MG{"Madagascar"}
         MH{"Marshall Islands"}
-        MK{"Macedonia (FYROM)"}
+        MK{"North Macedonia"}
         ML{"Mali"}
         MM{"Myanmar (Burma)"}
         MN{"Mongolia"}
-        MO{"Macau"}
+        MO{"Macau SAR China"}
         MP{"Northern Mariana Islands"}
         MQ{"Martinique"}
         MR{"Mauritania"}
@@ -222,7 +223,7 @@ fil{
         PM{"St. Pierre & Miquelon"}
         PN{"Pitcairn Islands"}
         PR{"Puerto Rico"}
-        PS{"Palestine"}
+        PS{"Palestinian Territories"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -266,7 +267,7 @@ fil{
         TM{"Turkmenistan"}
         TN{"Tunisia"}
         TO{"Tonga"}
-        TR{"Turkey"}
+        TR{"Türkiye"}
         TT{"Trinidad & Tobago"}
         TV{"Tuvalu"}
         TW{"Taiwan"}
@@ -287,6 +288,8 @@ fil{
         VU{"Vanuatu"}
         WF{"Wallis & Futuna"}
         WS{"Samoa"}
+        XA{"Mga Pseudo-Accent"}
+        XB{"Pseudo-Bidi"}
         XK{"Kosovo"}
         YE{"Yemen"}
         YT{"Mayotte"}
@@ -295,8 +298,14 @@ fil{
         ZW{"Zimbabwe"}
         ZZ{"Hindi Kilalang Rehiyon"}
     }
+    Countries%chagos{
+        IO{"Chagos Archipelago"}
+    }
     Countries%short{
         GB{"U.K."}
+        HK{"Hong Kong"}
+        MO{"Macau"}
+        PS{"Palestine"}
         UN{"UN"}
         US{"U.S."}
     }
@@ -305,7 +314,8 @@ fil{
         CG{"Congo (Republika)"}
         CI{"Ivory Coast"}
         CZ{"Czech Republic"}
+        FK{"Falkland Islands (Islas Malvinas)"}
+        NZ{"Aotearoa New Zealand"}
         TL{"East Timor"}
     }
-    Version{"2.1.44.91"}
 }

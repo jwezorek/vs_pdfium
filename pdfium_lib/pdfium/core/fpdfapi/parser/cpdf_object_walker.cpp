@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,19 +9,20 @@
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_stream.h"
-#include "third_party/base/check.h"
+#include "core/fxcrt/check.h"
 
 namespace {
 
 class StreamIterator final : public CPDF_ObjectWalker::SubobjectIterator {
  public:
-  explicit StreamIterator(const CPDF_Stream* stream)
-      : SubobjectIterator(stream) {}
-  ~StreamIterator() override {}
+  explicit StreamIterator(RetainPtr<const CPDF_Stream> stream)
+      : SubobjectIterator(std::move(stream)) {}
+
+  ~StreamIterator() override = default;
 
   bool IsFinished() const override { return IsStarted() && is_finished_; }
 
-  const CPDF_Object* IncrementImpl() override {
+  RetainPtr<const CPDF_Object> IncrementImpl() override {
     DCHECK(IsStarted());
     DCHECK(!IsFinished());
     is_finished_ = true;
@@ -36,18 +37,19 @@ class StreamIterator final : public CPDF_ObjectWalker::SubobjectIterator {
 
 class DictionaryIterator final : public CPDF_ObjectWalker::SubobjectIterator {
  public:
-  explicit DictionaryIterator(const CPDF_Dictionary* dictionary)
+  explicit DictionaryIterator(RetainPtr<const CPDF_Dictionary> dictionary)
       : SubobjectIterator(dictionary), locker_(dictionary) {}
-  ~DictionaryIterator() override {}
+
+  ~DictionaryIterator() override = default;
 
   bool IsFinished() const override {
     return IsStarted() && dict_iterator_ == locker_.end();
   }
 
-  const CPDF_Object* IncrementImpl() override {
+  RetainPtr<const CPDF_Object> IncrementImpl() override {
     DCHECK(IsStarted());
     DCHECK(!IsFinished());
-    const CPDF_Object* result = dict_iterator_->second.Get();
+    RetainPtr<const CPDF_Object> result = dict_iterator_->second;
     dict_key_ = dict_iterator_->first;
     ++dict_iterator_;
     return result;
@@ -68,19 +70,19 @@ class DictionaryIterator final : public CPDF_ObjectWalker::SubobjectIterator {
 
 class ArrayIterator final : public CPDF_ObjectWalker::SubobjectIterator {
  public:
-  explicit ArrayIterator(const CPDF_Array* array)
+  explicit ArrayIterator(RetainPtr<const CPDF_Array> array)
       : SubobjectIterator(array), locker_(array) {}
 
-  ~ArrayIterator() override {}
+  ~ArrayIterator() override = default;
 
   bool IsFinished() const override {
     return IsStarted() && arr_iterator_ == locker_.end();
   }
 
-  const CPDF_Object* IncrementImpl() override {
+  RetainPtr<const CPDF_Object> IncrementImpl() override {
     DCHECK(IsStarted());
     DCHECK(!IsFinished());
-    const CPDF_Object* result = arr_iterator_->Get();
+    RetainPtr<const CPDF_Object> result = *arr_iterator_;
     ++arr_iterator_;
     return result;
   }
@@ -96,13 +98,13 @@ class ArrayIterator final : public CPDF_ObjectWalker::SubobjectIterator {
 
 CPDF_ObjectWalker::SubobjectIterator::~SubobjectIterator() = default;
 
-const CPDF_Object* CPDF_ObjectWalker::SubobjectIterator::Increment() {
+RetainPtr<const CPDF_Object> CPDF_ObjectWalker::SubobjectIterator::Increment() {
   if (!IsStarted()) {
     Start();
     is_started_ = true;
   }
   while (!IsFinished()) {
-    const CPDF_Object* result = IncrementImpl();
+    RetainPtr<const CPDF_Object> result = IncrementImpl();
     if (result)
       return result;
   }
@@ -110,46 +112,44 @@ const CPDF_Object* CPDF_ObjectWalker::SubobjectIterator::Increment() {
 }
 
 CPDF_ObjectWalker::SubobjectIterator::SubobjectIterator(
-    const CPDF_Object* object)
-    : object_(object) {
+    RetainPtr<const CPDF_Object> object)
+    : object_(std::move(object)) {
   DCHECK(object_);
 }
 
 // static
 std::unique_ptr<CPDF_ObjectWalker::SubobjectIterator>
-CPDF_ObjectWalker::MakeIterator(const CPDF_Object* object) {
+CPDF_ObjectWalker::MakeIterator(RetainPtr<const CPDF_Object> object) {
   if (object->IsStream())
-    return std::make_unique<StreamIterator>(object->AsStream());
+    return std::make_unique<StreamIterator>(ToStream(object));
   if (object->IsDictionary())
-    return std::make_unique<DictionaryIterator>(object->AsDictionary());
+    return std::make_unique<DictionaryIterator>(ToDictionary(object));
   if (object->IsArray())
-    return std::make_unique<ArrayIterator>(object->AsArray());
+    return std::make_unique<ArrayIterator>(ToArray(object));
   return nullptr;
 }
 
-CPDF_ObjectWalker::CPDF_ObjectWalker(const CPDF_Object* root)
-    : next_object_(root) {}
+CPDF_ObjectWalker::CPDF_ObjectWalker(RetainPtr<const CPDF_Object> root)
+    : next_object_(std::move(root)) {}
 
 CPDF_ObjectWalker::~CPDF_ObjectWalker() = default;
 
-const CPDF_Object* CPDF_ObjectWalker::GetNext() {
+RetainPtr<const CPDF_Object> CPDF_ObjectWalker::GetNext() {
   while (!stack_.empty() || next_object_) {
     if (next_object_) {
-      auto new_iterator = MakeIterator(next_object_.Get());
+      auto new_iterator = MakeIterator(next_object_);
       if (new_iterator) {
         // Schedule walk within composite objects.
         stack_.push(std::move(new_iterator));
       }
-      auto* result = next_object_.Get();
-      next_object_ = nullptr;
-      return result;
+      return std::move(next_object_);  // next_object_ is NULL after move.
     }
 
     SubobjectIterator* it = stack_.top().get();
     if (it->IsFinished()) {
       stack_.pop();
     } else {
-      next_object_.Reset(it->Increment());
+      next_object_ = it->Increment();
       parent_object_.Reset(it->object());
       dict_key_ = parent_object_->IsDictionary()
                       ? static_cast<DictionaryIterator*>(it)->dict_key()
@@ -166,4 +166,13 @@ void CPDF_ObjectWalker::SkipWalkIntoCurrentObject() {
   if (stack_.empty() || stack_.top()->IsStarted())
     return;
   stack_.pop();
+}
+
+CPDF_NonConstObjectWalker::CPDF_NonConstObjectWalker(
+    RetainPtr<CPDF_Object> root)
+    : CPDF_ObjectWalker(std::move(root)) {}
+
+RetainPtr<CPDF_Object> CPDF_NonConstObjectWalker::GetNext() {
+  return pdfium::WrapRetain(
+      const_cast<CPDF_Object*>(CPDF_ObjectWalker::GetNext().Get()));
 }

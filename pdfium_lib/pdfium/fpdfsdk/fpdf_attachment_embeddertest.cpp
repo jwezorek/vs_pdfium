@@ -1,8 +1,7 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,6 +9,7 @@
 #include "public/fpdfview.h"
 #include "testing/embedder_test.h"
 #include "testing/fx_string_testhelpers.h"
+#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/utils/hash.h"
 
 static constexpr char kDateKey[] = "CreationDate";
@@ -43,12 +43,11 @@ TEST_F(FPDFAttachmentEmbedderTest, ExtractAttachments) {
 
   // Check that the content of the first attachment is correct.
   ASSERT_TRUE(FPDFAttachment_GetFile(attachment, nullptr, 0, &length_bytes));
-  std::vector<char> content_buf(length_bytes);
+  std::vector<uint8_t> content_buf(length_bytes);
   unsigned long actual_length_bytes;
   ASSERT_TRUE(FPDFAttachment_GetFile(attachment, content_buf.data(),
                                      length_bytes, &actual_length_bytes));
-  ASSERT_EQ(4u, actual_length_bytes);
-  EXPECT_EQ(std::string("test"), std::string(content_buf.data(), 4));
+  ASSERT_THAT(content_buf, testing::ElementsAre('t', 'e', 's', 't'));
 
   // Check that a non-existent key does not exist.
   EXPECT_FALSE(FPDFAttachment_HasKey(attachment, "none"));
@@ -84,8 +83,7 @@ TEST_F(FPDFAttachmentEmbedderTest, ExtractAttachments) {
   // Check that the calculated checksum of the file data matches expectation.
   const char kCheckSum[] = "72afcddedf554dda63c0c88e06f1ce18";
   const wchar_t kCheckSumW[] = L"<72AFCDDEDF554DDA63C0C88E06F1CE18>";
-  const std::string generated_checksum = GenerateMD5Base16(
-      reinterpret_cast<uint8_t*>(content_buf.data()), length_bytes);
+  const std::string generated_checksum = GenerateMD5Base16(content_buf);
   EXPECT_EQ(kCheckSum, generated_checksum);
 
   // Check that the stored checksum matches expectation.
@@ -367,4 +365,41 @@ TEST_F(FPDFAttachmentEmbedderTest, DeleteAttachment) {
   buf = GetFPDFWideStringBuffer(length_bytes);
   EXPECT_EQ(26u, FPDFAttachment_GetName(attachment, buf.data(), length_bytes));
   EXPECT_EQ(L"attached.pdf", GetPlatformWString(buf.data()));
+}
+
+TEST_F(FPDFAttachmentEmbedderTest, GetStringValueForChecksumNotString) {
+  ASSERT_TRUE(OpenDocument("embedded_attachments_invalid_types.pdf"));
+  EXPECT_EQ(2, FPDFDoc_GetAttachmentCount(document()));
+
+  FPDF_ATTACHMENT attachment = FPDFDoc_GetAttachment(document(), 0);
+  ASSERT_TRUE(attachment);
+
+  // The checksum key is a name, which violates the spec. This will still return
+  // the value, but should not crash.
+  constexpr unsigned long kExpectedLength = 8u;
+  ASSERT_EQ(kExpectedLength, FPDFAttachment_GetStringValue(
+                                 attachment, kChecksumKey, nullptr, 0));
+  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(kExpectedLength);
+  EXPECT_EQ(kExpectedLength,
+            FPDFAttachment_GetStringValue(attachment, kChecksumKey, buf.data(),
+                                          kExpectedLength));
+  EXPECT_EQ(L"Bad", GetPlatformWString(buf.data()));
+}
+
+TEST_F(FPDFAttachmentEmbedderTest, GetStringValueForNotString) {
+  ASSERT_TRUE(OpenDocument("embedded_attachments_invalid_types.pdf"));
+  EXPECT_EQ(2, FPDFDoc_GetAttachmentCount(document()));
+
+  FPDF_ATTACHMENT attachment = FPDFDoc_GetAttachment(document(), 1);
+  ASSERT_TRUE(attachment);
+
+  // The checksum key is a stream, while the API requires a string or name.
+  constexpr unsigned long kExpectedLength = 2u;
+  ASSERT_EQ(kExpectedLength, FPDFAttachment_GetStringValue(
+                                 attachment, kChecksumKey, nullptr, 0));
+  std::vector<FPDF_WCHAR> buf = GetFPDFWideStringBuffer(kExpectedLength);
+  EXPECT_EQ(kExpectedLength,
+            FPDFAttachment_GetStringValue(attachment, kChecksumKey, buf.data(),
+                                          kExpectedLength));
+  EXPECT_EQ(L"", GetPlatformWString(buf.data()));
 }

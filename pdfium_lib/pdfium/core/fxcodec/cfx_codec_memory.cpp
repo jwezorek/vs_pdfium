@@ -1,10 +1,13 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fxcodec/cfx_codec_memory.h"
 
 #include <algorithm>
+
+#include "core/fxcrt/span_util.h"
+#include "core/fxcrt/stl_util.h"
 
 CFX_CodecMemory::CFX_CodecMemory(size_t buffer_size)
     : buffer_(FX_Alloc(uint8_t, buffer_size)), size_(buffer_size) {}
@@ -19,12 +22,12 @@ bool CFX_CodecMemory::Seek(size_t pos) {
   return true;
 }
 
-size_t CFX_CodecMemory::ReadBlock(void* buffer, size_t size) {
-  if (!buffer || !size || IsEOF())
+size_t CFX_CodecMemory::ReadBlock(pdfium::span<uint8_t> buffer) {
+  if (buffer.empty() || IsEOF())
     return 0;
 
-  size_t bytes_to_read = std::min(size, size_ - pos_);
-  memcpy(buffer, buffer_.get() + pos_, bytes_to_read);
+  size_t bytes_to_read = std::min(buffer.size(), size_ - pos_);
+  fxcrt::Copy(GetBufferSpan().subspan(pos_, bytes_to_read), buffer);
   pos_ += bytes_to_read;
   return bytes_to_read;
 }
@@ -42,6 +45,5 @@ bool CFX_CodecMemory::TryResize(size_t new_buffer_size) {
 }
 
 void CFX_CodecMemory::Consume(size_t consumed) {
-  size_t unconsumed = size_ - consumed;
-  memmove(buffer_.get(), buffer_.get() + consumed, unconsumed);
+  fxcrt::spanmove(GetBufferSpan(), GetBufferSpan().subspan(consumed));
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,12 @@
 #ifndef CORE_FXGE_ANDROID_CFX_ANDROIDFONTINFO_H_
 #define CORE_FXGE_ANDROID_CFX_ANDROIDFONTINFO_H_
 
-#include "core/fxcrt/fx_system.h"
+#include <stdint.h>
+
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxge/cfx_fontmapper.h"
 #include "core/fxge/systemfontinfo_iface.h"
-#include "third_party/base/span.h"
 
 class CFPF_SkiaFontMgr;
 
@@ -20,21 +21,21 @@ class CFX_AndroidFontInfo final : public SystemFontInfoIface {
   CFX_AndroidFontInfo();
   ~CFX_AndroidFontInfo() override;
 
-  bool Init(CFPF_SkiaFontMgr* pFontMgr);
+  bool Init(CFPF_SkiaFontMgr* pFontMgr, const char** user_paths);
 
   // SystemFontInfoIface:
   bool EnumFontList(CFX_FontMapper* pMapper) override;
   void* MapFont(int weight,
                 bool bItalic,
-                int charset,
+                FX_Charset charset,
                 int pitch_family,
-                const char* face) override;
-  void* GetFont(const char* face) override;
-  uint32_t GetFontData(void* hFont,
-                       uint32_t table,
-                       pdfium::span<uint8_t> buffer) override;
+                const ByteString& face) override;
+  void* GetFont(const ByteString& face) override;
+  size_t GetFontData(void* hFont,
+                     uint32_t table,
+                     pdfium::span<uint8_t> buffer) override;
   bool GetFaceName(void* hFont, ByteString* name) override;
-  bool GetFontCharset(void* hFont, int* charset) override;
+  bool GetFontCharset(void* hFont, FX_Charset* charset) override;
   void DeleteFont(void* hFont) override;
 
  private:

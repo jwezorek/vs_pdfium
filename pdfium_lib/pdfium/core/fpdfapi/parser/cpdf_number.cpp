@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -36,15 +36,7 @@ int CPDF_Number::GetInteger() const {
   return m_Number.GetSigned();
 }
 
-bool CPDF_Number::IsNumber() const {
-  return true;
-}
-
-CPDF_Number* CPDF_Number::AsNumber() {
-  return this;
-}
-
-const CPDF_Number* CPDF_Number::AsNumber() const {
+CPDF_Number* CPDF_Number::AsMutableNumber() {
   return this;
 }
 

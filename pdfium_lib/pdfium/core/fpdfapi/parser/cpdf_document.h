@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,9 +12,12 @@
 #include <utility>
 #include <vector>
 
+#include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_parser.h"
+#include "core/fxcrt/fx_memory.h"
 #include "core/fxcrt/observed_ptr.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_ReadValidator;
@@ -29,10 +32,8 @@ class CPDF_Document : public Observable,
   class Extension {
    public:
     virtual ~Extension() = default;
-    virtual CPDF_Document* GetPDFDoc() const = 0;
     virtual int GetPageCount() const = 0;
-    virtual void DeletePage(int page_index) = 0;
-    virtual uint32_t GetUserPermissions() const = 0;
+    virtual uint32_t DeletePage(int page_index) = 0;
     virtual bool ContainsExtensionForm() const = 0;
     virtual bool ContainsExtensionFullForm() const = 0;
     virtual bool ContainsExtensionForegroundForm() const = 0;
@@ -51,12 +52,15 @@ class CPDF_Document : public Observable,
 
     virtual void ClearStockFont() = 0;
     virtual RetainPtr<CPDF_StreamAcc> GetFontFileStreamAcc(
-        const CPDF_Stream* pFontStream) = 0;
+        RetainPtr<const CPDF_Stream> pFontStream) = 0;
     virtual void MaybePurgeFontFileStreamAcc(
-        const CPDF_Stream* pFontStream) = 0;
+        RetainPtr<CPDF_StreamAcc>&& pStreamAcc) = 0;
+    virtual void MaybePurgeImage(uint32_t objnum) = 0;
 
     void SetDocument(CPDF_Document* pDoc) { m_pDoc = pDoc; }
-    CPDF_Document* GetDocument() const { return m_pDoc.Get(); }
+
+   protected:
+    CPDF_Document* GetDocument() const { return m_pDoc; }
 
    private:
     UnownedPtr<CPDF_Document> m_pDoc;
@@ -68,7 +72,9 @@ class CPDF_Document : public Observable,
     virtual ~RenderDataIface();
 
     void SetDocument(CPDF_Document* pDoc) { m_pDoc = pDoc; }
-    CPDF_Document* GetDocument() const { return m_pDoc.Get(); }
+
+   protected:
+    CPDF_Document* GetDocument() const { return m_pDoc; }
 
    private:
     UnownedPtr<CPDF_Document> m_pDoc;
@@ -88,16 +94,33 @@ class CPDF_Document : public Observable,
   }
 
   CPDF_Parser* GetParser() const { return m_pParser.get(); }
-  CPDF_Dictionary* GetRoot() const { return m_pRootDict.Get(); }
-  CPDF_Dictionary* GetInfo();
-  const CPDF_Array* GetFileIdentifier() const;
+  const CPDF_Dictionary* GetRoot() const { return m_pRootDict.Get(); }
+  RetainPtr<CPDF_Dictionary> GetMutableRoot() { return m_pRootDict; }
+  RetainPtr<CPDF_Dictionary> GetInfo();
+  RetainPtr<const CPDF_Array> GetFileIdentifier() const;
 
-  void DeletePage(int iPage);
+  // Returns the object number for the deleted page, or 0 on failure.
+  uint32_t DeletePage(int iPage);
+  // `page_obj_num` is the return value from DeletePage(). If it is non-zero,
+  // and it is no longer used in the page tree, then replace the page object
+  // with a null object.
+  void SetPageToNullObject(uint32_t page_obj_num);
+  bool MovePages(pdfium::span<const int> page_indices, int dest_page_index);
+
   int GetPageCount() const;
   bool IsPageLoaded(int iPage) const;
-  CPDF_Dictionary* GetPageDictionary(int iPage);
+  RetainPtr<const CPDF_Dictionary> GetPageDictionary(int iPage);
+  RetainPtr<CPDF_Dictionary> GetMutablePageDictionary(int iPage);
   int GetPageIndex(uint32_t objnum);
-  uint32_t GetUserPermissions() const;
+  // When `get_owner_perms` is true, returns full permissions if unlocked by
+  // owner.
+  uint32_t GetUserPermissions(bool get_owner_perms) const;
+
+  // PageDataIface wrappers, try to avoid explicit getter calls.
+  RetainPtr<CPDF_StreamAcc> GetFontFileStreamAcc(
+      RetainPtr<const CPDF_Stream> pFontStream);
+  void MaybePurgeFontFileStreamAcc(RetainPtr<CPDF_StreamAcc>&& pStreamAcc);
+  void MaybePurgeImage(uint32_t objnum);
 
   // Returns a valid pointer, unless it is called during destruction.
   PageDataIface* GetPageData() const { return m_pDocPage.get(); }
@@ -111,23 +134,29 @@ class CPDF_Document : public Observable,
     m_pLinksContext = std::move(pContext);
   }
 
+  // Behaves like NewIndirect<CPDF_Stream>(dict), but keeps track of the object
+  // number assigned to the newly created stream.
+  RetainPtr<CPDF_Stream> CreateModifiedAPStream(
+      RetainPtr<CPDF_Dictionary> dict);
+
+  // Returns whether CreateModifiedAPStream() created `stream`.
+  bool IsModifiedAPStream(const CPDF_Stream* stream) const;
+
   // CPDF_Parser::ParsedObjectsHolder:
   bool TryInit() override;
   RetainPtr<CPDF_Object> ParseIndirectObject(uint32_t objnum) override;
 
-  CPDF_Parser::Error LoadDoc(
-      const RetainPtr<IFX_SeekableReadStream>& pFileAccess,
-      const char* password);
-  CPDF_Parser::Error LoadLinearizedDoc(
-      const RetainPtr<CPDF_ReadValidator>& validator,
-      const char* password);
+  CPDF_Parser::Error LoadDoc(RetainPtr<IFX_SeekableReadStream> pFileAccess,
+                             const ByteString& password);
+  CPDF_Parser::Error LoadLinearizedDoc(RetainPtr<CPDF_ReadValidator> validator,
+                                       const ByteString& password);
   bool has_valid_cross_reference_table() const {
     return m_bHasValidCrossReferenceTable;
   }
 
   void LoadPages();
   void CreateNewDoc();
-  CPDF_Dictionary* CreateNewPage(int iPage);
+  RetainPtr<CPDF_Dictionary> CreateNewPage(int iPage);
 
   void IncrementParsedPageCount() { ++m_ParsedPageCount; }
   uint32_t GetParsedPageCountForTesting() { return m_ParsedPageCount; }
@@ -135,12 +164,14 @@ class CPDF_Document : public Observable,
  protected:
   void SetParser(std::unique_ptr<CPDF_Parser> pParser);
 
-  void SetRootForTesting(CPDF_Dictionary* root);
+  void SetRootForTesting(RetainPtr<CPDF_Dictionary> root);
   void ResizePageListForTesting(size_t size);
 
  private:
   class StockFontClearer {
    public:
+    FX_STACK_ALLOCATED();
+
     explicit StockFontClearer(CPDF_Document::PageDataIface* pPageData);
     ~StockFontClearer();
 
@@ -150,18 +181,22 @@ class CPDF_Document : public Observable,
 
   // Retrieve page count information by getting count value from the tree nodes
   int RetrievePageCount();
+
   // When this method is called, m_pTreeTraversal[level] exists.
-  CPDF_Dictionary* TraversePDFPages(int iPage, int* nPagesToGo, size_t level);
+  RetainPtr<CPDF_Dictionary> TraversePDFPages(int iPage,
+                                              int* nPagesToGo,
+                                              size_t level);
 
-  const CPDF_Dictionary* GetPagesDict() const;
-  CPDF_Dictionary* GetPagesDict();
+  RetainPtr<const CPDF_Dictionary> GetPagesDict() const;
+  RetainPtr<CPDF_Dictionary> GetMutablePagesDict();
 
-  bool InsertDeletePDFPage(CPDF_Dictionary* pPages,
-                           int nPagesToGo,
-                           CPDF_Dictionary* pPageDict,
-                           bool bInsert,
-                           std::set<CPDF_Dictionary*>* pVisited);
-  bool InsertNewPage(int iPage, CPDF_Dictionary* pPageDict);
+  bool InsertDeletePDFPage(RetainPtr<CPDF_Dictionary> pages_dict,
+                           int pages_to_go,
+                           RetainPtr<CPDF_Dictionary> page_dict,
+                           bool is_insert,
+                           std::set<RetainPtr<CPDF_Dictionary>>* visited);
+
+  bool InsertNewPage(int iPage, RetainPtr<CPDF_Dictionary> pPageDict);
   void ResetTraversal();
   CPDF_Parser::Error HandleLoadResult(CPDF_Parser::Error error);
 
@@ -173,7 +208,7 @@ class CPDF_Document : public Observable,
   // vector corresponds to the level being described. The pair contains a
   // pointer to the dictionary being processed at the level, and an index of the
   // of the child being processed within the dictionary's /Kids array.
-  std::vector<std::pair<CPDF_Dictionary*, size_t>> m_pTreeTraversal;
+  std::vector<std::pair<RetainPtr<CPDF_Dictionary>, size_t>> m_pTreeTraversal;
 
   // True if the CPDF_Parser succeeded without having to rebuild the cross
   // reference table.
@@ -184,10 +219,12 @@ class CPDF_Document : public Observable,
   int m_iNextPageToTraverse = 0;
   uint32_t m_ParsedPageCount = 0;
 
-  std::unique_ptr<RenderDataIface> m_pDocRender;
-  std::unique_ptr<PageDataIface> m_pDocPage;  // Must be after |m_pDocRender|.
+  std::unique_ptr<RenderDataIface> const m_pDocRender;
+  // Must be after `m_pDocRender`.
+  std::unique_ptr<PageDataIface> const m_pDocPage;
   std::unique_ptr<JBig2_DocumentContext> m_pCodecContext;
   std::unique_ptr<LinkListIface> m_pLinksContext;
+  std::set<uint32_t> m_ModifiedAPStreamIDs;
   std::vector<uint32_t> m_PageList;  // Page number to page's dict objnum.
 
   // Must be second to last.

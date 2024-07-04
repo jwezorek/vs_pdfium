@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,12 @@
 #ifndef FXBARCODE_CBC_PDF417I_H_
 #define FXBARCODE_CBC_PDF417I_H_
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/widestring.h"
 #include "fxbarcode/cbc_codebase.h"
 
 class CBC_PDF417Writer;
+class CFX_Matrix;
+class CFX_RenderDevice;
 
 class CBC_PDF417I final : public CBC_CodeBase {
  public:
@@ -21,7 +22,7 @@ class CBC_PDF417I final : public CBC_CodeBase {
   // CBC_CodeBase:
   bool Encode(WideStringView contents) override;
   bool RenderDevice(CFX_RenderDevice* device,
-                    const CFX_Matrix* matrix) override;
+                    const CFX_Matrix& matrix) override;
   BC_TYPE GetType() override;
 
  private:

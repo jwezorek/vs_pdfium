@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,7 +12,6 @@
 #include "core/fxcrt/unowned_ptr.h"
 
 class CBC_QRCoderErrorCorrectionLevel;
-class CBC_QRCoderMode;
 class CBC_CommonByteMatrix;
 
 class CBC_QRCoder final {
@@ -31,7 +30,7 @@ class CBC_QRCoder final {
   int32_t GetNumTotalBytes() const;
   int32_t GetNumDataBytes() const;
   int32_t GetNumRSBlocks() const;
-  const CBC_CommonByteMatrix* GetMatrix() const;
+  std::unique_ptr<CBC_CommonByteMatrix> TakeMatrix();
 
   bool IsValid() const;
 

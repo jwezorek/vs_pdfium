@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,53 +7,53 @@
 #include "core/fpdfdoc/cpdf_dest.h"
 
 #include <algorithm>
+#include <iterator>
+#include <utility>
 
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_name.h"
 #include "core/fpdfapi/parser/cpdf_number.h"
 #include "core/fpdfdoc/cpdf_nametree.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/stl_util.h"
 
 namespace {
 
 // These arrays are indexed by the PDFDEST_VIEW_* constants.
 
-// Last element is a sentinel.
-const char* const g_sZoomModes[] = {"Unknown", "XYZ",  "Fit",  "FitH",
-                                    "FitV",    "FitR", "FitB", "FitBH",
-                                    "FitBV",   nullptr};
+constexpr auto kZoomModes =
+    fxcrt::ToArray<const char*>({"Unknown", "XYZ", "Fit", "FitH", "FitV",
+                                 "FitR", "FitB", "FitBH", "FitBV"});
 
-const uint8_t g_sZoomModeMaxParamCount[] = {0, 3, 0, 1, 1, 4, 0, 1, 1, 0};
-
-static_assert(pdfium::size(g_sZoomModes) ==
-                  pdfium::size(g_sZoomModeMaxParamCount),
-              "Zoom mode count Mismatch");
+constexpr auto kZoomModeMaxParamCount =
+    fxcrt::ToArray<const uint8_t>({0, 3, 0, 1, 1, 4, 0, 1, 1});
 
 }  // namespace
 
-CPDF_Dest::CPDF_Dest(const CPDF_Array* pArray) : m_pArray(pArray) {}
+CPDF_Dest::CPDF_Dest(RetainPtr<const CPDF_Array> pArray)
+    : m_pArray(std::move(pArray)) {}
 
 CPDF_Dest::CPDF_Dest(const CPDF_Dest& that) = default;
 
 CPDF_Dest::~CPDF_Dest() = default;
 
 // static
-CPDF_Dest CPDF_Dest::Create(CPDF_Document* pDoc, const CPDF_Object* pDest) {
+CPDF_Dest CPDF_Dest::Create(CPDF_Document* pDoc,
+                            RetainPtr<const CPDF_Object> pDest) {
   if (!pDest)
     return CPDF_Dest(nullptr);
 
   if (pDest->IsString() || pDest->IsName())
     return CPDF_Dest(CPDF_NameTree::LookupNamedDest(pDoc, pDest->GetString()));
 
-  return CPDF_Dest(pDest->AsArray());
+  return CPDF_Dest(ToArray(pDest));
 }
 
 int CPDF_Dest::GetDestPageIndex(CPDF_Document* pDoc) const {
   if (!m_pArray)
     return -1;
 
-  const CPDF_Object* pPage = m_pArray->GetDirectObjectAt(0);
+  RetainPtr<const CPDF_Object> pPage = m_pArray->GetDirectObjectAt(0);
   if (!pPage)
     return -1;
 
@@ -66,20 +66,31 @@ int CPDF_Dest::GetDestPageIndex(CPDF_Document* pDoc) const {
   return pDoc->GetPageIndex(pPage->GetObjNum());
 }
 
-int CPDF_Dest::GetZoomMode() const {
-  if (!m_pArray)
-    return 0;
-
-  const CPDF_Object* pArray = m_pArray->GetDirectObjectAt(1);
-  if (!pArray)
-    return 0;
-
-  ByteString mode = pArray->GetString();
-  for (int i = 1; g_sZoomModes[i]; ++i) {
-    if (mode == g_sZoomModes[i])
-      return i;
+std::vector<float> CPDF_Dest::GetScrollPositionArray() const {
+  std::vector<float> result;
+  if (m_pArray) {
+    // Skip over index 0 which contains destination page details, and index 1
+    // which contains a parameter that describes the rest of the array.
+    for (size_t i = 2; i < m_pArray->size(); i++)
+      result.push_back(m_pArray->GetFloatAt(i));
   }
+  return result;
+}
 
+int CPDF_Dest::GetZoomMode() const {
+  if (!m_pArray) {
+    return 0;
+  }
+  RetainPtr<const CPDF_Object> pArray = m_pArray->GetDirectObjectAt(1);
+  if (!pArray) {
+    return 0;
+  }
+  ByteString mode = pArray->GetString();
+  for (size_t i = 1; i < std::size(kZoomModes); ++i) {
+    if (mode == kZoomModes[i]) {
+      return static_cast<int>(i);
+    }
+  }
   return 0;
 }
 
@@ -99,13 +110,14 @@ bool CPDF_Dest::GetXYZ(bool* pHasX,
   if (m_pArray->size() < 5)
     return false;
 
-  const CPDF_Name* xyz = ToName(m_pArray->GetDirectObjectAt(1));
+  RetainPtr<const CPDF_Name> xyz = ToName(m_pArray->GetDirectObjectAt(1));
   if (!xyz || xyz->GetString() != "XYZ")
     return false;
 
-  const CPDF_Number* numX = ToNumber(m_pArray->GetDirectObjectAt(2));
-  const CPDF_Number* numY = ToNumber(m_pArray->GetDirectObjectAt(3));
-  const CPDF_Number* numZoom = ToNumber(m_pArray->GetDirectObjectAt(4));
+  RetainPtr<const CPDF_Number> numX = ToNumber(m_pArray->GetDirectObjectAt(2));
+  RetainPtr<const CPDF_Number> numY = ToNumber(m_pArray->GetDirectObjectAt(3));
+  RetainPtr<const CPDF_Number> numZoom =
+      ToNumber(m_pArray->GetDirectObjectAt(4));
 
   // If the value is a CPDF_Null then ToNumber will return nullptr.
   *pHasX = !!numX;
@@ -129,15 +141,15 @@ bool CPDF_Dest::GetXYZ(bool* pHasX,
   return true;
 }
 
-unsigned long CPDF_Dest::GetNumParams() const {
+size_t CPDF_Dest::GetNumParams() const {
   if (!m_pArray || m_pArray->size() < 2)
     return 0;
 
-  unsigned long maxParamsForFitType = g_sZoomModeMaxParamCount[GetZoomMode()];
-  unsigned long numParamsInArray = m_pArray->size() - 2;
+  size_t maxParamsForFitType = kZoomModeMaxParamCount[GetZoomMode()];
+  size_t numParamsInArray = m_pArray->size() - 2;
   return std::min(maxParamsForFitType, numParamsInArray);
 }
 
-float CPDF_Dest::GetParam(int index) const {
-  return m_pArray ? m_pArray->GetNumberAt(2 + index) : 0;
+float CPDF_Dest::GetParam(size_t index) const {
+  return m_pArray ? m_pArray->GetFloatAt(2 + index) : 0;
 }

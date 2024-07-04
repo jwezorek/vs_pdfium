@@ -1,36 +1,59 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fxcrt/bytestring.h"
 
+#include <limits.h>
+
 #include <algorithm>
+#include <functional>
 #include <iterator>
+#include <set>
 #include <vector>
 
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/containers/contains.h"
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/span.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/span.h"
-#include "third_party/base/stl_util.h"
 
 namespace fxcrt {
 
 TEST(ByteString, ElementAccess) {
+  const ByteString empty;
+  pdfium::span<const char> empty_span = empty.span();
+  pdfium::span<const char> empty_span_with_terminator =
+      empty.span_with_terminator();
+  EXPECT_EQ(0u, empty_span.size());
+  ASSERT_EQ(1u, empty_span_with_terminator.size());
+  EXPECT_EQ('\0', empty_span_with_terminator[0]);
+
   const ByteString abc("abc");
   EXPECT_EQ('a', abc[0]);
   EXPECT_EQ('b', abc[1]);
   EXPECT_EQ('c', abc[2]);
 #ifndef NDEBUG
-  EXPECT_DEATH({ abc[3]; }, ".*");
+  EXPECT_DEATH({ abc[3]; }, "");
 #endif
 
   pdfium::span<const char> abc_span = abc.span();
   EXPECT_EQ(3u, abc_span.size());
   EXPECT_EQ(0, memcmp(abc_span.data(), "abc", 3));
 
-  pdfium::span<const uint8_t> abc_raw_span = abc.raw_span();
+  pdfium::span<const char> abc_span_with_terminator =
+      abc.span_with_terminator();
+  EXPECT_EQ(4u, abc_span_with_terminator.size());
+  EXPECT_EQ(0, memcmp(abc_span_with_terminator.data(), "abc", 4));
+
+  pdfium::span<const uint8_t> abc_raw_span = abc.unsigned_span();
   EXPECT_EQ(3u, abc_raw_span.size());
   EXPECT_EQ(0, memcmp(abc_raw_span.data(), "abc", 3));
+
+  pdfium::span<const uint8_t> abc_raw_span_with_terminator =
+      abc.unsigned_span_with_terminator();
+  EXPECT_EQ(4u, abc_raw_span_with_terminator.size());
+  EXPECT_EQ(0, memcmp(abc_raw_span_with_terminator.data(), "abc", 4));
 
   ByteString mutable_abc = abc;
   EXPECT_EQ(abc.c_str(), mutable_abc.c_str());
@@ -55,7 +78,7 @@ TEST(ByteString, ElementAccess) {
   EXPECT_EQ("abc", abc);
   EXPECT_EQ("def", mutable_abc);
 #ifndef NDEBUG
-  EXPECT_DEATH({ mutable_abc.SetAt(3, 'g'); }, ".*");
+  EXPECT_DEATH({ mutable_abc.SetAt(3, 'g'); }, "");
   EXPECT_EQ("abc", abc);
 #endif
 }
@@ -227,6 +250,19 @@ TEST(ByteString, OperatorLT) {
   EXPECT_FALSE(def < c_abc);
   EXPECT_TRUE(abc < v_def);
   EXPECT_FALSE(def < v_abc);
+
+  EXPECT_TRUE(v_empty < a);
+  EXPECT_TRUE(v_empty < c_a);
+
+  std::set<ByteString, std::less<>> str_set;
+  bool inserted = str_set.insert(ByteString("hello")).second;
+  ASSERT_TRUE(inserted);
+  EXPECT_TRUE(pdfium::Contains(str_set, ByteString("hello")));
+  EXPECT_TRUE(pdfium::Contains(str_set, ByteStringView("hello")));
+  EXPECT_TRUE(pdfium::Contains(str_set, "hello"));
+  EXPECT_FALSE(pdfium::Contains(str_set, ByteString("goodbye")));
+  EXPECT_FALSE(pdfium::Contains(str_set, ByteStringView("goodbye")));
+  EXPECT_FALSE(pdfium::Contains(str_set, "goodbye"));
 }
 
 TEST(ByteString, OperatorEQ) {
@@ -642,7 +678,20 @@ TEST(ByteString, Delete) {
   EXPECT_EQ("", empty);
 }
 
-TEST(ByteString, Substr) {
+TEST(ByteString, OneArgSubstr) {
+  ByteString fred("FRED");
+  EXPECT_EQ("FRED", fred.Substr(0));
+  EXPECT_EQ("RED", fred.Substr(1));
+  EXPECT_EQ("ED", fred.Substr(2));
+  EXPECT_EQ("D", fred.Substr(3));
+  EXPECT_EQ("", fred.Substr(4));
+
+  ByteString empty;
+  EXPECT_EQ("", empty.Substr(0));
+  EXPECT_EQ("", empty.Substr(1));
+}
+
+TEST(ByteString, TwoArgSubstr) {
   ByteString fred("FRED");
   EXPECT_EQ("", fred.Substr(0, 0));
   EXPECT_EQ("", fred.Substr(3, 0));
@@ -705,7 +754,7 @@ TEST(ByteString, Find) {
   EXPECT_FALSE(empty_string.Find('\0').has_value());
 
   ByteString single_string("a");
-  Optional<size_t> result = single_string.Find('a');
+  std::optional<size_t> result = single_string.Find('a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find('b').has_value());
@@ -753,7 +802,7 @@ TEST(ByteString, ReverseFind) {
   EXPECT_FALSE(empty_string.ReverseFind('\0').has_value());
 
   ByteString single_string("a");
-  Optional<size_t> result = single_string.ReverseFind('a');
+  std::optional<size_t> result = single_string.ReverseFind('a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.ReverseFind('b').has_value());
@@ -788,11 +837,22 @@ TEST(ByteString, UpperLower) {
   EXPECT_EQ("", empty);
   empty.MakeUpper();
   EXPECT_EQ("", empty);
+
+  ByteString empty_with_buffer("x");
+  empty_with_buffer.Delete(0);
+
+  ByteString additional_empty_with_buffer_ref = empty_with_buffer;
+  additional_empty_with_buffer_ref.MakeLower();
+  EXPECT_EQ("", additional_empty_with_buffer_ref);
+
+  additional_empty_with_buffer_ref = empty_with_buffer;
+  additional_empty_with_buffer_ref.MakeUpper();
+  EXPECT_EQ("", additional_empty_with_buffer_ref);
 }
 
 TEST(ByteString, Trim) {
   ByteString fred("  FRED  ");
-  fred.Trim();
+  fred.TrimWhitespace();
   EXPECT_EQ("FRED", fred);
   fred.Trim('E');
   EXPECT_EQ("FRED", fred);
@@ -806,7 +866,7 @@ TEST(ByteString, Trim) {
   EXPECT_EQ("   ", blank);
   blank.Trim('E');
   EXPECT_EQ("   ", blank);
-  blank.Trim();
+  blank.TrimWhitespace();
   EXPECT_EQ("", blank);
 
   ByteString empty;
@@ -814,7 +874,7 @@ TEST(ByteString, Trim) {
   EXPECT_EQ("", empty);
   empty.Trim('E');
   EXPECT_EQ("", empty);
-  empty.Trim();
+  empty.TrimWhitespace();
   EXPECT_EQ("", empty);
 
   ByteString abc("  ABCCBA  ");
@@ -824,40 +884,40 @@ TEST(ByteString, Trim) {
   EXPECT_EQ("BCCB", abc);
 }
 
-TEST(ByteString, TrimLeft) {
+TEST(ByteString, TrimFront) {
   ByteString fred("  FRED  ");
-  fred.TrimLeft();
+  fred.TrimWhitespaceFront();
   EXPECT_EQ("FRED  ", fred);
-  fred.TrimLeft('E');
+  fred.TrimFront('E');
   EXPECT_EQ("FRED  ", fred);
-  fred.TrimLeft('F');
+  fred.TrimFront('F');
   EXPECT_EQ("RED  ", fred);
-  fred.TrimLeft("ERP");
+  fred.TrimFront("ERP");
   EXPECT_EQ("D  ", fred);
 
   ByteString blank("   ");
-  blank.TrimLeft("ERP");
+  blank.TrimFront("ERP");
   EXPECT_EQ("   ", blank);
-  blank.TrimLeft('E');
+  blank.TrimFront('E');
   EXPECT_EQ("   ", blank);
-  blank.TrimLeft();
+  blank.TrimWhitespaceFront();
   EXPECT_EQ("", blank);
 
   ByteString empty;
-  empty.TrimLeft("ERP");
+  empty.TrimFront("ERP");
   EXPECT_EQ("", empty);
-  empty.TrimLeft('E');
+  empty.TrimFront('E');
   EXPECT_EQ("", empty);
-  empty.TrimLeft();
+  empty.TrimWhitespaceFront();
   EXPECT_EQ("", empty);
 }
 
-TEST(ByteString, TrimLeftCopies) {
+TEST(ByteString, TrimFrontCopies) {
   {
     // With a single reference, no copy takes place.
     ByteString fred("  FRED  ");
     const char* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ("FRED  ", fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
@@ -866,7 +926,7 @@ TEST(ByteString, TrimLeftCopies) {
     ByteString fred("  FRED  ");
     ByteString other_fred = fred;
     const char* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ("FRED  ", fred);
     EXPECT_EQ("  FRED  ", other_fred);
     EXPECT_NE(old_buffer, fred.c_str());
@@ -876,47 +936,47 @@ TEST(ByteString, TrimLeftCopies) {
     ByteString fred("FRED");
     ByteString other_fred = fred;
     const char* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ("FRED", fred);
     EXPECT_EQ("FRED", other_fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
 }
 
-TEST(ByteString, TrimRight) {
+TEST(ByteString, TrimBack) {
   ByteString fred("  FRED  ");
-  fred.TrimRight();
+  fred.TrimWhitespaceBack();
   EXPECT_EQ("  FRED", fred);
-  fred.TrimRight('E');
+  fred.TrimBack('E');
   EXPECT_EQ("  FRED", fred);
-  fred.TrimRight('D');
+  fred.TrimBack('D');
   EXPECT_EQ("  FRE", fred);
-  fred.TrimRight("ERP");
+  fred.TrimBack("ERP");
   EXPECT_EQ("  F", fred);
 
   ByteString blank("   ");
-  blank.TrimRight("ERP");
+  blank.TrimBack("ERP");
   EXPECT_EQ("   ", blank);
-  blank.TrimRight('E');
+  blank.TrimBack('E');
   EXPECT_EQ("   ", blank);
-  blank.TrimRight();
+  blank.TrimWhitespaceBack();
   EXPECT_EQ("", blank);
 
   ByteString empty;
-  empty.TrimRight("ERP");
+  empty.TrimBack("ERP");
   EXPECT_EQ("", empty);
-  empty.TrimRight('E');
+  empty.TrimBack('E');
   EXPECT_EQ("", empty);
-  empty.TrimRight();
+  empty.TrimWhitespaceBack();
   EXPECT_EQ("", empty);
 }
 
-TEST(ByteString, TrimRightCopies) {
+TEST(ByteString, TrimBackCopies) {
   {
     // With a single reference, no copy takes place.
     ByteString fred("  FRED  ");
     const char* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ("  FRED", fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
@@ -925,7 +985,7 @@ TEST(ByteString, TrimRightCopies) {
     ByteString fred("  FRED  ");
     ByteString other_fred = fred;
     const char* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ("  FRED", fred);
     EXPECT_EQ("  FRED  ", other_fred);
     EXPECT_NE(old_buffer, fred.c_str());
@@ -935,7 +995,7 @@ TEST(ByteString, TrimRightCopies) {
     ByteString fred("FRED");
     ByteString other_fred = fred;
     const char* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ("FRED", fred);
     EXPECT_EQ("FRED", other_fred);
     EXPECT_EQ(old_buffer, fred.c_str());
@@ -1109,7 +1169,7 @@ TEST(ByteString, MultiCharReverseIterator) {
 
 TEST(ByteStringView, Null) {
   ByteStringView null_string;
-  EXPECT_FALSE(null_string.raw_str());
+  EXPECT_FALSE(null_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, null_string.GetLength());
   EXPECT_TRUE(null_string.IsEmpty());
 
@@ -1117,40 +1177,40 @@ TEST(ByteStringView, Null) {
   EXPECT_EQ(null_string, another_null_string);
 
   ByteStringView copied_null_string(null_string);
-  EXPECT_FALSE(copied_null_string.raw_str());
+  EXPECT_FALSE(copied_null_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, copied_null_string.GetLength());
   EXPECT_TRUE(copied_null_string.IsEmpty());
   EXPECT_EQ(null_string, copied_null_string);
 
   ByteStringView span_null_string = pdfium::span<const uint8_t>();
-  EXPECT_FALSE(span_null_string.raw_str());
+  EXPECT_FALSE(span_null_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, span_null_string.GetLength());
   EXPECT_TRUE(span_null_string.IsEmpty());
   EXPECT_EQ(null_string, span_null_string);
 
   ByteStringView empty_string("");  // Pointer to NUL, not NULL pointer.
-  EXPECT_TRUE(empty_string.raw_str());
+  EXPECT_TRUE(empty_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, empty_string.GetLength());
   EXPECT_TRUE(empty_string.IsEmpty());
   EXPECT_EQ(null_string, empty_string);
 
   ByteStringView assigned_null_string("initially not nullptr");
   assigned_null_string = null_string;
-  EXPECT_FALSE(assigned_null_string.raw_str());
+  EXPECT_FALSE(assigned_null_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, assigned_null_string.GetLength());
   EXPECT_TRUE(assigned_null_string.IsEmpty());
   EXPECT_EQ(null_string, assigned_null_string);
 
   ByteStringView assigned_nullptr_string("initially not nullptr");
   assigned_nullptr_string = nullptr;
-  EXPECT_FALSE(assigned_nullptr_string.raw_str());
+  EXPECT_FALSE(assigned_nullptr_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, assigned_nullptr_string.GetLength());
   EXPECT_TRUE(assigned_nullptr_string.IsEmpty());
   EXPECT_EQ(null_string, assigned_nullptr_string);
 
   ByteStringView assigned_span_null_string("initially not null span");
   assigned_span_null_string = pdfium::span<const uint8_t>();
-  EXPECT_FALSE(assigned_span_null_string.raw_str());
+  EXPECT_FALSE(assigned_span_null_string.unterminated_unsigned_str());
   EXPECT_EQ(0u, assigned_span_null_string.GetLength());
   EXPECT_TRUE(assigned_span_null_string.IsEmpty());
   EXPECT_EQ(null_string, assigned_span_null_string);
@@ -1162,10 +1222,15 @@ TEST(ByteStringView, Null) {
 TEST(ByteStringView, NotNull) {
   ByteStringView string3("abc");
   ByteStringView string6("abcdef");
-  ByteStringView alternate_string3("abcdef", 3);
-  ByteStringView span_string4(pdfium::as_bytes(pdfium::make_span("abcd", 4)));
-  ByteStringView embedded_nul_string7("abc\0def", 7);
-  ByteStringView illegal_string7("abcdef", 7);
+  // SAFETY: known fixed-length string.
+  auto alternate_string3 = UNSAFE_BUFFERS(ByteStringView("abcdef", 3));
+  const char abcd[] = "abcd";
+  ByteStringView span_string4(
+      pdfium::as_bytes(pdfium::make_span(abcd).first(4u)));
+  // SAFETY: known fixed-length string.
+  auto embedded_nul_string7 = UNSAFE_BUFFERS(ByteStringView("abc\0def", 7));
+  // SAFETY: known fixed-length string.
+  auto illegal_string7 = UNSAFE_BUFFERS(ByteStringView("abcdef", 7));
 
   EXPECT_EQ(3u, string3.GetLength());
   EXPECT_EQ(6u, string6.GetLength());
@@ -1245,7 +1310,7 @@ TEST(ByteStringView, FromVector) {
   cleared_vec.pop_back();
   ByteStringView cleared_string(cleared_vec);
   EXPECT_EQ(0u, cleared_string.GetLength());
-  EXPECT_EQ(nullptr, cleared_string.raw_str());
+  EXPECT_FALSE(cleared_string.unterminated_unsigned_str());
 }
 
 TEST(ByteStringView, GetID) {
@@ -1272,7 +1337,7 @@ TEST(ByteStringView, Find) {
   EXPECT_FALSE(empty_string.Find('\0').has_value());
 
   ByteStringView single_string("a");
-  Optional<size_t> result = single_string.Find('a');
+  std::optional<size_t> result = single_string.Find('a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find('b').has_value());
@@ -1296,7 +1361,28 @@ TEST(ByteStringView, Find) {
   EXPECT_EQ(2u, result.value());
 }
 
-TEST(ByteStringView, Substr) {
+TEST(ByteStringView, OneArgSubstr) {
+  ByteStringView null_string;
+  EXPECT_EQ(null_string, null_string.Substr(0));
+  EXPECT_EQ(null_string, null_string.Substr(1));
+
+  ByteStringView empty_string("");
+  EXPECT_EQ("", empty_string.Substr(0));
+  EXPECT_EQ("", empty_string.Substr(1));
+
+  ByteStringView single_character("a");
+  EXPECT_EQ(single_character, single_character.Substr(0));
+  EXPECT_EQ("", single_character.Substr(1));
+
+  ByteStringView longer_string("abcdef");
+  EXPECT_EQ(longer_string, longer_string.Substr(0));
+  EXPECT_EQ("", longer_string.Substr(187));
+
+  ByteStringView trailing_substring("ef");
+  EXPECT_EQ(trailing_substring, longer_string.Substr(4));
+}
+
+TEST(ByteStringView, TwoArgSubstr) {
   ByteStringView null_string;
   EXPECT_EQ(null_string, null_string.Substr(0, 1));
   EXPECT_EQ(null_string, null_string.Substr(1, 1));
@@ -1331,7 +1417,7 @@ TEST(ByteStringView, TrimmedRight) {
   EXPECT_EQ("FRED", fred.TrimmedRight('E'));
   EXPECT_EQ("FRE", fred.TrimmedRight('D'));
   ByteStringView fredd("FREDD");
-  EXPECT_EQ("FRE", fred.TrimmedRight('D'));
+  EXPECT_EQ("FRE", fredd.TrimmedRight('D'));
 }
 
 TEST(ByteStringView, ElementAccess) {
@@ -1341,7 +1427,7 @@ TEST(ByteStringView, ElementAccess) {
   EXPECT_EQ('b', static_cast<char>(abc[1]));
   EXPECT_EQ('c', static_cast<char>(abc[2]));
 #ifndef NDEBUG
-  EXPECT_DEATH({ abc[3]; }, ".*");
+  EXPECT_DEATH({ abc[3]; }, "");
 #endif
 }
 
@@ -1456,9 +1542,12 @@ TEST(ByteStringView, OperatorEQ) {
   EXPECT_FALSE(c_string2 == byte_string_c);
   EXPECT_FALSE(c_string3 == byte_string_c);
 
+  const char kHello[] = "hello";
   pdfium::span<const uint8_t> span5(
-      pdfium::as_bytes(pdfium::make_span("hello", 5)));
-  EXPECT_EQ(byte_string_c.raw_span(), span5);
+      pdfium::as_bytes(pdfium::make_span(kHello).first(5u)));
+  auto raw_span = byte_string_c.unsigned_span();
+  EXPECT_TRUE(
+      std::equal(raw_span.begin(), raw_span.end(), span5.begin(), span5.end()));
 }
 
 TEST(ByteStringView, OperatorNE) {
@@ -1666,19 +1755,19 @@ TEST(ByteString, Empty) {
   EXPECT_EQ(0u, empty_str.GetLength());
 
   const char* cstr = empty_str.c_str();
-  EXPECT_NE(nullptr, cstr);
+  EXPECT_TRUE(cstr);
   EXPECT_EQ(0u, strlen(cstr));
 
-  const uint8_t* rstr = empty_str.raw_str();
-  EXPECT_EQ(nullptr, rstr);
+  const uint8_t* rstr = empty_str.unsigned_str();
+  EXPECT_FALSE(rstr);
 
   pdfium::span<const char> cspan = empty_str.span();
   EXPECT_TRUE(cspan.empty());
-  EXPECT_EQ(nullptr, cspan.data());
+  EXPECT_FALSE(cspan.data());
 
-  pdfium::span<const uint8_t> rspan = empty_str.raw_span();
+  pdfium::span<const uint8_t> rspan = empty_str.unsigned_span();
   EXPECT_TRUE(rspan.empty());
-  EXPECT_EQ(nullptr, rspan.data());
+  EXPECT_FALSE(rspan.data());
 }
 
 TEST(ByteString, InitializerList) {
@@ -1797,7 +1886,7 @@ TEST(ByteString, OStreamOverload) {
   stream << "abc" << str << "ghi";
   EXPECT_EQ("abc123ghi", stream.str());
 
-  char stringWithNulls[]{'x', 'y', '\0', 'z'};
+  char stringWithNulls[] = {'x', 'y', '\0', 'z'};
 
   // Writing a ByteString with nulls and no specified length treats it as
   // a C-style null-terminated string.
@@ -1809,7 +1898,8 @@ TEST(ByteString, OStreamOverload) {
 
   // Writing a ByteString with nulls but specifying its length treats it as
   // a C++-style string.
-  str = ByteString(stringWithNulls, 4);
+  // SAFETY: required for testing, manual length calculation based on above.
+  str = UNSAFE_BUFFERS(ByteString(stringWithNulls, 4));
   EXPECT_EQ(4u, str.GetLength());
   stream.str("");
   stream << str;
@@ -1876,8 +1966,9 @@ TEST(ByteStringView, OStreamOverload) {
   // a C++-style string.
   {
     std::ostringstream stream;
-    char stringWithNulls[]{'x', 'y', '\0', 'z'};
-    ByteStringView str(stringWithNulls, 4);
+    char stringWithNulls[] = {'x', 'y', '\0', 'z'};
+    // SAFETY: known array above.
+    auto str = UNSAFE_BUFFERS(ByteStringView(stringWithNulls, 4));
     EXPECT_EQ(4u, str.GetLength());
     stream << str;
     EXPECT_EQ(4u, stream.tellp());
@@ -1910,21 +2001,21 @@ TEST(ByteString, FormatInteger) {
 }
 
 TEST(ByteString, FX_HashCode_Ascii) {
-  EXPECT_EQ(0u, FX_HashCode_GetA("", false));
-  EXPECT_EQ(65u, FX_HashCode_GetA("A", false));
-  EXPECT_EQ(97u, FX_HashCode_GetA("A", true));
-  EXPECT_EQ(31 * 65u + 66u, FX_HashCode_GetA("AB", false));
-  EXPECT_EQ(31u * 65u + 255u, FX_HashCode_GetA("A\xff", false));
-  EXPECT_EQ(31u * 97u + 255u, FX_HashCode_GetA("A\xff", true));
+  EXPECT_EQ(0u, FX_HashCode_GetA(""));
+  EXPECT_EQ(65u, FX_HashCode_GetA("A"));
+  EXPECT_EQ(97u, FX_HashCode_GetLoweredA("A"));
+  EXPECT_EQ(31 * 65u + 66u, FX_HashCode_GetA("AB"));
+  EXPECT_EQ(31u * 65u + 255u, FX_HashCode_GetA("A\xff"));
+  EXPECT_EQ(31u * 97u + 255u, FX_HashCode_GetLoweredA("A\xff"));
 }
 
 TEST(ByteString, FX_HashCode_Wide) {
-  EXPECT_EQ(0u, FX_HashCode_GetAsIfW("", false));
-  EXPECT_EQ(65u, FX_HashCode_GetAsIfW("A", false));
-  EXPECT_EQ(97u, FX_HashCode_GetAsIfW("A", true));
-  EXPECT_EQ(1313u * 65u + 66u, FX_HashCode_GetAsIfW("AB", false));
-  EXPECT_EQ(1313u * 65u + 255u, FX_HashCode_GetAsIfW("A\xff", false));
-  EXPECT_EQ(1313u * 97u + 255u, FX_HashCode_GetAsIfW("A\xff", true));
+  EXPECT_EQ(0u, FX_HashCode_GetAsIfW(""));
+  EXPECT_EQ(65u, FX_HashCode_GetAsIfW("A"));
+  EXPECT_EQ(97u, FX_HashCode_GetLoweredAsIfW("A"));
+  EXPECT_EQ(1313u * 65u + 66u, FX_HashCode_GetAsIfW("AB"));
+  EXPECT_EQ(1313u * 65u + 255u, FX_HashCode_GetAsIfW("A\xff"));
+  EXPECT_EQ(1313u * 97u + 255u, FX_HashCode_GetLoweredAsIfW("A\xff"));
 }
 
 }  // namespace fxcrt

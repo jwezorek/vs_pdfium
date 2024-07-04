@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,11 @@
 #ifndef CORE_FXCRT_WEAK_PTR_H_
 #define CORE_FXCRT_WEAK_PTR_H_
 
-#include <cstddef>
+#include <stdint.h>
+
 #include <memory>
 #include <utility>
 
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
 
 namespace fxcrt {

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -28,11 +28,11 @@ class CPDF_ImageObject final : public CPDF_PageObject {
   const CPDF_ImageObject* AsImage() const override;
 
   void CalcBoundingBox();
-  void SetImage(const RetainPtr<CPDF_Image>& pImage);
+  void SetImage(RetainPtr<CPDF_Image> pImage);
   RetainPtr<CPDF_Image> GetImage() const;
   RetainPtr<CFX_DIBitmap> GetIndependentBitmap() const;
 
-  void set_matrix(const CFX_Matrix& matrix) { m_Matrix = matrix; }
+  void SetImageMatrix(const CFX_Matrix& matrix);
   const CFX_Matrix& matrix() const { return m_Matrix; }
 
  private:

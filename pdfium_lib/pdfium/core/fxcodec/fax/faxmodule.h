@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,19 @@
 #ifndef CORE_FXCODEC_FAX_FAXMODULE_H_
 #define CORE_FXCODEC_FAX_FAXMODULE_H_
 
+#include <stdint.h>
+
 #include <memory>
 
 #include "build/build_config.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/span.h"
+
+#if BUILDFLAG(IS_WIN)
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/retain_ptr.h"
+#endif
+
+class CFX_DIBBase;
 
 namespace fxcodec {
 
@@ -32,22 +39,17 @@ class FaxModule {
       int Rows);
 
   // Return the ending bit position.
-  static int FaxG4Decode(const uint8_t* src_buf,
-                         uint32_t src_size,
+  static int FaxG4Decode(pdfium::span<const uint8_t> src_buf,
                          int starting_bitpos,
                          int width,
                          int height,
                          int pitch,
                          uint8_t* dest_buf);
 
-#if defined(OS_WIN)
-  static void FaxEncode(const uint8_t* src_buf,
-                        int width,
-                        int height,
-                        int pitch,
-                        std::unique_ptr<uint8_t, FxFreeDeleter>* dest_buf,
-                        uint32_t* dest_size);
-#endif  // defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
+  // `src` must have a BPP value of 1.
+  static DataVector<uint8_t> FaxEncode(RetainPtr<const CFX_DIBBase> src);
+#endif  // BUILDFLAG(IS_WIN)
 
   FaxModule() = delete;
   FaxModule(const FaxModule&) = delete;

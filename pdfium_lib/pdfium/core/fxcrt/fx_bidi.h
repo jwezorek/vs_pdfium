@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,15 +7,16 @@
 #ifndef CORE_FXCRT_FX_BIDI_H_
 #define CORE_FXCRT_FX_BIDI_H_
 
+#include <stdint.h>
+
 #include <vector>
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/widestring.h"
 
 // Processes characters and group them into segments based on text direction.
 class CFX_BidiChar {
  public:
-  enum Direction { NEUTRAL, LEFT, RIGHT };
+  enum class Direction { kNeutral, kLeft, kRight, kLeftWeak };
   struct Segment {
     int32_t start;        // Start position.
     int32_t count;        // Character count.
@@ -24,7 +25,7 @@ class CFX_BidiChar {
 
   CFX_BidiChar();
 
-  // Append a character and classify it as left, right, or neutral.
+  // Append a character and classify it as left, left-weak, right, or neutral.
   // Returns true if the character has a different direction than the
   // existing direction to indicate there is a segment to process.
   bool AppendChar(wchar_t wch);
@@ -64,7 +65,7 @@ class CFX_BidiString {
  private:
   const WideString& m_Str;
   std::vector<CFX_BidiChar::Segment> m_Order;
-  CFX_BidiChar::Direction m_eOverallDirection = CFX_BidiChar::LEFT;
+  CFX_BidiChar::Direction m_eOverallDirection = CFX_BidiChar::Direction::kLeft;
 };
 
 #endif  // CORE_FXCRT_FX_BIDI_H_

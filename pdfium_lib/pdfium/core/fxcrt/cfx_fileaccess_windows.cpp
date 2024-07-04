@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,24 +11,6 @@
 #include "core/fxcrt/fx_stream.h"
 #include "core/fxcrt/fx_string.h"
 
-namespace {
-
-void GetFileMode(uint32_t dwMode,
-                 uint32_t& dwAccess,
-                 uint32_t& dwShare,
-                 uint32_t& dwCreation) {
-  dwAccess = GENERIC_READ;
-  dwShare = FILE_SHARE_READ | FILE_SHARE_WRITE;
-  if (!(dwMode & FX_FILEMODE_ReadOnly)) {
-    dwAccess |= GENERIC_WRITE;
-    dwCreation = (dwMode & FX_FILEMODE_Truncate) ? CREATE_ALWAYS : OPEN_ALWAYS;
-  } else {
-    dwCreation = OPEN_EXISTING;
-  }
-}
-
-}  // namespace
-
 // static
 std::unique_ptr<FileAccessIface> FileAccessIface::Create() {
   return std::make_unique<CFX_FileAccess_Windows>();
@@ -40,29 +22,14 @@ CFX_FileAccess_Windows::~CFX_FileAccess_Windows() {
   Close();
 }
 
-bool CFX_FileAccess_Windows::Open(ByteStringView fileName, uint32_t dwMode) {
+bool CFX_FileAccess_Windows::Open(ByteStringView fileName) {
   if (m_hFile)
     return false;
 
-  uint32_t dwAccess, dwShare, dwCreation;
-  GetFileMode(dwMode, dwAccess, dwShare, dwCreation);
-  m_hFile = ::CreateFileA(fileName.unterminated_c_str(), dwAccess, dwShare,
-                          nullptr, dwCreation, FILE_ATTRIBUTE_NORMAL, nullptr);
-  if (m_hFile == INVALID_HANDLE_VALUE)
-    m_hFile = nullptr;
-
-  return !!m_hFile;
-}
-
-bool CFX_FileAccess_Windows::Open(WideStringView fileName, uint32_t dwMode) {
-  if (m_hFile)
-    return false;
-
-  uint32_t dwAccess, dwShare, dwCreation;
-  GetFileMode(dwMode, dwAccess, dwShare, dwCreation);
-  m_hFile =
-      ::CreateFileW((LPCWSTR)fileName.unterminated_c_str(), dwAccess, dwShare,
-                    nullptr, dwCreation, FILE_ATTRIBUTE_NORMAL, nullptr);
+  WideString wname = WideString::FromUTF8(fileName);
+  m_hFile = ::CreateFileW(wname.c_str(), GENERIC_READ,
+                          FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+                          OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (m_hFile == INVALID_HANDLE_VALUE)
     m_hFile = nullptr;
 
@@ -113,32 +80,31 @@ FX_FILESIZE CFX_FileAccess_Windows::SetPosition(FX_FILESIZE pos) {
   return (FX_FILESIZE)newPos.QuadPart;
 }
 
-size_t CFX_FileAccess_Windows::Read(void* pBuffer, size_t szBuffer) {
+size_t CFX_FileAccess_Windows::Read(pdfium::span<uint8_t> buffer) {
   if (!m_hFile)
     return 0;
 
   size_t szRead = 0;
-  if (!::ReadFile(m_hFile, pBuffer, (DWORD)szBuffer, (LPDWORD)&szRead,
-                  nullptr)) {
+  if (!::ReadFile(m_hFile, buffer.data(), (DWORD)buffer.size(),
+                  (LPDWORD)&szRead, nullptr)) {
     return 0;
   }
   return szRead;
 }
 
-size_t CFX_FileAccess_Windows::Write(const void* pBuffer, size_t szBuffer) {
+size_t CFX_FileAccess_Windows::Write(pdfium::span<const uint8_t> buffer) {
   if (!m_hFile)
     return 0;
 
   size_t szWrite = 0;
-  if (!::WriteFile(m_hFile, pBuffer, (DWORD)szBuffer, (LPDWORD)&szWrite,
-                   nullptr)) {
+  if (!::WriteFile(m_hFile, buffer.data(), (DWORD)buffer.size(),
+                   (LPDWORD)&szWrite, nullptr)) {
     return 0;
   }
   return szWrite;
 }
 
-size_t CFX_FileAccess_Windows::ReadPos(void* pBuffer,
-                                       size_t szBuffer,
+size_t CFX_FileAccess_Windows::ReadPos(pdfium::span<uint8_t> buffer,
                                        FX_FILESIZE pos) {
   if (!m_hFile)
     return 0;
@@ -149,11 +115,10 @@ size_t CFX_FileAccess_Windows::ReadPos(void* pBuffer,
   if (SetPosition(pos) == (FX_FILESIZE)-1)
     return 0;
 
-  return Read(pBuffer, szBuffer);
+  return Read(buffer);
 }
 
-size_t CFX_FileAccess_Windows::WritePos(const void* pBuffer,
-                                        size_t szBuffer,
+size_t CFX_FileAccess_Windows::WritePos(pdfium::span<const uint8_t> buffer,
                                         FX_FILESIZE pos) {
   if (!m_hFile) {
     return 0;
@@ -161,7 +126,7 @@ size_t CFX_FileAccess_Windows::WritePos(const void* pBuffer,
   if (SetPosition(pos) == (FX_FILESIZE)-1) {
     return 0;
   }
-  return Write(pBuffer, szBuffer);
+  return Write(buffer);
 }
 
 bool CFX_FileAccess_Windows::Flush() {

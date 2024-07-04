@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 is{
     Countries{
         001{"Heimurinn"}
@@ -14,7 +15,7 @@ is{
         017{"Mið-Afríka"}
         018{"Suðurhluti Afríku"}
         019{"Ameríka"}
-        021{"Ameríka norðan Mexikó"}
+        021{"Ameríka norðan Mexíkó"}
         029{"Karíbahafið"}
         030{"Austur-Asía"}
         034{"Suður-Asía"}
@@ -110,7 +111,7 @@ is{
         EZ{"Evrusvæðið"}
         FI{"Finnland"}
         FJ{"Fídjíeyjar"}
-        FK{"Falklandseyjar (Malvinas)"}
+        FK{"Falklandseyjar"}
         FM{"Míkrónesía"}
         FO{"Færeyjar"}
         FR{"Frakkland"}
@@ -133,7 +134,7 @@ is{
         GU{"Gvam"}
         GW{"Gínea-Bissá"}
         GY{"Gvæjana"}
-        HK{"Hong Kong"}
+        HK{"sérstjórnarsvæðið Hong Kong"}
         HM{"Heard og McDonaldseyjar"}
         HN{"Hondúras"}
         HR{"Króatía"}
@@ -180,14 +181,14 @@ is{
         MC{"Mónakó"}
         MD{"Moldóva"}
         ME{"Svartfjallaland"}
-        MF{"St. Martin"}
+        MF{"Saint-Martin"}
         MG{"Madagaskar"}
         MH{"Marshalleyjar"}
-        MK{"Makedónía (Fyrrverandi lýðveldi Júgóslavíu)"}
+        MK{"Norður-Makedónía"}
         ML{"Malí"}
         MM{"Mjanmar (Búrma)"}
         MN{"Mongólía"}
-        MO{"Makaó"}
+        MO{"sérstjórnarsvæðið Makaó"}
         MP{"Norður-Maríanaeyjar"}
         MQ{"Martiník"}
         MR{"Máritanía"}
@@ -222,7 +223,7 @@ is{
         PM{"Sankti Pierre og Miquelon"}
         PN{"Pitcairn-eyjar"}
         PR{"Púertó Ríkó"}
-        PS{"Palestína"}
+        PS{"Heimastjórnarsvæði Palestínumanna"}
         PT{"Portúgal"}
         PW{"Palá"}
         PY{"Paragvæ"}
@@ -251,7 +252,7 @@ is{
         SS{"Suður-Súdan"}
         ST{"Saó Tóme og Prinsípe"}
         SV{"El Salvador"}
-        SX{"Sankti Martin"}
+        SX{"Sint Maarten"}
         SY{"Sýrland"}
         SZ{"Svasíland"}
         TA{"Tristan da Cunha"}
@@ -260,7 +261,7 @@ is{
         TF{"Frönsku suðlægu landsvæðin"}
         TG{"Tógó"}
         TH{"Taíland"}
-        TJ{"Tadsjikistan"}
+        TJ{"Tadsíkistan"}
         TK{"Tókelá"}
         TL{"Tímor-Leste"}
         TM{"Túrkmenistan"}
@@ -287,6 +288,8 @@ is{
         VU{"Vanúatú"}
         WF{"Wallis- og Fútúnaeyjar"}
         WS{"Samóa"}
+        XA{"gervihreimur"}
+        XB{"gervistaður"}
         XK{"Kósóvó"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -295,15 +298,21 @@ is{
         ZW{"Simbabve"}
         ZZ{"Óþekkt svæði"}
     }
+    Countries%chagos{
+        IO{"Chagos-eyjaklasinn"}
+    }
     Countries%short{
-        GB{"Bretland"}
+        HK{"Hong Kong"}
+        MO{"Makaó"}
+        PS{"Palestína"}
         UN{"SÞ"}
         US{"BNA"}
     }
     Countries%variant{
         CD{"Kongó (Lýðstjórnarlýðveldið)"}
         CG{"Kongó (Lýðveldið)"}
+        FK{"Falklandseyjar (Malvinas)"}
+        NZ{"Aotearoa, Nýja-Sjáland"}
         TL{"Austur-Tímor"}
     }
-    Version{"2.1.44.91"}
 }

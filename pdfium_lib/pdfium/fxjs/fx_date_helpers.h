@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,14 +9,16 @@
 
 #include <stddef.h>
 
-#include "core/fxcrt/fx_string.h"
+#include <array>
+
+#include "core/fxcrt/widestring.h"
 
 namespace fxjs {
 
 enum class ConversionStatus { kSuccess = 0, kBadFormat, kBadDate };
 
-extern const wchar_t* const kMonths[12];
-extern const wchar_t* const kFullMonths[12];
+extern const std::array<const char*, 12> kMonths;
+extern const std::array<const char*, 12> kFullMonths;
 
 double FX_GetDateTime();
 int FX_GetYearFromTime(double dt);

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,10 +6,12 @@
 
 #include "core/fpdfapi/render/cpdf_docrenderdata.h"
 
+#include <stdint.h>
+
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "core/fpdfapi/font/cpdf_type3font.h"
 #include "core/fpdfapi/page/cpdf_dib.h"
@@ -18,6 +20,12 @@
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/render/cpdf_type3cache.h"
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/fixed_size_data_vector.h"
+
+#if BUILDFLAG(IS_WIN)
+#include "core/fxge/win32/cfx_psfonttracker.h"
+#endif
 
 namespace {
 
@@ -47,7 +55,7 @@ RetainPtr<CPDF_Type3Cache> CPDF_DocRenderData::GetCachedType3(
 }
 
 RetainPtr<CPDF_TransferFunc> CPDF_DocRenderData::GetTransferFunc(
-    const CPDF_Object* pObj) {
+    RetainPtr<const CPDF_Object> pObj) {
   if (!pObj)
     return nullptr;
 
@@ -60,9 +68,17 @@ RetainPtr<CPDF_TransferFunc> CPDF_DocRenderData::GetTransferFunc(
   return pFunc;
 }
 
+#if BUILDFLAG(IS_WIN)
+CFX_PSFontTracker* CPDF_DocRenderData::GetPSFontTracker() {
+  if (!m_PSFontTracker)
+    m_PSFontTracker = std::make_unique<CFX_PSFontTracker>();
+  return m_PSFontTracker.get();
+}
+#endif
+
 RetainPtr<CPDF_TransferFunc> CPDF_DocRenderData::CreateTransferFunc(
-    const CPDF_Object* pObj) const {
-  std::unique_ptr<CPDF_Function> pFuncs[3];
+    RetainPtr<const CPDF_Object> pObj) const {
+  std::array<std::unique_ptr<CPDF_Function>, 3> pFuncs;
   const CPDF_Array* pArray = pObj->AsArray();
   if (pArray) {
     if (pArray->size() < 3)
@@ -70,8 +86,9 @@ RetainPtr<CPDF_TransferFunc> CPDF_DocRenderData::CreateTransferFunc(
 
     for (uint32_t i = 0; i < 3; ++i) {
       pFuncs[2 - i] = CPDF_Function::Load(pArray->GetDirectObjectAt(i));
-      if (!pFuncs[2 - i])
+      if (!pFuncs[2 - i]) {
         return nullptr;
+      }
     }
   } else {
     pFuncs[0] = CPDF_Function::Load(pObj);
@@ -79,45 +96,49 @@ RetainPtr<CPDF_TransferFunc> CPDF_DocRenderData::CreateTransferFunc(
       return nullptr;
   }
 
-  int noutput;
   float output[kMaxOutputs];
-  memset(output, 0, sizeof(output));
+  std::fill(std::begin(output), std::end(output), 0.0f);
 
   bool bIdentity = true;
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_r(
+  auto samples_r = FixedSizeDataVector<uint8_t>::Uninit(
       CPDF_TransferFunc::kChannelSampleSize);
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_g(
+  auto samples_g = FixedSizeDataVector<uint8_t>::Uninit(
       CPDF_TransferFunc::kChannelSampleSize);
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> samples_b(
+  auto samples_b = FixedSizeDataVector<uint8_t>::Uninit(
       CPDF_TransferFunc::kChannelSampleSize);
-  std::array<pdfium::span<uint8_t>, 3> samples = {samples_r, samples_g,
-                                                  samples_b};
-  for (size_t v = 0; v < CPDF_TransferFunc::kChannelSampleSize; ++v) {
-    float input = static_cast<float>(v) / 255.0f;
-    if (pArray) {
+
+  std::array<pdfium::span<uint8_t>, 3> samples = {
+      samples_r.span(), samples_g.span(), samples_b.span()};
+  if (pArray) {
+    for (size_t v = 0; v < CPDF_TransferFunc::kChannelSampleSize; ++v) {
+      float input = static_cast<float>(v) / 255.0f;
       for (int i = 0; i < 3; ++i) {
-        if (pFuncs[i]->CountOutputs() > kMaxOutputs) {
+        if (pFuncs[i]->OutputCount() > kMaxOutputs) {
           samples[i][v] = v;
           continue;
         }
-        pFuncs[i]->Call(&input, 1, output, &noutput);
+        pFuncs[i]->Call(pdfium::span_from_ref(input), output);
         size_t o = FXSYS_roundf(output[0] * 255);
         if (o != v)
           bIdentity = false;
         samples[i][v] = o;
       }
-      continue;
     }
-    if (pFuncs[0]->CountOutputs() <= kMaxOutputs)
-      pFuncs[0]->Call(&input, 1, output, &noutput);
-    size_t o = FXSYS_roundf(output[0] * 255);
-    if (o != v)
-      bIdentity = false;
-    for (auto& channel : samples)
-      channel[v] = o;
+  } else {
+    for (size_t v = 0; v < CPDF_TransferFunc::kChannelSampleSize; ++v) {
+      float input = static_cast<float>(v) / 255.0f;
+      if (pFuncs[0]->OutputCount() <= kMaxOutputs) {
+        pFuncs[0]->Call(pdfium::span_from_ref(input), output);
+      }
+      size_t o = FXSYS_roundf(output[0] * 255);
+      if (o != v)
+        bIdentity = false;
+      for (auto& channel : samples)
+        channel[v] = o;
+    }
   }
 
-  return pdfium::MakeRetain<CPDF_TransferFunc>(
-      GetDocument(), bIdentity, std::move(samples_r), std::move(samples_g),
-      std::move(samples_b));
+  return pdfium::MakeRetain<CPDF_TransferFunc>(bIdentity, std::move(samples_r),
+                                               std::move(samples_g),
+                                               std::move(samples_b));
 }

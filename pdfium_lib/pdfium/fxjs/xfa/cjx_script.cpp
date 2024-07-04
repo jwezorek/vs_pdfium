@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,7 @@
 #include "fxjs/xfa/cjx_script.h"
 
 #include "fxjs/fxv8.h"
+#include "v8/include/v8-primitive.h"
 #include "xfa/fxfa/parser/cxfa_script.h"
 
 CJX_Script::CJX_Script(CXFA_Script* node) : CJX_Node(node) {}
@@ -22,7 +23,7 @@ void CJX_Script::stateless(v8::Isolate* pIsolate,
                            bool bSetting,
                            XFA_Attribute eAttribute) {
   if (bSetting) {
-    ThrowInvalidPropertyException();
+    ThrowInvalidPropertyException(pIsolate);
     return;
   }
   *pValue = fxv8::NewStringHelper(pIsolate, "0");

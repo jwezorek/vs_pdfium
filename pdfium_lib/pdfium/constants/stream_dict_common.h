@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,18 +8,11 @@
 namespace pdfium {
 namespace stream {
 
-// PDF 1.7 spec, table 3.4.
-// Entries common to all stream dictionaries.
-
-// TODO(https://crbug.com/pdfium/1049): Examine all usages of "Length",
-// "Filter", and "F".
-constexpr char kLength[] = "Length";
-constexpr char kFilter[] = "Filter";
-constexpr char kDecodeParms[] = "DecodeParms";
-constexpr char kF[] = "F";
-// constexpr char kFFilter[] = "FFilter";
-// constexpr char kFDecodeParms[] = "FDecodeParms";
-constexpr char kDL[] = "DL";
+extern const char kLength[];
+extern const char kFilter[];
+extern const char kDecodeParms[];
+extern const char kF[];
+extern const char kDL[];
 
 }  // namespace stream
 }  // namespace pdfium

@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,25 +9,40 @@
 #include <vector>
 
 #include "build/build_config.h"
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/containers/contains.h"
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/utf16.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/span.h"
-#include "third_party/base/stl_util.h"
 
 namespace fxcrt {
 
 TEST(WideString, ElementAccess) {
+  const WideString empty;
+  pdfium::span<const wchar_t> empty_span = empty.span();
+  pdfium::span<const wchar_t> empty_span_with_terminator =
+      empty.span_with_terminator();
+  EXPECT_EQ(0u, empty_span.size());
+  ASSERT_EQ(1u, empty_span_with_terminator.size());
+  EXPECT_EQ(L'\0', empty_span_with_terminator[0]);
+
   const WideString abc(L"abc");
   EXPECT_EQ(L'a', abc[0]);
   EXPECT_EQ(L'b', abc[1]);
   EXPECT_EQ(L'c', abc[2]);
 #ifndef NDEBUG
-  EXPECT_DEATH({ abc[4]; }, ".*");
+  EXPECT_DEATH({ abc[4]; }, "");
 #endif
 
   pdfium::span<const wchar_t> abc_span = abc.span();
   EXPECT_EQ(3u, abc_span.size());
   EXPECT_EQ(0, wmemcmp(abc_span.data(), L"abc", 3));
+
+  pdfium::span<const wchar_t> abc_span_with_terminator =
+      abc.span_with_terminator();
+  EXPECT_EQ(4u, abc_span_with_terminator.size());
+  EXPECT_EQ(0, wmemcmp(abc_span_with_terminator.data(), L"abc", 4));
 
   WideString mutable_abc = abc;
   EXPECT_EQ(abc.c_str(), mutable_abc.c_str());
@@ -52,7 +67,7 @@ TEST(WideString, ElementAccess) {
   EXPECT_EQ(L"abc", abc);
   EXPECT_EQ(L"def", mutable_abc);
 #ifndef NDEBUG
-  EXPECT_DEATH({ mutable_abc.SetAt(3, L'g'); }, ".*");
+  EXPECT_DEATH({ mutable_abc.SetAt(3, L'g'); }, "");
   EXPECT_EQ(L"abc", abc);
 #endif
 }
@@ -650,7 +665,20 @@ TEST(WideString, Delete) {
   EXPECT_EQ(L"", empty);
 }
 
-TEST(WideString, Substr) {
+TEST(WideString, OneArgSubstr) {
+  WideString fred(L"FRED");
+  EXPECT_EQ(L"FRED", fred.Substr(0));
+  EXPECT_EQ(L"RED", fred.Substr(1));
+  EXPECT_EQ(L"ED", fred.Substr(2));
+  EXPECT_EQ(L"D", fred.Substr(3));
+  EXPECT_EQ(L"", fred.Substr(4));
+
+  WideString empty;
+  EXPECT_EQ(L"", empty.Substr(0));
+  EXPECT_EQ(L"", empty.Substr(1));
+}
+
+TEST(WideString, TwoArgSubstr) {
   WideString fred(L"FRED");
   EXPECT_EQ(L"", fred.Substr(0, 0));
   EXPECT_EQ(L"", fred.Substr(3, 0));
@@ -713,7 +741,7 @@ TEST(WideString, Find) {
   EXPECT_FALSE(empty_string.Find(L'\0').has_value());
 
   WideString single_string(L"a");
-  Optional<size_t> result = single_string.Find(L'a');
+  std::optional<size_t> result = single_string.Find(L'a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find(L'b').has_value());
@@ -760,7 +788,7 @@ TEST(WideString, ReverseFind) {
   EXPECT_FALSE(empty_string.ReverseFind(L'\0').has_value());
 
   WideString single_string(L"a");
-  Optional<size_t> result = single_string.ReverseFind(L'a');
+  std::optional<size_t> result = single_string.ReverseFind(L'a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.ReverseFind(L'b').has_value());
@@ -795,11 +823,22 @@ TEST(WideString, UpperLower) {
   EXPECT_EQ(L"", empty);
   empty.MakeUpper();
   EXPECT_EQ(L"", empty);
+
+  WideString empty_with_buffer(L"x");
+  empty_with_buffer.Delete(0);
+
+  WideString additional_empty_with_buffer_ref = empty_with_buffer;
+  additional_empty_with_buffer_ref.MakeLower();
+  EXPECT_EQ(L"", additional_empty_with_buffer_ref);
+
+  additional_empty_with_buffer_ref = empty_with_buffer;
+  additional_empty_with_buffer_ref.MakeUpper();
+  EXPECT_EQ(L"", additional_empty_with_buffer_ref);
 }
 
 TEST(WideString, Trim) {
   WideString fred(L"  FRED  ");
-  fred.Trim();
+  fred.TrimWhitespace();
   EXPECT_EQ(L"FRED", fred);
   fred.Trim(L'E');
   EXPECT_EQ(L"FRED", fred);
@@ -813,7 +852,7 @@ TEST(WideString, Trim) {
   EXPECT_EQ(L"   ", blank);
   blank.Trim(L'E');
   EXPECT_EQ(L"   ", blank);
-  blank.Trim();
+  blank.TrimWhitespace();
   EXPECT_EQ(L"", blank);
 
   WideString empty;
@@ -821,7 +860,7 @@ TEST(WideString, Trim) {
   EXPECT_EQ(L"", empty);
   empty.Trim(L'E');
   EXPECT_EQ(L"", empty);
-  empty.Trim();
+  empty.TrimWhitespace();
   EXPECT_EQ(L"", empty);
 
   WideString abc(L"  ABCCBA  ");
@@ -831,40 +870,40 @@ TEST(WideString, Trim) {
   EXPECT_EQ(L"BCCB", abc);
 }
 
-TEST(WideString, TrimLeft) {
+TEST(WideString, TrimFront) {
   WideString fred(L"  FRED  ");
-  fred.TrimLeft();
+  fred.TrimWhitespaceFront();
   EXPECT_EQ(L"FRED  ", fred);
-  fred.TrimLeft(L'E');
+  fred.TrimFront(L'E');
   EXPECT_EQ(L"FRED  ", fred);
-  fred.TrimLeft(L'F');
+  fred.TrimFront(L'F');
   EXPECT_EQ(L"RED  ", fred);
-  fred.TrimLeft(L"ERP");
+  fred.TrimFront(L"ERP");
   EXPECT_EQ(L"D  ", fred);
 
   WideString blank(L"   ");
-  blank.TrimLeft(L"ERP");
+  blank.TrimFront(L"ERP");
   EXPECT_EQ(L"   ", blank);
-  blank.TrimLeft(L'E');
+  blank.TrimFront(L'E');
   EXPECT_EQ(L"   ", blank);
-  blank.TrimLeft();
+  blank.TrimWhitespaceFront();
   EXPECT_EQ(L"", blank);
 
   WideString empty;
-  empty.TrimLeft(L"ERP");
+  empty.TrimFront(L"ERP");
   EXPECT_EQ(L"", empty);
-  empty.TrimLeft(L'E');
+  empty.TrimFront(L'E');
   EXPECT_EQ(L"", empty);
-  empty.TrimLeft();
+  empty.TrimWhitespaceFront();
   EXPECT_EQ(L"", empty);
 }
 
-TEST(WideString, TrimLeftCopies) {
+TEST(WideString, TrimFrontCopies) {
   {
     // With a single reference, no copy takes place.
     WideString fred(L"  FRED  ");
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ(L"FRED  ", fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
@@ -873,7 +912,7 @@ TEST(WideString, TrimLeftCopies) {
     WideString fred(L"  FRED  ");
     WideString other_fred = fred;
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ(L"FRED  ", fred);
     EXPECT_EQ(L"  FRED  ", other_fred);
     EXPECT_NE(old_buffer, fred.c_str());
@@ -883,47 +922,47 @@ TEST(WideString, TrimLeftCopies) {
     WideString fred(L"FRED");
     WideString other_fred = fred;
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimLeft();
+    fred.TrimWhitespaceFront();
     EXPECT_EQ(L"FRED", fred);
     EXPECT_EQ(L"FRED", other_fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
 }
 
-TEST(WideString, TrimRight) {
+TEST(WideString, TrimBack) {
   WideString fred(L"  FRED  ");
-  fred.TrimRight();
+  fred.TrimWhitespaceBack();
   EXPECT_EQ(L"  FRED", fred);
-  fred.TrimRight(L'E');
+  fred.TrimBack(L'E');
   EXPECT_EQ(L"  FRED", fred);
-  fred.TrimRight(L'D');
+  fred.TrimBack(L'D');
   EXPECT_EQ(L"  FRE", fred);
-  fred.TrimRight(L"ERP");
+  fred.TrimBack(L"ERP");
   EXPECT_EQ(L"  F", fred);
 
   WideString blank(L"   ");
-  blank.TrimRight(L"ERP");
+  blank.TrimBack(L"ERP");
   EXPECT_EQ(L"   ", blank);
-  blank.TrimRight(L'E');
+  blank.TrimBack(L'E');
   EXPECT_EQ(L"   ", blank);
-  blank.TrimRight();
+  blank.TrimWhitespaceBack();
   EXPECT_EQ(L"", blank);
 
   WideString empty;
-  empty.TrimRight(L"ERP");
+  empty.TrimBack(L"ERP");
   EXPECT_EQ(L"", empty);
-  empty.TrimRight(L'E');
+  empty.TrimBack(L'E');
   EXPECT_EQ(L"", empty);
-  empty.TrimRight();
+  empty.TrimWhitespaceBack();
   EXPECT_EQ(L"", empty);
 }
 
-TEST(WideString, TrimRightCopies) {
+TEST(WideString, TrimBackCopies) {
   {
     // With a single reference, no copy takes place.
     WideString fred(L"  FRED  ");
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ(L"  FRED", fred);
     EXPECT_EQ(old_buffer, fred.c_str());
   }
@@ -932,7 +971,7 @@ TEST(WideString, TrimRightCopies) {
     WideString fred(L"  FRED  ");
     WideString other_fred = fred;
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ(L"  FRED", fred);
     EXPECT_EQ(L"  FRED  ", other_fred);
     EXPECT_NE(old_buffer, fred.c_str());
@@ -942,7 +981,7 @@ TEST(WideString, TrimRightCopies) {
     WideString fred(L"FRED");
     WideString other_fred = fred;
     const wchar_t* old_buffer = fred.c_str();
-    fred.TrimRight();
+    fred.TrimWhitespaceBack();
     EXPECT_EQ(L"FRED", fred);
     EXPECT_EQ(L"FRED", other_fred);
     EXPECT_EQ(old_buffer, fred.c_str());
@@ -982,7 +1021,7 @@ TEST(WideString, GetBuffer) {
   WideString str2(L"cl");
   {
     pdfium::span<wchar_t> buffer = str2.GetBuffer(12);
-    wcscpy(buffer.data() + 2, L"ams");
+    UNSAFE_TODO(wcscpy(buffer.data() + 2, L"ams"));
   }
   str2.ReleaseBuffer(str2.GetStringLength());
   EXPECT_EQ(L"clams", str2);
@@ -1112,24 +1151,187 @@ TEST(WideString, MultiCharReverseIterator) {
   EXPECT_EQ(0, iter - multi_str.rbegin());
 }
 
+TEST(WideString, FromUTF8) {
+  EXPECT_EQ(L"", WideString::FromUTF8(ByteStringView()));
+  EXPECT_EQ(
+      L"x"
+      L"\u0080"
+      L"\u00ff"
+      L"\ud7ff"
+      L"\ue000"
+      L"\uff2c"
+      L"\uffff"
+      L"y",
+      WideString::FromUTF8("x"
+                           "\u0080"
+                           "\u00ff"
+                           "\ud7ff"
+                           "\ue000"
+                           "\uff2c"
+                           "\uffff"
+                           "y"));
+}
+
+TEST(WideString, FromUTF8Supplementary) {
+  EXPECT_EQ(
+      L"\U00010000"
+      L"\U0001f3a8"
+      L"\U0010ffff",
+      WideString::FromUTF8("\U00010000"
+                           "🎨"
+                           "\U0010ffff"));
+}
+
+TEST(WideString, FromUTF8ErrorRecovery) {
+  EXPECT_EQ(L"(A)", WideString::FromUTF8("(\xc2\x41)"))
+      << "Invalid continuation";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xc2\xc2)"))
+      << "Invalid continuation";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xc2\xff\x80)"))
+      << "Invalid continuation";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\x80\x80)")) << "Invalid leading";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xff\x80\x80)")) << "Invalid leading";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xf8\x80\x80\x80\x80)"))
+      << "Invalid leading";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xf8\x88\x80\x80\x80)"))
+      << "Invalid leading";
+  EXPECT_EQ(L"()", WideString::FromUTF8("(\xf4\x90\x80\x80)"))
+      << "Code point greater than U+10FFFF";
+}
+
+TEST(WideString, UTF8EncodeDecodeConsistency) {
+  WideString wstr;
+  wstr.Reserve(0x10000);
+  for (char32_t w = 0; w < pdfium::kMinimumSupplementaryCodePoint; ++w) {
+    if (pdfium::IsHighSurrogate(w) || pdfium::IsLowSurrogate(w)) {
+      // Skip UTF-16 surrogates.
+      continue;
+    }
+    wstr += static_cast<wchar_t>(w);
+  }
+  ASSERT_EQ(0xf800u, wstr.GetLength());
+
+  ByteString bstr = FX_UTF8Encode(wstr.AsStringView());
+  WideString wstr2 = WideString::FromUTF8(bstr.AsStringView());
+  EXPECT_EQ(wstr, wstr2);
+}
+
+TEST(WideString, UTF8EncodeDecodeConsistencyUnpairedHighSurrogates) {
+  WideString wstr;
+  wstr.Reserve(0x400);
+  for (wchar_t w = pdfium::kMinimumHighSurrogateCodeUnit;
+       w <= pdfium::kMaximumHighSurrogateCodeUnit; ++w) {
+    wstr += w;
+  }
+  ASSERT_EQ(0x400u, wstr.GetLength());
+
+  ByteString bstr = FX_UTF8Encode(wstr.AsStringView());
+  WideString wstr2 = WideString::FromUTF8(bstr.AsStringView());
+  EXPECT_EQ(wstr, wstr2);
+}
+
+TEST(WideString, UTF8EncodeDecodeConsistencyUnpairedLowSurrogates) {
+  WideString wstr;
+  wstr.Reserve(0x400);
+  for (wchar_t w = pdfium::kMinimumLowSurrogateCodeUnit;
+       w <= pdfium::kMaximumLowSurrogateCodeUnit; ++w) {
+    wstr += w;
+  }
+  ASSERT_EQ(0x400u, wstr.GetLength());
+
+  ByteString bstr = FX_UTF8Encode(wstr.AsStringView());
+  WideString wstr2 = WideString::FromUTF8(bstr.AsStringView());
+  EXPECT_EQ(wstr, wstr2);
+}
+
+TEST(WideString, FromUTF16BE) {
+  struct UTF16BEDecodeCase {
+    ByteString in;
+    WideString out;
+  } const utf16be_decode_cases[] = {
+      {"", L""},
+      {UNSAFE_BUFFERS(ByteString("\0a\0b\0c", 6)), L"abc"},
+      {UNSAFE_BUFFERS(ByteString("\0a\0b\0c\0\0\0d\0e\0f", 14)),
+       UNSAFE_BUFFERS(WideString(L"abc\0def", 7))},
+      {UNSAFE_BUFFERS(ByteString(" &", 2)), L"…"},
+      {UNSAFE_BUFFERS(ByteString("\xD8\x3C\xDF\xA8", 4)), L"🎨"},
+  };
+  UNSAFE_TODO({
+    for (size_t i = 0; i < std::size(utf16be_decode_cases); ++i) {
+      EXPECT_EQ(
+          WideString::FromUTF16BE(utf16be_decode_cases[i].in.unsigned_span()),
+          utf16be_decode_cases[i].out)
+          << " for case number " << i;
+    }
+  });
+}
+
+TEST(WideString, FromUTF16LE) {
+  struct UTF16LEDecodeCase {
+    ByteString in;
+    WideString out;
+  } const utf16le_decode_cases[] = {
+      // SAFETY: not required, control sizes for test.
+      {"", L""},
+      {UNSAFE_BUFFERS(ByteString("a\0b\0c\0", 6)), L"abc"},
+      {UNSAFE_BUFFERS(ByteString("a\0b\0c\0\0\0d\0e\0f\0", 14)),
+       UNSAFE_BUFFERS(WideString(L"abc\0def", 7))},
+      {UNSAFE_BUFFERS(ByteString("& ", 2)), L"…"},
+      {UNSAFE_BUFFERS(ByteString("\x3C\xD8\xA8\xDF", 4)), L"🎨"},
+  };
+  UNSAFE_TODO({
+    for (size_t i = 0; i < std::size(utf16le_decode_cases); ++i) {
+      EXPECT_EQ(
+          WideString::FromUTF16LE(utf16le_decode_cases[i].in.unsigned_span()),
+          utf16le_decode_cases[i].out)
+          << " for case number " << i;
+    }
+  });
+}
+
 TEST(WideString, ToUTF16LE) {
   struct UTF16LEEncodeCase {
     WideString ws;
     ByteString bs;
   } const utf16le_encode_cases[] = {
-      {L"", ByteString("\0\0", 2)},
-      {L"abc", ByteString("a\0b\0c\0\0\0", 8)},
-      {L"abcdef", ByteString("a\0b\0c\0d\0e\0f\0\0\0", 14)},
-      {L"abc\0def", ByteString("a\0b\0c\0\0\0", 8)},
-      {L"\xaabb\xccdd", ByteString("\xbb\xaa\xdd\xcc\0\0", 6)},
-      {L"\x3132\x6162", ByteString("\x32\x31\x62\x61\0\0", 6)},
+      {L"", UNSAFE_TODO(ByteString("\0\0", 2))},
+      {L"abc", UNSAFE_TODO(ByteString("a\0b\0c\0\0\0", 8))},
+      {L"abcdef", UNSAFE_TODO(ByteString("a\0b\0c\0d\0e\0f\0\0\0", 14))},
+      {L"abc\0def", UNSAFE_TODO(ByteString("a\0b\0c\0\0\0", 8))},
+      {L"\xaabb\xccdd", UNSAFE_TODO(ByteString("\xbb\xaa\xdd\xcc\0\0", 6))},
+      {L"\x3132\x6162", UNSAFE_TODO(ByteString("\x32\x31\x62\x61\0\0", 6))},
+      {L"🎨", UNSAFE_TODO(ByteString("\x3C\xD8\xA8\xDF\0\0", 6))},
   };
+  UNSAFE_TODO({
+    for (size_t i = 0; i < std::size(utf16le_encode_cases); ++i) {
+      EXPECT_EQ(utf16le_encode_cases[i].bs,
+                utf16le_encode_cases[i].ws.ToUTF16LE())
+          << " for case number " << i;
+    }
+  });
+}
 
-  for (size_t i = 0; i < pdfium::size(utf16le_encode_cases); ++i) {
-    EXPECT_EQ(utf16le_encode_cases[i].bs,
-              utf16le_encode_cases[i].ws.ToUTF16LE())
-        << " for case number " << i;
-  }
+TEST(WideString, ToUCS2LE) {
+  struct UCS2LEEncodeCase {
+    WideString ws;
+    ByteString bs;
+  } const ucs2le_encode_cases[] = {
+      {L"", UNSAFE_TODO(ByteString("\0\0", 2))},
+      {L"abc", UNSAFE_TODO(ByteString("a\0b\0c\0\0\0", 8))},
+      {L"abcdef", UNSAFE_TODO(ByteString("a\0b\0c\0d\0e\0f\0\0\0", 14))},
+      {L"abc\0def", UNSAFE_TODO(ByteString("a\0b\0c\0\0\0", 8))},
+      {L"\xaabb\xccdd", UNSAFE_TODO(ByteString("\xbb\xaa\xdd\xcc\0\0", 6))},
+      {L"\x3132\x6162", UNSAFE_TODO(ByteString("\x32\x31\x62\x61\0\0", 6))},
+#if defined(WCHAR_T_IS_32_BIT)
+      {L"🎨", UNSAFE_TODO(ByteString("\0\0", 2))},
+#endif
+  };
+  UNSAFE_TODO({
+    for (size_t i = 0; i < std::size(ucs2le_encode_cases); ++i) {
+      EXPECT_EQ(ucs2le_encode_cases[i].bs, ucs2le_encode_cases[i].ws.ToUCS2LE())
+          << " for case number " << i;
+    }
+  });
 }
 
 TEST(WideString, EncodeEntities) {
@@ -1199,7 +1401,7 @@ TEST(WideString, ToLatin1) {
 
 TEST(WideString, ToDefANSI) {
   EXPECT_EQ("", WideString().ToDefANSI());
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   const char* kResult =
       "x"
       "?"
@@ -1251,7 +1453,7 @@ TEST(WideString, FromLatin1) {
 
 TEST(WideString, FromDefANSI) {
   EXPECT_EQ(L"", WideString::FromDefANSI(ByteStringView()));
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   const wchar_t* kResult =
       L"x"
       L"\u20ac"
@@ -1286,7 +1488,7 @@ TEST(WideStringView, FromVector) {
   cleared_vec.pop_back();
   WideStringView cleared_string(cleared_vec);
   EXPECT_EQ(0u, cleared_string.GetLength());
-  EXPECT_EQ(nullptr, cleared_string.raw_str());
+  EXPECT_FALSE(cleared_string.unterminated_unsigned_str());
 }
 
 TEST(WideStringView, ElementAccess) {
@@ -1295,7 +1497,7 @@ TEST(WideStringView, ElementAccess) {
   EXPECT_EQ(L'b', static_cast<wchar_t>(abc[1]));
   EXPECT_EQ(L'c', static_cast<wchar_t>(abc[2]));
 #ifndef NDEBUG
-  EXPECT_DEATH({ abc[4]; }, ".*");
+  EXPECT_DEATH({ abc[4]; }, "");
 #endif
 }
 
@@ -1473,7 +1675,7 @@ TEST(WideStringView, Find) {
   EXPECT_FALSE(empty_string.Find(L'\0').has_value());
 
   WideStringView single_string(L"a");
-  Optional<size_t> result = single_string.Find(L'a');
+  std::optional<size_t> result = single_string.Find(L'a');
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(0u, result.value());
   EXPECT_FALSE(single_string.Find(L'b').has_value());
@@ -1633,7 +1835,7 @@ TEST(WideStringView, TrimmedRight) {
   EXPECT_EQ(L"FRED", fred.TrimmedRight(L'E'));
   EXPECT_EQ(L"FRE", fred.TrimmedRight(L'D'));
   WideStringView fredd(L"FREDD");
-  EXPECT_EQ(L"FRE", fred.TrimmedRight(L'D'));
+  EXPECT_EQ(L"FRE", fredd.TrimmedRight(L'D'));
 }
 
 TEST(WideString, FormatWidth) {
@@ -1666,7 +1868,7 @@ TEST(WideString, FormatString) {
   EXPECT_EQ(L"cla", WideString::Format(L"%.3ls", L"clams"));
   EXPECT_EQ(L"\u043e\u043f", WideString(L"\u043e\u043f"));
 
-#if !defined(OS_APPLE)
+#if !BUILDFLAG(IS_APPLE)
   // See https://bugs.chromium.org/p/pdfium/issues/detail?id=1132
   EXPECT_EQ(L"\u043e\u043f", WideString::Format(L"\u043e\u043f"));
   EXPECT_EQ(L"\u043e\u043f", WideString::Format(L"%ls", L"\u043e\u043f"));
@@ -1680,12 +1882,12 @@ TEST(WideString, Empty) {
   EXPECT_EQ(0u, empty_str.GetLength());
 
   const wchar_t* cstr = empty_str.c_str();
-  EXPECT_NE(nullptr, cstr);
+  EXPECT_TRUE(cstr);
   EXPECT_EQ(0u, wcslen(cstr));
 
   pdfium::span<const wchar_t> cspan = empty_str.span();
   EXPECT_TRUE(cspan.empty());
-  EXPECT_EQ(nullptr, cspan.data());
+  EXPECT_FALSE(cspan.data());
 }
 
 TEST(CFX_WidString, InitializerList) {
@@ -1808,7 +2010,8 @@ TEST(WideString, OStreamOverload) {
 
   // Writing a WideString with nulls but specifying its length treats it as
   // a C++-style string.
-  str = WideString(stringWithNulls, 4);
+  // SAFETY: known fixed-length string.
+  str = UNSAFE_BUFFERS(WideString(stringWithNulls, 4));
   EXPECT_EQ(4u, str.GetLength());
   stream.str("");
   stream << str;
@@ -1862,7 +2065,7 @@ TEST(WideString, WideOStreamOverload) {
 
   // Writing a WideString with nulls but specifying its length treats it as
   // a C++-style string.
-  str = WideString(stringWithNulls, 4);
+  str = UNSAFE_BUFFERS(WideString(stringWithNulls, 4));
   EXPECT_EQ(4u, str.GetLength());
   stream.str(L"");
   stream << str;
@@ -1937,8 +2140,9 @@ TEST(WideStringView, OStreamOverload) {
   // a C++-style string.
   {
     wchar_t stringWithNulls[]{'x', 'y', '\0', 'z'};
+    // SAFETY: known array above.
+    auto str = UNSAFE_BUFFERS(WideStringView(stringWithNulls, 4));
     std::ostringstream stream;
-    WideStringView str(stringWithNulls, 4);
     EXPECT_EQ(4u, str.GetLength());
     stream << str;
     EXPECT_EQ(4u, stream.tellp());
@@ -2015,8 +2219,9 @@ TEST(WideStringView, WideOStreamOverload) {
   // a C++-style string.
   {
     wchar_t stringWithNulls[]{'x', 'y', '\0', 'z'};
+    // SAFETY: known array above.
+    auto str = UNSAFE_BUFFERS(WideStringView(stringWithNulls, 4));
     std::wostringstream stream;
-    WideStringView str(stringWithNulls, 4);
     EXPECT_EQ(4u, str.GetLength());
     stream << str;
     EXPECT_EQ(4u, stream.tellp());
@@ -2032,15 +2237,29 @@ TEST(WideStringView, WideOStreamOverload) {
   }
 }
 
+TEST(WideString, FormatInteger) {
+  // Base case of 0.
+  EXPECT_EQ(L"0", WideString::FormatInteger(0));
+
+  // Positive ordinary number.
+  EXPECT_EQ(L"123456", WideString::FormatInteger(123456));
+
+  // Negative ordinary number.
+  EXPECT_EQ(L"-123456", WideString::FormatInteger(-123456));
+
+  // int limits.
+  EXPECT_EQ(L"2147483647", WideString::FormatInteger(INT_MAX));
+  EXPECT_EQ(L"-2147483648", WideString::FormatInteger(INT_MIN));
+}
+
 TEST(WideString, FX_HashCode_Wide) {
-  EXPECT_EQ(0u, FX_HashCode_GetW(L"", false));
-  EXPECT_EQ(65u, FX_HashCode_GetW(L"A", false));
-  EXPECT_EQ(97u, FX_HashCode_GetW(L"A", true));
-  EXPECT_EQ(1313 * 65u + 66u, FX_HashCode_GetW(L"AB", false));
-  EXPECT_EQ(FX_HashCode_GetAsIfW("AB\xff", false),
-            FX_HashCode_GetW(L"AB\xff", false));
-  EXPECT_EQ(FX_HashCode_GetAsIfW("AB\xff", true),
-            FX_HashCode_GetW(L"AB\xff", true));
+  EXPECT_EQ(0u, FX_HashCode_GetW(L""));
+  EXPECT_EQ(65u, FX_HashCode_GetW(L"A"));
+  EXPECT_EQ(97u, FX_HashCode_GetLoweredW(L"A"));
+  EXPECT_EQ(1313 * 65u + 66u, FX_HashCode_GetW(L"AB"));
+  EXPECT_EQ(FX_HashCode_GetAsIfW("AB\xff"), FX_HashCode_GetW(L"AB\xff"));
+  EXPECT_EQ(FX_HashCode_GetLoweredAsIfW("AB\xff"),
+            FX_HashCode_GetLoweredW(L"AB\xff"));
 }
 
 }  // namespace fxcrt

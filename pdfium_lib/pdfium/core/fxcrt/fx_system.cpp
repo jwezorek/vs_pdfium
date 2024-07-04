@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,15 +6,17 @@
 
 #include "core/fxcrt/fx_system.h"
 
-#include <cmath>
+#include <math.h>
+
 #include <limits>
 
 #include "build/build_config.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_extension.h"
 
 namespace {
 
-#if !defined(OS_WIN)
+#if !BUILDFLAG(IS_WIN)
 uint32_t g_last_error = 0;
 #endif
 
@@ -25,8 +27,13 @@ IntType FXSYS_StrToInt(const CharType* str) {
 
   // Process the sign.
   bool neg = *str == '-';
-  if (neg || *str == '+')
-    str++;
+  if (neg || *str == '+') {
+    // SAFETY: `str` points at the start of the string, which is a character or
+    // a terminating NUL. `*str` is non-NUL from the condition above, so `str`
+    // is pointing inside the string. Afterward, `str` may be pointing at the
+    // terminating NUL.
+    UNSAFE_BUFFERS(str++);
+  }
 
   IntType num = 0;
   while (*str && FXSYS_IsDecimalDigit(*str)) {
@@ -36,15 +43,17 @@ IntType FXSYS_StrToInt(const CharType* str) {
         // Return MIN when the represented number is signed type and is smaller
         // than the min value.
         return std::numeric_limits<IntType>::min();
-      } else {
-        // Return MAX when the represented number is signed type and is larger
-        // than the max value, or the number is unsigned type and out of range.
-        return std::numeric_limits<IntType>::max();
       }
+      // Return MAX when the represented number is signed type and is larger
+      // than the max value, or the number is unsigned type and out of range.
+      return std::numeric_limits<IntType>::max();
     }
-
     num = num * 10 + val;
-    str++;
+
+    // SAFETY: The loop terminates if `str` is ever pointing at the terminating
+    // NUL. `str` is only moved by one character at a time, so inside the loop
+    // `str` always points inside the string.
+    UNSAFE_BUFFERS(str++);
   }
   // When it is a negative value, -num should be returned. Since num may be of
   // unsigned type, use ~num + 1 to avoid the warning of applying unary minus
@@ -60,13 +69,13 @@ STR_T FXSYS_IntToStr(T value, STR_T str, int radix) {
   }
   if (value == 0) {
     str[0] = '0';
-    str[1] = 0;
+    UNSAFE_TODO(str[1]) = 0;
     return str;
   }
   int i = 0;
   UT uvalue;
   if (value < 0) {
-    str[i++] = '-';
+    UNSAFE_TODO(str[i++]) = '-';
     // Standard trick to avoid undefined behaviour when negating INT_MIN.
     uvalue = static_cast<UT>(-(value + 1)) + 1;
   } else {
@@ -79,17 +88,17 @@ STR_T FXSYS_IntToStr(T value, STR_T str, int radix) {
     order = order / radix;
   }
   for (int d = digits - 1; d > -1; d--) {
-    str[d + i] = "0123456789abcdef"[uvalue % radix];
+    UNSAFE_TODO(str[d + i] = "0123456789abcdef"[uvalue % radix]);
     uvalue /= radix;
   }
-  str[digits + i] = 0;
+  UNSAFE_TODO(str[digits + i]) = 0;
   return str;
 }
 
 }  // namespace
 
 int FXSYS_roundf(float f) {
-  if (std::isnan(f))
+  if (isnan(f))
     return 0;
   if (f < static_cast<float>(std::numeric_limits<int>::min()))
     return std::numeric_limits<int>::min();
@@ -99,7 +108,7 @@ int FXSYS_roundf(float f) {
 }
 
 int FXSYS_round(double d) {
-  if (std::isnan(d))
+  if (isnan(d))
     return 0;
   if (d < static_cast<double>(std::numeric_limits<int>::min()))
     return std::numeric_limits<int>::min();
@@ -124,7 +133,7 @@ const char* FXSYS_i64toa(int64_t value, char* str, int radix) {
   return FXSYS_IntToStr<int64_t, uint64_t, char*>(value, str, radix);
 }
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 
 size_t FXSYS_wcsftime(wchar_t* strDest,
                       size_t maxsize,
@@ -144,11 +153,15 @@ size_t FXSYS_wcsftime(wchar_t* strDest,
   return wcsftime(strDest, maxsize, format, timeptr);
 }
 
-#else   // defined(OS_WIN)
-
-int FXSYS_GetACP() {
-  return 0;
+int FXSYS_stricmp(const char* str1, const char* str2) {
+  return _stricmp(str1, str2);
 }
+
+int FXSYS_wcsicmp(const wchar_t* str1, const wchar_t* str2) {
+  return _wcsicmp(str1, str2);
+}
+
+#else   // BUILDFLAG(IS_WIN)
 
 char* FXSYS_strlwr(char* str) {
   if (!str) {
@@ -157,10 +170,11 @@ char* FXSYS_strlwr(char* str) {
   char* s = str;
   while (*str) {
     *str = tolower(*str);
-    str++;
+    UNSAFE_BUFFERS(str++);  // SAFETY: NUL check in while condition.
   }
   return s;
 }
+
 char* FXSYS_strupr(char* str) {
   if (!str) {
     return nullptr;
@@ -168,10 +182,11 @@ char* FXSYS_strupr(char* str) {
   char* s = str;
   while (*str) {
     *str = toupper(*str);
-    str++;
+    UNSAFE_BUFFERS(str++);  // SAFETY: NUL check in while condition.
   }
   return s;
 }
+
 wchar_t* FXSYS_wcslwr(wchar_t* str) {
   if (!str) {
     return nullptr;
@@ -179,10 +194,11 @@ wchar_t* FXSYS_wcslwr(wchar_t* str) {
   wchar_t* s = str;
   while (*str) {
     *str = FXSYS_towlower(*str);
-    str++;
+    UNSAFE_BUFFERS(str++);  // SAFETY: NUL check in while condition.
   }
   return s;
 }
+
 wchar_t* FXSYS_wcsupr(wchar_t* str) {
   if (!str) {
     return nullptr;
@@ -190,7 +206,7 @@ wchar_t* FXSYS_wcsupr(wchar_t* str) {
   wchar_t* s = str;
   while (*str) {
     *str = FXSYS_towupper(*str);
-    str++;
+    UNSAFE_BUFFERS(str++);  // SAFETY: NUL check in while condition.
   }
   return s;
 }
@@ -201,8 +217,12 @@ int FXSYS_stricmp(const char* str1, const char* str2) {
   do {
     f = toupper(*str1);
     l = toupper(*str2);
-    ++str1;
-    ++str2;
+    // SAFETY: The loop breaks when `*str1` is NUL, so `str1` is always inside
+    // its string.
+    UNSAFE_BUFFERS(++str1);
+    // SAFETY: The loop breaks when `*str1` is non-NUL but `*str2` is NUL (as
+    // checked by `f != l`), so `str2` is always inside its string.
+    UNSAFE_BUFFERS(++str2);
   } while (f && f == l);
   return f - l;
 }
@@ -213,48 +233,18 @@ int FXSYS_wcsicmp(const wchar_t* str1, const wchar_t* str2) {
   do {
     f = FXSYS_towupper(*str1);
     l = FXSYS_towupper(*str2);
-    ++str1;
-    ++str2;
+    // SAFETY: The loop breaks when `*str1` is NUL, so `str1` is always inside
+    // its string.
+    UNSAFE_BUFFERS(++str1);
+    // SAFETY: The loop breaks when `*str1` is non-NUL but `*str2` is NUL (as
+    // checked by `f != l`), so `str2` is always inside its string.
+    UNSAFE_BUFFERS(++str2);
   } while (f && f == l);
   return f - l;
 }
 
 char* FXSYS_itoa(int value, char* str, int radix) {
   return FXSYS_IntToStr<int32_t, uint32_t, char*>(value, str, radix);
-}
-
-int FXSYS_WideCharToMultiByte(uint32_t codepage,
-                              uint32_t dwFlags,
-                              const wchar_t* wstr,
-                              int wlen,
-                              char* buf,
-                              int buflen,
-                              const char* default_str,
-                              int* pUseDefault) {
-  int len = 0;
-  for (int i = 0; i < wlen; i++) {
-    if (wstr[i] < 0x100) {
-      if (buf && len < buflen)
-        buf[len] = static_cast<char>(wstr[i]);
-      len++;
-    }
-  }
-  return len;
-}
-
-int FXSYS_MultiByteToWideChar(uint32_t codepage,
-                              uint32_t dwFlags,
-                              const char* bstr,
-                              int blen,
-                              wchar_t* buf,
-                              int buflen) {
-  int wlen = 0;
-  for (int i = 0; i < blen; i++) {
-    if (buf && wlen < buflen)
-      buf[wlen] = reinterpret_cast<const uint8_t*>(bstr)[i];
-    wlen++;
-  }
-  return wlen;
 }
 
 void FXSYS_SetLastError(uint32_t err) {
@@ -264,4 +254,8 @@ void FXSYS_SetLastError(uint32_t err) {
 uint32_t FXSYS_GetLastError() {
   return g_last_error;
 }
-#endif  // defined(OS_WIN)
+#endif  // BUILDFLAG(IS_WIN)
+
+float FXSYS_sqrt2(float a, float b) {
+  return sqrtf(a * a + b * b);
+}

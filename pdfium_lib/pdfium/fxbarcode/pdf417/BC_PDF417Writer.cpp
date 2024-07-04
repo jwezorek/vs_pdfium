@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,14 +22,31 @@
 
 #include "fxbarcode/pdf417/BC_PDF417Writer.h"
 
+#include <stdint.h>
+
 #include <algorithm>
 #include <utility>
 
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/stl_util.h"
 #include "fxbarcode/BC_TwoDimWriter.h"
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
 #include "fxbarcode/pdf417/BC_PDF417.h"
 #include "fxbarcode/pdf417/BC_PDF417BarcodeMatrix.h"
-#include "third_party/base/stl_util.h"
+
+namespace {
+
+void RotateArray(DataVector<uint8_t>& bitarray, int32_t width, int32_t height) {
+  DataVector<uint8_t> temp = bitarray;
+  for (int32_t i = 0; i < height; i++) {
+    int32_t inverse_i = height - i - 1;
+    for (int32_t j = 0; j < width; j++) {
+      bitarray[j * height + inverse_i] = temp[i * width + j];
+    }
+  }
+}
+
+}  // namespace
 
 CBC_PDF417Writer::CBC_PDF417Writer() : CBC_TwoDimWriter(false) {}
 
@@ -43,11 +60,8 @@ bool CBC_PDF417Writer::SetErrorCorrectionLevel(int32_t level) {
   return true;
 }
 
-std::vector<uint8_t, FxAllocAllocator<uint8_t>> CBC_PDF417Writer::Encode(
-    WideStringView contents,
-    int32_t* pOutWidth,
-    int32_t* pOutHeight) {
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> results;
+CBC_PDF417Writer::EncodeResult CBC_PDF417Writer::Encode(
+    WideStringView contents) const {
   CBC_PDF417 encoder;
   int32_t col = (m_Width / m_ModuleWidth - 69) / 17;
   int32_t row = m_Height / (m_ModuleWidth * 20);
@@ -57,36 +71,25 @@ std::vector<uint8_t, FxAllocAllocator<uint8_t>> CBC_PDF417Writer::Encode(
     encoder.setDimensions(col, col, 90, 3);
   else if (row >= 3 && row <= 90)
     encoder.setDimensions(30, 1, row, row);
-  if (!encoder.GenerateBarcodeLogic(contents, error_correction_level()))
-    return results;
+  if (!encoder.GenerateBarcodeLogic(contents, error_correction_level())) {
+    return {DataVector<uint8_t>(), 0, 0};
+  }
 
   CBC_BarcodeMatrix* barcodeMatrix = encoder.getBarcodeMatrix();
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> matrixData =
-      barcodeMatrix->toBitArray();
-  int32_t matrixWidth = barcodeMatrix->getWidth();
-  int32_t matrixHeight = barcodeMatrix->getHeight();
+  DataVector<uint8_t> matrix_data = barcodeMatrix->toBitArray();
+  int32_t matrix_width = barcodeMatrix->getWidth();
+  int32_t matrix_height = barcodeMatrix->getHeight();
 
-  if (matrixWidth < matrixHeight) {
-    RotateArray(&matrixData, matrixHeight, matrixWidth);
-    std::swap(matrixWidth, matrixHeight);
+  if (matrix_width < matrix_height) {
+    RotateArray(matrix_data, matrix_width, matrix_height);
+    std::swap(matrix_width, matrix_height);
   }
-  *pOutWidth = matrixWidth;
-  *pOutHeight = matrixHeight;
-  results = pdfium::Vector2D<uint8_t, FxAllocAllocator<uint8_t>>(*pOutWidth,
-                                                                 *pOutHeight);
-  memcpy(results.data(), matrixData.data(), *pOutWidth * *pOutHeight);
-  return results;
+  return {std::move(matrix_data), matrix_width, matrix_height};
 }
 
-void CBC_PDF417Writer::RotateArray(
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>>* bitarray,
-    int32_t height,
-    int32_t width) {
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> temp = *bitarray;
-  for (int32_t ii = 0; ii < height; ii++) {
-    int32_t inverseii = height - ii - 1;
-    for (int32_t jj = 0; jj < width; jj++) {
-      (*bitarray)[jj * height + inverseii] = temp[ii * width + jj];
-    }
-  }
-}
+CBC_PDF417Writer::EncodeResult::EncodeResult(DataVector<uint8_t> data,
+                                             int32_t width,
+                                             int32_t height)
+    : data(std::move(data)), width(width), height(height) {}
+
+CBC_PDF417Writer::EncodeResult::~EncodeResult() = default;

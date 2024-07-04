@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es_GT{
     %%Parent{"es_419"}
     Currencies{
@@ -15,8 +16,7 @@ es_GT{
         }
     }
     CurrencyUnitPatterns{
-        one{"{1} {0}"}
+        one{"{0} {1}"}
         other{"{1} {0}"}
     }
-    Version{"2.1.38.39"}
 }

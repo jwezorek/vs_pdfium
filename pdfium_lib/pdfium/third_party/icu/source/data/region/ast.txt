@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 ast{
     Countries{
         001{"Mundu"}
@@ -109,7 +110,7 @@ ast{
         EZ{"Eurozona"}
         FI{"Finlandia"}
         FJ{"Islles Fixi"}
-        FK{"Islles Malvines (Falkland Islands)"}
+        FK{"Falkland Islands"}
         FM{"Micronesia"}
         FO{"Islles Feroe"}
         FR{"Francia"}
@@ -132,7 +133,7 @@ ast{
         GU{"Guam"}
         GW{"Guinea-Bisáu"}
         GY{"Guyana"}
-        HK{"Ḥong Kong"}
+        HK{"ARE China de Ḥong Kong"}
         HM{"Islles Heard y McDonald"}
         HN{"Hondures"}
         HR{"Croacia"}
@@ -144,7 +145,6 @@ ast{
         IL{"Israel"}
         IM{"Islla de Man"}
         IN{"India"}
-        IO{"Territoriu Británicu del Océanu Índicu"}
         IQ{"Iraq"}
         IR{"Irán"}
         IS{"Islandia"}
@@ -182,11 +182,10 @@ ast{
         MF{"Saint Martin"}
         MG{"Madagascar"}
         MH{"Islles Marshall"}
-        MK{"Macedonia (ARYDM)"}
         ML{"Malí"}
         MM{"Myanmar (Birmania)"}
         MN{"Mongolia"}
-        MO{"Macáu"}
+        MO{"ARE China de Macáu"}
         MP{"Islles Marianes del Norte"}
         MQ{"La Martinica"}
         MR{"Mauritania"}
@@ -221,7 +220,7 @@ ast{
         PM{"Saint Pierre y Miquelon"}
         PN{"Islles Pitcairn"}
         PR{"Puertu Ricu"}
-        PS{"Palestina"}
+        PS{"Territorios Palestinos"}
         PT{"Portugal"}
         PW{"Paláu"}
         PY{"Paraguái"}
@@ -296,6 +295,9 @@ ast{
     }
     Countries%short{
         GB{"RX"}
+        HK{"Ḥong Kong"}
+        MO{"Macáu"}
+        PS{"Palestina"}
         US{"EE.XX."}
     }
     Countries%variant{
@@ -303,7 +305,7 @@ ast{
         CG{"Congu (República del)"}
         CI{"Costa del Marfil"}
         CZ{"República Checa"}
+        FK{"Islles Malvines (Falkland Islands)"}
         TL{"Timor Este"}
     }
-    Version{"2.1.44.91"}
 }

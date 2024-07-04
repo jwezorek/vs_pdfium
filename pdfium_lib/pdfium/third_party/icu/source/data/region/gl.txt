@@ -1,11 +1,12 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 gl{
     Countries{
         001{"Mundo"}
         002{"África"}
-        003{"Norteamérica"}
-        005{"Suramérica"}
+        003{"América do Norte"}
+        005{"América do Sur"}
         009{"Oceanía"}
         011{"África Occidental"}
         013{"América Central"}
@@ -14,7 +15,7 @@ gl{
         017{"África Central"}
         018{"África Meridional"}
         019{"América"}
-        021{"América do Norte"}
+        021{"América Setentrional"}
         029{"Caribe"}
         030{"Asia Oriental"}
         034{"Asia Meridional"}
@@ -22,7 +23,7 @@ gl{
         039{"Europa Meridional"}
         053{"Australasia"}
         054{"Melanesia"}
-        057{"Rexión da Micronesia"}
+        057{"Rexión de Micronesia"}
         061{"Polinesia"}
         142{"Asia"}
         143{"Asia Central"}
@@ -77,7 +78,7 @@ gl{
         CF{"República Centroafricana"}
         CG{"República do Congo"}
         CH{"Suíza"}
-        CI{"Costa do Marfil"}
+        CI{"Côte d’Ivoire"}
         CK{"Illas Cook"}
         CL{"Chile"}
         CM{"Camerún"}
@@ -110,7 +111,7 @@ gl{
         EZ{"Eurozona"}
         FI{"Finlandia"}
         FJ{"Fixi"}
-        FK{"Illas Malvinas (Falkland)"}
+        FK{"Illas Malvinas"}
         FM{"Micronesia"}
         FO{"Illas Feroe"}
         FR{"Francia"}
@@ -133,7 +134,7 @@ gl{
         GU{"Guam"}
         GW{"A Guinea Bissau"}
         GY{"Güiana"}
-        HK{"Hong Kong"}
+        HK{"Hong Kong RAE da China"}
         HM{"Illa Heard e Illas McDonald"}
         HN{"Honduras"}
         HR{"Croacia"}
@@ -164,7 +165,7 @@ gl{
         KR{"Corea do Sur"}
         KW{"Kuwait"}
         KY{"Illas Caimán"}
-        KZ{"Casaquistán"}
+        KZ{"Kazakistán"}
         LA{"Laos"}
         LB{"O Líbano"}
         LC{"Santa Lucía"}
@@ -178,16 +179,16 @@ gl{
         LY{"Libia"}
         MA{"Marrocos"}
         MC{"Mónaco"}
-        MD{"Moldavia"}
+        MD{"República Moldova"}
         ME{"Montenegro"}
         MF{"Saint Martin"}
         MG{"Madagascar"}
         MH{"Illas Marshall"}
-        MK{"Macedonia (ARIM)"}
+        MK{"Macedonia do Norte"}
         ML{"Malí"}
         MM{"Myanmar (Birmania)"}
         MN{"Mongolia"}
-        MO{"Macau"}
+        MO{"Macau RAE da China"}
         MP{"Illas Marianas do Norte"}
         MQ{"Martinica"}
         MR{"Mauritania"}
@@ -222,7 +223,7 @@ gl{
         PM{"Saint Pierre et Miquelon"}
         PN{"Illas Pitcairn"}
         PR{"Porto Rico"}
-        PS{"Palestina"}
+        PS{"Territorios Palestinos"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"O Paraguai"}
@@ -253,7 +254,7 @@ gl{
         SV{"O Salvador"}
         SX{"Sint Maarten"}
         SY{"Siria"}
-        SZ{"Suazilandia"}
+        SZ{"Eswatini"}
         TA{"Tristán da Cunha"}
         TC{"Illas Turks e Caicos"}
         TD{"Chad"}
@@ -277,9 +278,9 @@ gl{
         UN{"Nacións Unidas"}
         US{"Os Estados Unidos"}
         UY{"O Uruguai"}
-        UZ{"Uzbequistán"}
+        UZ{"Uzbekistán"}
         VA{"Cidade do Vaticano"}
-        VC{"San Vicente e As Granadinas"}
+        VC{"San Vicente e as Granadinas"}
         VE{"Venezuela"}
         VG{"Illas Virxes Británicas"}
         VI{"Illas Virxes Estadounidenses"}
@@ -287,6 +288,8 @@ gl{
         VU{"Vanuatu"}
         WF{"Wallis e Futuna"}
         WS{"Samoa"}
+        XA{"Pseudoacentos"}
+        XB{"Pseudobidireccional"}
         XK{"Kosovo"}
         YE{"O Iemen"}
         YT{"Mayotte"}
@@ -295,17 +298,24 @@ gl{
         ZW{"Zimbabwe"}
         ZZ{"Rexión descoñecida"}
     }
+    Countries%chagos{
+        IO{"Arquipélago de Chagos"}
+    }
     Countries%short{
         GB{"RU"}
+        HK{"Hong Kong"}
+        MO{"Macau"}
+        PS{"Palestina"}
         UN{"ONU"}
         US{"EUA"}
     }
     Countries%variant{
         CD{"Congo (RDC)"}
         CG{"Congo (RC)"}
-        CI{"CI"}
+        CI{"Costa do Marfil"}
         CZ{"República Checa"}
-        TL{"TL"}
+        FK{"Illas Malvinas (Falkland)"}
+        NZ{"Aotearoa (Nova Zelandia)"}
+        SZ{"Swazilandia"}
     }
-    Version{"2.1.43.94"}
 }

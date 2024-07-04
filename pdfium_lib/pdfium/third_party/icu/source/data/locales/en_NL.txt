@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 en_NL{
     %%Parent{"en_150"}
     NumberElements{
@@ -8,7 +9,10 @@ en_NL{
                 accountingFormat{"¤ #,##0.00;(¤ #,##0.00)"}
                 currencyFormat{"¤ #,##0.00;¤ -#,##0.00"}
             }
+            symbols{
+                decimal{","}
+                group{"."}
+            }
         }
     }
-    Version{"2.1.38.69"}
 }

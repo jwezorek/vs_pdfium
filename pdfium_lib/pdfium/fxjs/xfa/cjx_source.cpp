@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/js_resources.h"
 #include "fxjs/xfa/cfxjse_value.h"
 #include "xfa/fxfa/parser/cxfa_source.h"
@@ -41,133 +42,128 @@ bool CJX_Source::DynamicTypeIs(TypeTag eType) const {
   return eType == static_type__ || ParentType__::DynamicTypeIs(eType);
 }
 
-CJS_Result CJX_Source::next(CFX_V8* runtime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::next(CFXJSE_Engine* runtime,
+                            pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::cancelBatch(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::cancelBatch(CFXJSE_Engine* runtime,
+                                   pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::first(CFX_V8* runtime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::first(CFXJSE_Engine* runtime,
+                             pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::updateBatch(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::updateBatch(CFXJSE_Engine* runtime,
+                                   pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::previous(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::previous(CFXJSE_Engine* runtime,
+                                pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::isBOF(CFX_V8* runtime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::isBOF(CFXJSE_Engine* runtime,
+                             pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::isEOF(CFX_V8* runtime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::isEOF(CFXJSE_Engine* runtime,
+                             pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::cancel(CFX_V8* runtime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::cancel(CFXJSE_Engine* runtime,
+                              pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::update(CFX_V8* runtime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::update(CFXJSE_Engine* runtime,
+                              pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::open(CFX_V8* runtime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::open(CFXJSE_Engine* runtime,
+                            pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::deleteItem(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::deleteItem(CFXJSE_Engine* runtime,
+                                  pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::addNew(CFX_V8* runtime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::addNew(CFXJSE_Engine* runtime,
+                              pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::requery(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::requery(CFXJSE_Engine* runtime,
+                               pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::resync(CFX_V8* runtime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::resync(CFXJSE_Engine* runtime,
+                              pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::close(CFX_V8* runtime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::close(CFXJSE_Engine* runtime,
+                             pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Source::last(CFX_V8* runtime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Source::last(CFXJSE_Engine* runtime,
+                            pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -175,8 +171,8 @@ CJS_Result CJX_Source::last(CFX_V8* runtime,
 }
 
 CJS_Result CJX_Source::hasDataChanged(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 

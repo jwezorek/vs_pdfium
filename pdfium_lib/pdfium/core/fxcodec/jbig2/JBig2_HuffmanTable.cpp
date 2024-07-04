@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,13 +6,15 @@
 
 #include "core/fxcodec/jbig2/JBig2_HuffmanTable.h"
 
+#include <iterator>
 #include <limits>
 
 #include "core/fxcodec/jbig2/JBig2_BitStream.h"
 #include "core/fxcodec/jbig2/JBig2_Context.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
 namespace {
 
@@ -24,7 +26,7 @@ struct JBig2TableLine {
 
 struct HuffmanTable {
   bool HTOOB;
-  const JBig2TableLine* lines;
+  UNOWNED_PTR_EXCLUSION const JBig2TableLine* lines;
   size_t size;
 };
 
@@ -105,26 +107,27 @@ constexpr JBig2TableLine kTableLine15[] = {
     {1, 0, 0},   {3, 0, 1},    {4, 0, 2},  {5, 1, 3},  {6, 2, 5},
     {7, 4, 9},   {7, 32, -25}, {7, 32, 25}};
 
-constexpr HuffmanTable kHuffmanTables[16] = {
+constexpr std::array<const HuffmanTable, 16> kHuffmanTables = {{
     {false, nullptr, 0},  // Zero dummy to preserve indexing.
-    {false, kTableLine1, pdfium::size(kTableLine1)},
-    {true, kTableLine2, pdfium::size(kTableLine2)},
-    {true, kTableLine3, pdfium::size(kTableLine3)},
-    {false, kTableLine4, pdfium::size(kTableLine4)},
-    {false, kTableLine5, pdfium::size(kTableLine5)},
-    {false, kTableLine6, pdfium::size(kTableLine6)},
-    {false, kTableLine7, pdfium::size(kTableLine7)},
-    {true, kTableLine8, pdfium::size(kTableLine8)},
-    {true, kTableLine9, pdfium::size(kTableLine9)},
-    {true, kTableLine10, pdfium::size(kTableLine10)},
-    {false, kTableLine11, pdfium::size(kTableLine11)},
-    {false, kTableLine12, pdfium::size(kTableLine12)},
-    {false, kTableLine13, pdfium::size(kTableLine13)},
-    {false, kTableLine14, pdfium::size(kTableLine14)},
-    {false, kTableLine15, pdfium::size(kTableLine15)}};
+    {false, kTableLine1, std::size(kTableLine1)},
+    {true, kTableLine2, std::size(kTableLine2)},
+    {true, kTableLine3, std::size(kTableLine3)},
+    {false, kTableLine4, std::size(kTableLine4)},
+    {false, kTableLine5, std::size(kTableLine5)},
+    {false, kTableLine6, std::size(kTableLine6)},
+    {false, kTableLine7, std::size(kTableLine7)},
+    {true, kTableLine8, std::size(kTableLine8)},
+    {true, kTableLine9, std::size(kTableLine9)},
+    {true, kTableLine10, std::size(kTableLine10)},
+    {false, kTableLine11, std::size(kTableLine11)},
+    {false, kTableLine12, std::size(kTableLine12)},
+    {false, kTableLine13, std::size(kTableLine13)},
+    {false, kTableLine14, std::size(kTableLine14)},
+    {false, kTableLine15, std::size(kTableLine15)},
+}};
 
 static_assert(CJBig2_HuffmanTable::kNumHuffmanTables ==
-                  pdfium::size(kHuffmanTables),
+                  std::size(kHuffmanTables),
               "kNumHuffmanTables must be equal to the size of kHuffmanTables");
 
 }  // namespace
@@ -134,7 +137,7 @@ CJBig2_HuffmanTable::CJBig2_HuffmanTable(size_t idx) {
   DCHECK(idx < kNumHuffmanTables);
   const HuffmanTable& table = kHuffmanTables[idx];
   HTOOB = table.HTOOB;
-  NTEMP = table.size;
+  NTEMP = pdfium::checked_cast<uint32_t>(table.size);
   m_bOK = ParseFromStandardTable(idx);
   DCHECK(m_bOK);
 }
@@ -151,11 +154,13 @@ bool CJBig2_HuffmanTable::ParseFromStandardTable(size_t idx) {
   CODES.resize(NTEMP);
   RANGELEN.resize(NTEMP);
   RANGELOW.resize(NTEMP);
-  for (uint32_t i = 0; i < NTEMP; ++i) {
-    CODES[i].codelen = pTable[i].PREFLEN;
-    RANGELEN[i] = pTable[i].RANDELEN;
-    RANGELOW[i] = pTable[i].RANGELOW;
-  }
+  UNSAFE_TODO({
+    for (uint32_t i = 0; i < NTEMP; ++i) {
+      CODES[i].codelen = pTable[i].PREFLEN;
+      RANGELEN[i] = pTable[i].RANDELEN;
+      RANGELOW[i] = pTable[i].RANGELOW;
+    }
+  });
   return CJBig2_Context::HuffmanAssignCode(CODES.data(), NTEMP);
 }
 

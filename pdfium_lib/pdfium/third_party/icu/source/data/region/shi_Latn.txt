@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 shi_Latn{
     %%Parent{"root"}
     Countries{
@@ -93,7 +94,6 @@ shi_Latn{
         IE{"irlanda"}
         IL{"israyil"}
         IN{"lhind"}
-        IO{"tamnaḍt tanglizit n ugaru ahindi"}
         IQ{"lɛiraq"}
         IR{"iran"}
         IS{"island"}
@@ -128,7 +128,6 @@ shi_Latn{
         MD{"muldufya"}
         MG{"madaɣacqar"}
         MH{"tigzirin n marcal"}
-        MK{"masidunya"}
         ML{"mali"}
         MM{"myanmar"}
         MN{"mnɣulya"}
@@ -228,5 +227,4 @@ shi_Latn{
         ZM{"zambya"}
         ZW{"zimbabwi"}
     }
-    Version{"2.1.39.11"}
 }

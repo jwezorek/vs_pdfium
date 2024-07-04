@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,6 +18,6 @@ FPDFCatalog_IsTagged(FPDF_DOCUMENT document) {
   if (!pCatalog)
     return false;
 
-  const CPDF_Dictionary* pMarkInfo = pCatalog->GetDictFor("MarkInfo");
+  RetainPtr<const CPDF_Dictionary> pMarkInfo = pCatalog->GetDictFor("MarkInfo");
   return pMarkInfo && pMarkInfo->GetIntegerFor("Marked") != 0;
 }

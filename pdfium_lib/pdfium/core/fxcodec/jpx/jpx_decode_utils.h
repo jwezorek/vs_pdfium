@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,21 +9,23 @@
 
 #include <stdint.h>
 
+#include "core/fxcrt/span.h"
+
 #if defined(USE_SYSTEM_LIBOPENJPEG2)
 #include <openjpeg.h>
 #else
-#include "third_party/libopenjpeg20/openjpeg.h"
+#include "third_party/libopenjpeg/openjpeg.h"
 #endif
 
 namespace fxcodec {
 
 struct DecodeData {
-  DecodeData(const uint8_t* data, OPJ_SIZE_T size)
-      : src_data(data), src_size(size), offset(0) {}
+  DecodeData() = default;
+  explicit DecodeData(pdfium::span<const uint8_t> data);
 
-  const uint8_t* src_data;
-  OPJ_SIZE_T src_size;
-  OPJ_SIZE_T offset;
+  const uint8_t* src_data = nullptr;
+  OPJ_SIZE_T src_size = 0;
+  OPJ_SIZE_T offset = 0;
 };
 
 /* Wrappers for C-style callbacks. */

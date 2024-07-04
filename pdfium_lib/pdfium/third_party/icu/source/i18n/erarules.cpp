@@ -1,6 +1,8 @@
 // © 2018 and later: Unicode, Inc. and others.
 // License & terms of use: http://www.unicode.org/copyright.html
 
+#include <utility>
+
 #include "unicode/utypes.h"
 
 #if !UCONFIG_NO_FORMATTING
@@ -9,6 +11,7 @@
 #include "unicode/ucal.h"
 #include "unicode/ures.h"
 #include "unicode/ustring.h"
+#include "unicode/timezone.h"
 #include "cmemory.h"
 #include "cstring.h"
 #include "erarules.h"
@@ -28,8 +31,8 @@ static const int32_t DAY_MASK = 0x000000FF;
 static const int32_t MAX_INT32 = 0x7FFFFFFF;
 static const int32_t MIN_INT32 = 0xFFFFFFFF;
 
-static const UChar VAL_FALSE[] = {0x66, 0x61, 0x6c, 0x73, 0x65};    // "false"
-static const UChar VAL_FALSE_LEN = 5;
+static const char16_t VAL_FALSE[] = {0x66, 0x61, 0x6c, 0x73, 0x65};    // "false"
+static const char16_t VAL_FALSE_LEN = 5;
 
 static UBool isSet(int startDate) {
     return startDate != 0;
@@ -51,7 +54,7 @@ static UBool isValidRuleStartDate(int32_t year, int32_t month, int32_t day) {
  * @return  an encoded date.
  */
 static int32_t encodeDate(int32_t year, int32_t month, int32_t day) {
-    return year << 16 | month << 8 | day;
+    return (int32_t)((uint32_t)year << 16) | month << 8 | day;
 }
 
 static void decodeDate(int32_t encodedDate, int32_t (&fields)[3]) {
@@ -101,7 +104,7 @@ static int32_t compareEncodedDateWithYMD(int encoded, int year, int month, int d
 
 EraRules::EraRules(LocalMemory<int32_t>& eraStartDates, int32_t numEras)
     : numEras(numEras) {
-    startDates.moveFrom(eraStartDates);
+    startDates = std::move(eraStartDates);
     initCurrentEra();
 }
 
@@ -153,8 +156,8 @@ EraRules* EraRules::createInstance(const char *calType, UBool includeTentativeEr
             return nullptr;
         }
 
-        UBool hasName = TRUE;
-        UBool hasEnd = TRUE;
+        UBool hasName = true;
+        UBool hasEnd = true;
         int32_t len;
         while (ures_hasNext(eraRuleRes.getAlias())) {
             LocalUResourceBundlePointer res(ures_getNextResource(eraRuleRes.getAlias(), nullptr, &status));
@@ -173,12 +176,12 @@ EraRules* EraRules::createInstance(const char *calType, UBool includeTentativeEr
                 }
                 startDates[eraIdx] = encodeDate(fields[0], fields[1], fields[2]);
             } else if (uprv_strcmp(key, "named") == 0) {
-                const UChar *val = ures_getString(res.getAlias(), &len, &status);
+                const char16_t *val = ures_getString(res.getAlias(), &len, &status);
                 if (u_strncmp(val, VAL_FALSE, VAL_FALSE_LEN) == 0) {
-                    hasName = FALSE;
+                    hasName = false;
                 }
             } else if (uprv_strcmp(key, "end") == 0) {
-                hasEnd = TRUE;
+                hasEnd = true;
             }
         }
 
@@ -288,9 +291,23 @@ int32_t EraRules::getEraIndex(int32_t year, int32_t month, int32_t day, UErrorCo
 }
 
 void EraRules::initCurrentEra() {
-    UDate now = ucal_getNow();
+    // Compute local wall time in millis using ICU's default time zone.
+    UErrorCode ec = U_ZERO_ERROR;
+    UDate localMillis = ucal_getNow();
+
+    int32_t rawOffset, dstOffset;
+    TimeZone* zone = TimeZone::createDefault();
+    // If we failed to create the default time zone, we are in a bad state and don't
+    // really have many options. Carry on using UTC millis as a fallback.
+    if (zone != nullptr) {
+        zone->getOffset(localMillis, false, rawOffset, dstOffset, ec);
+        delete zone;
+        localMillis += (rawOffset + dstOffset);
+    }
+
     int year, month0, dom, dow, doy, mid;
-    Grego::timeToFields(now, year, month0, dom, dow, doy, mid);
+    Grego::timeToFields(localMillis, year, month0, dom, dow, doy, mid, ec);
+    if (U_FAILURE(ec)) return;
     int currentEncodedDate = encodeDate(year, month0 + 1 /* changes to 1-base */, dom);
     int eraIdx = numEras - 1;
     while (eraIdx > 0) {
@@ -301,7 +318,8 @@ void EraRules::initCurrentEra() {
     }
     // Note: current era could be before the first era.
     // In this case, this implementation returns the first era index (0).
-    currentEra = eraIdx;}
+    currentEra = eraIdx;
+}
 
 U_NAMESPACE_END
 #endif /* #if !UCONFIG_NO_FORMATTING */

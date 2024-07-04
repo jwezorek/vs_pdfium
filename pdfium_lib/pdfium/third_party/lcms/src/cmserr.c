@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------------
 //
 //  Little Color Management System
-//  Copyright (c) 1998-2017 Marti Maria Saguer
+//  Copyright (c) 1998-2023 Marti Maria Saguer
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the "Software"),
@@ -40,7 +40,7 @@ int CMSEXPORT cmsGetEncodedCMMversion(void)
 // compare two strings ignoring case
 int CMSEXPORT cmsstrcasecmp(const char* s1, const char* s2)
 {
-    register const unsigned char *us1 = (const unsigned char *)s1,
+    CMSREGISTER const unsigned char *us1 = (const unsigned char *)s1,
                                  *us2 = (const unsigned char *)s2;
 
     while (toupper(*us1) == toupper(*us2++))
@@ -166,7 +166,7 @@ void _cmsInstallAllocFunctions(cmsPluginMemHandler* Plugin, _cmsMemPluginChunkTy
 
 // Sub allocation takes care of many pointers of small size. The memory allocated in
 // this way have be freed at once. Next function allocates a single chunk for linked list
-// I prefer this method over realloc due to the big inpact on xput realloc may have if
+// I prefer this method over realloc due to the big impact on xput realloc may have if
 // memory is being swapped to disk. This approach is safer (although that may not be true on all platforms)
 static
 _cmsSubAllocator_chunk* _cmsCreateSubAllocChunk(cmsContext ContextID, cmsUInt32Number Initial)
@@ -293,7 +293,7 @@ void* _cmsSubAllocDup(_cmsSubAllocator* s, const void *ptr, cmsUInt32Number size
 // There is no error handling at all. When a function fails, it returns proper value.
 // For example, all create functions does return NULL on failure. Other return FALSE
 // It may be interesting, for the developer, to know why the function is failing.
-// for that reason, lcms2 does offer a logging function. This function does recive
+// for that reason, lcms2 does offer a logging function. This function does receive
 // a ENGLISH string with some clues on what is going wrong. You can show this
 // info to the end user, or just create some sort of log.
 // The logging function should NOT terminate the program, as this obviously can leave
@@ -471,7 +471,6 @@ cmsBool  _cmsRegisterMutexPlugin(cmsContext ContextID, cmsPluginBase* Data)
     if (Plugin ->CreateMutexPtr == NULL || Plugin ->DestroyMutexPtr == NULL || 
         Plugin ->LockMutexPtr == NULL || Plugin ->UnlockMutexPtr == NULL) return FALSE;
 
-
     ctx->CreateMutexPtr  = Plugin->CreateMutexPtr;
     ctx->DestroyMutexPtr = Plugin ->DestroyMutexPtr;
     ctx ->LockMutexPtr   = Plugin ->LockMutexPtr;
@@ -519,3 +518,47 @@ void CMSEXPORT _cmsUnlockMutex(cmsContext ContextID, void* mtx)
         ptr ->UnlockMutexPtr(ContextID, mtx);
     }
 }
+
+// The global Context0 storage for parallelization plug-in
+ _cmsParallelizationPluginChunkType _cmsParallelizationPluginChunk = { 0 };
+
+// Allocate parallelization container.
+void _cmsAllocParallelizationPluginChunk(struct _cmsContext_struct* ctx,
+                                         const struct _cmsContext_struct* src)
+{    
+    if (src != NULL) {
+        void* from = src->chunks[ParallelizationPlugin];
+        ctx->chunks[ParallelizationPlugin] = _cmsSubAllocDup(ctx->MemPool, from, sizeof(_cmsParallelizationPluginChunkType));
+    }
+    else {        
+        _cmsParallelizationPluginChunkType ParallelizationPluginChunk = { 0 };
+        ctx->chunks[ParallelizationPlugin] = _cmsSubAllocDup(ctx->MemPool, &ParallelizationPluginChunk, sizeof(_cmsParallelizationPluginChunkType));
+    }         
+}
+
+// Register parallel processing
+cmsBool _cmsRegisterParallelizationPlugin(cmsContext ContextID, cmsPluginBase* Data)
+{
+    cmsPluginParalellization* Plugin = (cmsPluginParalellization*)Data;
+    _cmsParallelizationPluginChunkType* ctx = (_cmsParallelizationPluginChunkType*)_cmsContextGetClientChunk(ContextID, ParallelizationPlugin);
+
+    if (Data == NULL) {
+
+        // No parallelization routines
+        ctx->MaxWorkers = 0;
+        ctx->WorkerFlags = 0;
+        ctx->SchedulerFn = NULL;        
+        return TRUE;
+    }
+
+    // callback is required
+    if (Plugin->SchedulerFn == NULL) return FALSE;
+
+    ctx->MaxWorkers = Plugin->MaxWorkers;
+    ctx->WorkerFlags = Plugin->WorkerFlags;
+    ctx->SchedulerFn = Plugin->SchedulerFn;
+    
+    // All is ok
+    return TRUE;
+}
+

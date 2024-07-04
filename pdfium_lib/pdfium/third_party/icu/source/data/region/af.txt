@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 af{
     Countries{
         001{"Wêreld"}
@@ -81,7 +82,7 @@ af{
         CK{"Cookeilande"}
         CL{"Chili"}
         CM{"Kameroen"}
-        CN{"Sjina"}
+        CN{"China"}
         CO{"Colombië"}
         CP{"Clippertoneiland"}
         CR{"Costa Rica"}
@@ -110,7 +111,7 @@ af{
         EZ{"Eurosone"}
         FI{"Finland"}
         FJ{"Fidji"}
-        FK{"Falklandeilande (Malvinas)"}
+        FK{"Falklandeilande"}
         FM{"Mikronesië"}
         FO{"Faroëreilande"}
         FR{"Frankryk"}
@@ -133,7 +134,7 @@ af{
         GU{"Guam"}
         GW{"Guinee-Bissau"}
         GY{"Guyana"}
-        HK{"Hongkong"}
+        HK{"Hongkong SAS China"}
         HM{"Heardeiland en McDonaldeilande"}
         HN{"Honduras"}
         HR{"Kroasië"}
@@ -183,11 +184,11 @@ af{
         MF{"Sint Martin"}
         MG{"Madagaskar"}
         MH{"Marshalleilande"}
-        MK{"Macedonië (VJRM)"}
+        MK{"Noord-Macedonië"}
         ML{"Mali"}
         MM{"Mianmar (Birma)"}
         MN{"Mongolië"}
-        MO{"Macau"}
+        MO{"Macau SAS China"}
         MP{"Noord-Mariane-eilande"}
         MQ{"Martinique"}
         MR{"Mauritanië"}
@@ -222,7 +223,7 @@ af{
         PM{"Sint Pierre en Miquelon"}
         PN{"Pitcairneilande"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Palestynse Grondgebiede"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -241,7 +242,7 @@ af{
         SG{"Singapoer"}
         SH{"Sint Helena"}
         SI{"Slowenië"}
-        SJ{"Svalbard en Jan Mayen"}
+        SJ{"Spitsbergen en Jan Mayen"}
         SK{"Slowakye"}
         SL{"Sierra Leone"}
         SM{"San Marino"}
@@ -253,7 +254,7 @@ af{
         SV{"El Salvador"}
         SX{"Sint Maarten"}
         SY{"Sirië"}
-        SZ{"Swaziland"}
+        SZ{"Eswatini"}
         TA{"Tristan da Cunha"}
         TC{"Turks- en Caicoseilande"}
         TD{"Tsjad"}
@@ -287,6 +288,8 @@ af{
         VU{"Vanuatu"}
         WF{"Wallis en Futuna"}
         WS{"Samoa"}
+        XA{"Pseudoaksente"}
+        XB{"Pseudotweerigting"}
         XK{"Kosovo"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -297,6 +300,9 @@ af{
     }
     Countries%short{
         GB{"VK"}
+        HK{"Hongkong"}
+        MO{"Macau"}
+        PS{"Palestina"}
         UN{"VN"}
         US{"VSA"}
     }
@@ -304,6 +310,6 @@ af{
         CD{"Kongo (DRK)"}
         CG{"Kongo (Republiek die)"}
         CZ{"Tsjeggiese Republiek"}
+        FK{"Falklandeilande (Malvinas)"}
     }
-    Version{"2.1.43.65"}
 }

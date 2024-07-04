@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,31 +7,23 @@
 #ifndef CORE_FXCRT_FX_STREAM_H_
 #define CORE_FXCRT_FX_STREAM_H_
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#include "core/fxcrt/bytestring.h"
+#include "core/fxcrt/fx_types.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "third_party/base/compiler_specific.h"
-
-struct FX_FolderHandle;
-
-FX_FolderHandle* FX_OpenFolder(const char* path);
-bool FX_GetNextFile(FX_FolderHandle* handle,
-                    ByteString* filename,
-                    bool* bFolder);
-void FX_CloseFolder(FX_FolderHandle* handle);
-
-// Used with std::unique_ptr to automatically call FX_CloseFolder().
-struct FxFolderHandleCloser {
-  inline void operator()(FX_FolderHandle* h) const { FX_CloseFolder(h); }
-};
-
-#define FX_FILEMODE_ReadOnly 1
-#define FX_FILEMODE_Truncate 2
+#include "core/fxcrt/span.h"
 
 class IFX_WriteStream {
  public:
-  virtual bool WriteBlock(const void* pData, size_t size) = 0;
-  virtual bool WriteString(ByteStringView str) = 0;
+  // When `size` is 0, treat it as a no-op and return true.
+  virtual bool WriteBlock(pdfium::span<const uint8_t> data) = 0;
+
+  bool WriteString(ByteStringView str);
+  bool WriteByte(uint8_t byte);
+  bool WriteDWord(uint32_t i);
+  bool WriteFilesize(FX_FILESIZE size);
 
  protected:
   virtual ~IFX_WriteStream() = default;
@@ -39,8 +31,6 @@ class IFX_WriteStream {
 
 class IFX_ArchiveStream : public IFX_WriteStream {
  public:
-  virtual bool WriteByte(uint8_t byte) = 0;
-  virtual bool WriteDWord(uint32_t i) = 0;
   virtual FX_FILESIZE CurrentOffset() const = 0;
 };
 
@@ -56,12 +46,11 @@ class IFX_SeekableWriteStream : virtual public IFX_StreamWithSize,
                                 public IFX_RetainableWriteStream {
  public:
   // IFX_WriteStream:
-  bool WriteBlock(const void* pData, size_t size) override;
+  bool WriteBlock(pdfium::span<const uint8_t> buffer) override;
 
   virtual bool Flush() = 0;
-  virtual bool WriteBlockAtOffset(const void* pData,
-                                  FX_FILESIZE offset,
-                                  size_t size) = 0;
+  virtual bool WriteBlockAtOffset(pdfium::span<const uint8_t> data,
+                                  FX_FILESIZE offset) = 0;
 };
 
 class IFX_SeekableReadStream : virtual public Retainable,
@@ -72,26 +61,16 @@ class IFX_SeekableReadStream : virtual public Retainable,
 
   virtual bool IsEOF();
   virtual FX_FILESIZE GetPosition();
-  virtual size_t ReadBlock(void* buffer, size_t size);
-
-  virtual bool ReadBlockAtOffset(void* buffer,
-                                 FX_FILESIZE offset,
-                                 size_t size) WARN_UNUSED_RESULT = 0;
+  [[nodiscard]] virtual size_t ReadBlock(pdfium::span<uint8_t> buffer);
+  [[nodiscard]] virtual bool ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                                               FX_FILESIZE offset) = 0;
 };
 
 class IFX_SeekableStream : public IFX_SeekableReadStream,
                            public IFX_SeekableWriteStream {
  public:
-  static RetainPtr<IFX_SeekableStream> CreateFromFilename(const char* filename,
-                                                          uint32_t dwModes);
-
-  static RetainPtr<IFX_SeekableStream> CreateFromFilename(
-      const wchar_t* filename,
-      uint32_t dwModes);
-
   // IFX_SeekableWriteStream:
-  bool WriteBlock(const void* buffer, size_t size) override;
-  bool WriteString(ByteStringView str) override;
+  bool WriteBlock(pdfium::span<const uint8_t> buffer) override;
 };
 
 #endif  // CORE_FXCRT_FX_STREAM_H_

@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,16 +7,17 @@
 #include "core/fxge/dib/cfx_cmyk_to_srgb.h"
 
 #include <algorithm>
-#include <tuple>
+#include <array>
 
+#include "core/fxcrt/check_op.h"
 #include "core/fxcrt/fx_system.h"
-#include "third_party/base/check.h"
 
 namespace fxge {
 
 namespace {
 
-constexpr uint8_t kCMYK[81 * 81][3] = {
+// 4-dimensional array each indexed by [0..8).
+constexpr std::array<const FX_RGB_STRUCT<uint8_t>, 9 * 9 * 9 * 9> kCMYK = {{
     {255, 255, 255}, {225, 226, 228}, {199, 200, 202}, {173, 174, 178},
     {147, 149, 152}, {123, 125, 128}, {99, 99, 102},   {69, 70, 71},
     {34, 30, 31},    {255, 253, 229}, {226, 224, 203}, {200, 199, 182},
@@ -1658,14 +1659,18 @@ constexpr uint8_t kCMYK[81 * 81][3] = {
     {54, 53, 57},    {48, 45, 49},    {41, 37, 41},    {33, 28, 32},
     {22, 19, 23},    {11, 6, 10},     {1, 0, 0},       {0, 0, 0},
     {0, 0, 0},
-};
+}};
+
+constexpr inline int IndexFromCMYK(int c, int m, int y, int k) {
+  return 9 * 9 * 9 * c + 9 * 9 * m + 9 * y + k;
+}
 
 }  // namespace
 
-std::tuple<uint8_t, uint8_t, uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
-                                                         uint8_t m,
-                                                         uint8_t y,
-                                                         uint8_t k) {
+FX_RGB_STRUCT<uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
+                                          uint8_t m,
+                                          uint8_t y,
+                                          uint8_t k) {
   int fix_c = c << 8;
   int fix_m = m << 8;
   int fix_y = y << 8;
@@ -1674,10 +1679,11 @@ std::tuple<uint8_t, uint8_t, uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
   int m_index = (fix_m + 4096) >> 13;
   int y_index = (fix_y + 4096) >> 13;
   int k_index = (fix_k + 4096) >> 13;
-  const int pos = c_index * 9 * 9 * 9 + m_index * 9 * 9 + y_index * 9 + k_index;
-  int fix_r = kCMYK[pos][0] << 8;
-  int fix_g = kCMYK[pos][1] << 8;
-  int fix_b = kCMYK[pos][2] << 8;
+  const auto& start_rgb =
+      kCMYK[IndexFromCMYK(c_index, m_index, y_index, k_index)];
+  int fix_r = start_rgb.red << 8;
+  int fix_g = start_rgb.green << 8;
+  int fix_b = start_rgb.blue << 8;
   int c1_index = fix_c >> 13;
   if (c1_index == c_index)
     c1_index = c1_index == 8 ? c1_index - 1 : c1_index + 1;
@@ -1691,41 +1697,43 @@ std::tuple<uint8_t, uint8_t, uint8_t> AdobeCMYK_to_sRGB1(uint8_t c,
   if (k1_index == k_index)
     k1_index = k1_index == 8 ? k1_index - 1 : k1_index + 1;
 
-  const int c1_pos = pos + (c1_index - c_index) * 9 * 9 * 9;
+  const auto& c1_rgb =
+      kCMYK[IndexFromCMYK(c1_index, m_index, y_index, k_index)];
   const int c_rate = (fix_c - (c_index << 13)) * (c_index - c1_index);
-  fix_r += (kCMYK[pos][0] - kCMYK[c1_pos][0]) * c_rate / 32;
-  fix_g += (kCMYK[pos][1] - kCMYK[c1_pos][1]) * c_rate / 32;
-  fix_b += (kCMYK[pos][2] - kCMYK[c1_pos][2]) * c_rate / 32;
+  fix_r += (start_rgb.red - c1_rgb.red) * c_rate / 32;
+  fix_g += (start_rgb.green - c1_rgb.green) * c_rate / 32;
+  fix_b += (start_rgb.blue - c1_rgb.blue) * c_rate / 32;
 
-  const int m1_pos = pos + (m1_index - m_index) * 9 * 9;
+  const auto& m1_rgb =
+      kCMYK[IndexFromCMYK(c_index, m1_index, y_index, k_index)];
   const int m_rate = (fix_m - (m_index << 13)) * (m_index - m1_index);
-  fix_r += (kCMYK[pos][0] - kCMYK[m1_pos][0]) * m_rate / 32;
-  fix_g += (kCMYK[pos][1] - kCMYK[m1_pos][1]) * m_rate / 32;
-  fix_b += (kCMYK[pos][2] - kCMYK[m1_pos][2]) * m_rate / 32;
+  fix_r += (start_rgb.red - m1_rgb.red) * m_rate / 32;
+  fix_g += (start_rgb.green - m1_rgb.green) * m_rate / 32;
+  fix_b += (start_rgb.blue - m1_rgb.blue) * m_rate / 32;
 
-  const int y1_pos = pos + (y1_index - y_index) * 9;
+  const auto& y1_rgb =
+      kCMYK[IndexFromCMYK(c_index, m_index, y1_index, k_index)];
   const int y_rate = (fix_y - (y_index << 13)) * (y_index - y1_index);
-  fix_r += (kCMYK[pos][0] - kCMYK[y1_pos][0]) * y_rate / 32;
-  fix_g += (kCMYK[pos][1] - kCMYK[y1_pos][1]) * y_rate / 32;
-  fix_b += (kCMYK[pos][2] - kCMYK[y1_pos][2]) * y_rate / 32;
+  fix_r += (start_rgb.red - y1_rgb.red) * y_rate / 32;
+  fix_g += (start_rgb.green - y1_rgb.green) * y_rate / 32;
+  fix_b += (start_rgb.blue - y1_rgb.blue) * y_rate / 32;
 
-  const int k1_pos = pos + (k1_index - k_index);
+  const auto& k1_rgb =
+      kCMYK[IndexFromCMYK(c_index, m_index, y_index, k1_index)];
   const int k_rate = (fix_k - (k_index << 13)) * (k_index - k1_index);
-  fix_r += (kCMYK[pos][0] - kCMYK[k1_pos][0]) * k_rate / 32;
-  fix_g += (kCMYK[pos][1] - kCMYK[k1_pos][1]) * k_rate / 32;
-  fix_b += (kCMYK[pos][2] - kCMYK[k1_pos][2]) * k_rate / 32;
+  fix_r += (start_rgb.red - k1_rgb.red) * k_rate / 32;
+  fix_g += (start_rgb.green - k1_rgb.green) * k_rate / 32;
+  fix_b += (start_rgb.blue - k1_rgb.blue) * k_rate / 32;
 
-  fix_r = std::max(fix_r, 0);
-  fix_g = std::max(fix_g, 0);
-  fix_b = std::max(fix_b, 0);
+  fix_r = std::max(fix_r, 0) >> 8;
+  fix_g = std::max(fix_g, 0) >> 8;
+  fix_b = std::max(fix_b, 0) >> 8;
 
-  return std::make_tuple(fix_r >> 8, fix_g >> 8, fix_b >> 8);
+  return {static_cast<uint8_t>(fix_r), static_cast<uint8_t>(fix_g),
+          static_cast<uint8_t>(fix_b)};
 }
 
-std::tuple<float, float, float> AdobeCMYK_to_sRGB(float c,
-                                                  float m,
-                                                  float y,
-                                                  float k) {
+FX_RGB_STRUCT<float> AdobeCMYK_to_sRGB(float c, float m, float y, float k) {
   // Convert to uint8_t with round-to-nearest. Avoid using FXSYS_roundf because
   // it is incredibly expensive with VC++ (tested on VC++ 2015) because round()
   // is very expensive.
@@ -1735,24 +1743,26 @@ std::tuple<float, float, float> AdobeCMYK_to_sRGB(float c,
   // That value is close to the cusp but zero is the correct answer, and
   // getting the same answer as before is desirable.
   // All floats from 0.0 to 1.0 were tested and now give the same results.
-  const float rounding_offset = 0.49999997f;
-  uint8_t c1 = static_cast<int>(c * 255.f + rounding_offset);
-  uint8_t m1 = static_cast<int>(m * 255.f + rounding_offset);
-  uint8_t y1 = static_cast<int>(y * 255.f + rounding_offset);
-  uint8_t k1 = static_cast<int>(k * 255.f + rounding_offset);
+  constexpr float kRoundingOffset = 0.49999997f;
+  uint8_t c1 = static_cast<int>(c * 255.f + kRoundingOffset);
+  uint8_t m1 = static_cast<int>(m * 255.f + kRoundingOffset);
+  uint8_t y1 = static_cast<int>(y * 255.f + kRoundingOffset);
+  uint8_t k1 = static_cast<int>(k * 255.f + kRoundingOffset);
 
-  DCHECK(c1 == FXSYS_roundf(c * 255));
-  DCHECK(m1 == FXSYS_roundf(m * 255));
-  DCHECK(y1 == FXSYS_roundf(y * 255));
-  DCHECK(k1 == FXSYS_roundf(k * 255));
+  DCHECK_EQ(c1, FXSYS_roundf(c * 255));
+  DCHECK_EQ(m1, FXSYS_roundf(m * 255));
+  DCHECK_EQ(y1, FXSYS_roundf(y * 255));
+  DCHECK_EQ(k1, FXSYS_roundf(k * 255));
 
-  uint8_t r;
-  uint8_t g;
-  uint8_t b;
-  std::tie(r, g, b) = AdobeCMYK_to_sRGB1(c1, m1, y1, k1);
+  FX_RGB_STRUCT<uint8_t> int_results = AdobeCMYK_to_sRGB1(c1, m1, y1, k1);
   // Multiply by a constant rather than dividing because division is much
   // more expensive.
-  return std::make_tuple(r * (1.0f / 255), g * (1.0f / 255), b * (1.0f / 255));
+  constexpr float kToFloat = 1.0f / 255.0f;
+  return {
+      int_results.red * kToFloat,
+      int_results.green * kToFloat,
+      int_results.blue * kToFloat,
+  };
 }
 
 }  // namespace fxge

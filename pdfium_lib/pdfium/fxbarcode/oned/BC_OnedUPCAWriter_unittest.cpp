@@ -1,10 +1,13 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "fxbarcode/oned/BC_OnedUPCAWriter.h"
 
-#include "core/fxcrt/fx_memory.h"
+#include <string.h>
+
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/data_vector.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace {
@@ -12,29 +15,15 @@ namespace {
 TEST(OnedUPCAWriterTest, Encode) {
   CBC_OnedUPCAWriter writer;
   writer.InitEANWriter();
-  int32_t width;
-  int32_t height;
 
   // UPCA barcodes encode 12-digit numbers into 95 modules in a unidimensional
   // disposition.
-  uint8_t* encoded = writer.Encode("", BCFORMAT_UPC_A, width, height);
-  EXPECT_EQ(nullptr, encoded);
-  FX_Free(encoded);
+  EXPECT_TRUE(writer.Encode("").empty());
+  EXPECT_TRUE(writer.Encode("123").empty());
+  EXPECT_TRUE(writer.Encode("12345678901").empty());
+  EXPECT_TRUE(writer.Encode("1234567890123").empty());
 
-  encoded = writer.Encode("123", BCFORMAT_UPC_A, width, height);
-  EXPECT_EQ(nullptr, encoded);
-  FX_Free(encoded);
-
-  encoded = writer.Encode("12345678901", BCFORMAT_UPC_A, width, height);
-  EXPECT_EQ(nullptr, encoded);
-  FX_Free(encoded);
-
-  encoded = writer.Encode("1234567890123", BCFORMAT_UPC_A, width, height);
-  EXPECT_EQ(nullptr, encoded);
-  FX_Free(encoded);
-
-  encoded = writer.Encode("123456789012", BCFORMAT_UPC_A, width, height);
-  const char* expected =
+  static const char kExpected1[] =
       "# #"      // Start
       "  ##  #"  // 1 L
       "  #  ##"  // 2 L
@@ -50,16 +39,14 @@ TEST(OnedUPCAWriterTest, Encode) {
       "##  ## "  // 1 R
       "## ##  "  // 2 R
       "# #";     // End
-  EXPECT_NE(nullptr, encoded);
-  EXPECT_EQ(1, height);
-  EXPECT_EQ(static_cast<int32_t>(strlen(expected)), width);
-  for (size_t i = 0; i < strlen(expected); i++) {
-    EXPECT_EQ(expected[i] != ' ', !!encoded[i]) << i;
+  DataVector<uint8_t> encoded = writer.Encode("123456789012");
+  ASSERT_EQ(strlen(kExpected1), encoded.size());
+  for (size_t i = 0; i < strlen(kExpected1); i++) {
+    UNSAFE_TODO(EXPECT_EQ(kExpected1[i] != ' ', !!encoded[i])) << i;
   }
-  FX_Free(encoded);
 
-  encoded = writer.Encode("777666555440", BCFORMAT_UPC_A, width, height);
-  expected =
+  encoded = writer.Encode("777666555440");
+  static const char kExpected2[] =
       "# #"      // Start
       " ### ##"  // 7 L
       " ### ##"  // 7 L
@@ -75,13 +62,10 @@ TEST(OnedUPCAWriterTest, Encode) {
       "# ###  "  // 4 R
       "###  # "  // 0 R
       "# #";     // End
-  EXPECT_NE(nullptr, encoded);
-  EXPECT_EQ(1, height);
-  EXPECT_EQ(static_cast<int32_t>(strlen(expected)), width);
-  for (size_t i = 0; i < strlen(expected); i++) {
-    EXPECT_EQ(expected[i] != ' ', !!encoded[i]) << i;
+  ASSERT_EQ(strlen(kExpected2), encoded.size());
+  for (size_t i = 0; i < strlen(kExpected2); i++) {
+    UNSAFE_TODO(EXPECT_EQ(kExpected2[i] != ' ', !!encoded[i])) << i;
   }
-  FX_Free(encoded);
 }
 
 TEST(OnedUPCAWriterTest, Checksum) {

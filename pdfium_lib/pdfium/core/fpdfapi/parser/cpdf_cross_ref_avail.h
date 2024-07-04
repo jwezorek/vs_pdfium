@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,6 +9,7 @@
 #include <set>
 
 #include "core/fpdfapi/parser/cpdf_data_avail.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_SyntaxParser;
@@ -26,16 +27,16 @@ class CPDF_CrossRefAvail {
  private:
   enum class State {
     kCrossRefCheck,
-    kCrossRefV4ItemCheck,
-    kCrossRefV4TrailerCheck,
+    kCrossRefTableItemCheck,
+    kCrossRefTableTrailerCheck,
     kDone,
   };
 
   bool CheckReadProblems();
   bool CheckCrossRef();
-  bool CheckCrossRefV4();
-  bool CheckCrossRefV4Item();
-  bool CheckCrossRefV4Trailer();
+  bool CheckCrossRefTable();
+  bool CheckCrossRefTableItem();
+  bool CheckCrossRefTableTrailer();
   bool CheckCrossRefStream();
 
   void AddCrossRefForCheck(FX_FILESIZE crossref_offset);
@@ -44,7 +45,7 @@ class CPDF_CrossRefAvail {
 
   UnownedPtr<CPDF_SyntaxParser> const parser_;
   const FX_FILESIZE last_crossref_offset_;
-  CPDF_DataAvail::DocAvailStatus status_ = CPDF_DataAvail::DataNotAvailable;
+  CPDF_DataAvail::DocAvailStatus status_ = CPDF_DataAvail::kDataNotAvailable;
   State state_ = State::kCrossRefCheck;
   FX_FILESIZE offset_ = 0;
   std::queue<FX_FILESIZE> cross_refs_for_check_;

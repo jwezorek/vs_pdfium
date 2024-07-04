@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +6,10 @@
 
 #include "core/fpdfapi/cmaps/Korea1/cmaps_korea1.h"
 
-const uint16_t g_FXCMAP_Korea1CID2Unicode_2[18352] = {
+namespace fxcmap {
+namespace {
+
+const uint16_t kKorea1CID2UnicodeData[] = {
     0xFFFD, 0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
     0x0028, 0x0029, 0x002A, 0x002B, 0x002C, 0x002D, 0x002E, 0x002F, 0x0030,
     0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037, 0x0038, 0x0039,
@@ -2048,3 +2051,9 @@ const uint16_t g_FXCMAP_Korea1CID2Unicode_2[18352] = {
     0x0077, 0x0078, 0x0079, 0x007A, 0x007B, 0x007C, 0x007D, 0x203E, 0x007E,
     0x005C,
 };
+
+}  // namespace
+
+const pdfium::span<const uint16_t> kKorea1CID2Unicode_2{kKorea1CID2UnicodeData};
+
+}  // namespace fxcmap

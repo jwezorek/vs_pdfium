@@ -1,4 +1,4 @@
-# Copyright 2019 The PDFium Authors. All rights reserved.
+# Copyright 2019 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -7,6 +7,9 @@
 See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts
 for more details about the presubmit API built into depot_tools.
 """
+
+USE_PYTHON3 = True
+
 
 def _CheckApiTestFile(input_api, output_api):
   """Checks that the public headers match the API tests."""
@@ -21,7 +24,7 @@ def _CheckApiTestFile(input_api, output_api):
   src_path = input_api.os_path.dirname(input_api.PresubmitLocalPath())
   check_script = input_api.os_path.join(
       src_path, 'testing' , 'tools' , 'api_check.py')
-  cmd = [input_api.python_executable, check_script]
+  cmd = [input_api.python3_executable, check_script]
   try:
     input_api.subprocess.check_output(cmd)
     return []

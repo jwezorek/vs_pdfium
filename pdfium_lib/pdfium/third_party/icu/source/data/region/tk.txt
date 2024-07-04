@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 tk{
     Countries{
         001{"Dünýä"}
@@ -110,7 +111,7 @@ tk{
         EZ{"Ýewro sebiti"}
         FI{"Finlýandiýa"}
         FJ{"Fiji"}
-        FK{"Folklend (Malwina) adalary"}
+        FK{"Folklend adalary"}
         FM{"Mikroneziýa"}
         FO{"Farer adalary"}
         FR{"Fransiýa"}
@@ -133,7 +134,7 @@ tk{
         GU{"Guam"}
         GW{"Gwineýa-Bisau"}
         GY{"Gaýana"}
-        HK{"Gonkong"}
+        HK{"Gonkong AAS Hytaý"}
         HM{"Herd we Makdonald adalary"}
         HN{"Gonduras"}
         HR{"Horwatiýa"}
@@ -179,15 +180,15 @@ tk{
         MA{"Marokko"}
         MC{"Monako"}
         MD{"Moldowa"}
-        ME{"Montenegro"}
+        ME{"Çernogoriýa"}
         MF{"Sen-Marten"}
         MG{"Madagaskar"}
         MH{"Marşall adalary"}
-        MK{"Makedoniýa (ÖÝR)"}
+        MK{"Demirgazyk Makedoniýa"}
         ML{"Mali"}
-        MM{"Mýanma (Burma)"}
+        MM{"Mýanma (Birma)"}
         MN{"Mongoliýa"}
-        MO{"Makau"}
+        MO{"Makao AAS Hytaý"}
         MP{"Demirgazyk Mariana adalary"}
         MQ{"Martinika"}
         MR{"Mawritaniýa"}
@@ -222,7 +223,7 @@ tk{
         PM{"Sen-Pýer we Mikelon"}
         PN{"Pitkern adalary"}
         PR{"Puerto-Riko"}
-        PS{"Palestina"}
+        PS{"Palestina territoriýasy"}
         PT{"Portugaliýa"}
         PW{"Palau"}
         PY{"Paragwaý"}
@@ -253,7 +254,7 @@ tk{
         SV{"Salwador"}
         SX{"Sint-Marten"}
         SY{"Siriýa"}
-        SZ{"Swazilend"}
+        SZ{"Eswatini"}
         TA{"Tristan-da-Kunýa"}
         TC{"Terks we Kaýkos adalary"}
         TD{"Çad"}
@@ -287,6 +288,8 @@ tk{
         VU{"Wanuatu"}
         WF{"Uollis we Futuna"}
         WS{"Samoa"}
+        XA{"psewdo-şiweler"}
+        XB{"psewdo-bidi"}
         XK{"Kosowo"}
         YE{"Ýemen"}
         YT{"Maýotta"}
@@ -296,7 +299,9 @@ tk{
         ZZ{"Näbelli sebit"}
     }
     Countries%short{
-        GB{"Birleşen Patyşalyk"}
+        HK{"Gonkong"}
+        MO{"Makao"}
+        PS{"Palestina"}
         US{"ABŞ"}
     }
     Countries%variant{
@@ -304,7 +309,9 @@ tk{
         CG{"Kongo (Respublika)"}
         CI{"Şirmaýy kenar"}
         CZ{"Çeh Respublikasy"}
+        FK{"Folklend (Malwina) adalary"}
+        NZ{"Aotearoa Täze Zelandiýa"}
+        SZ{"Swazilend"}
         TL{"Gündogar Timor"}
     }
-    Version{"2.1.43.65"}
 }

@@ -1,29 +1,14 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 de_CH{
-    ExemplarCharacters{"[a ä b c d e f g h i j k l m n o ö p q r s t u ü v w x y z]"}
-    ExemplarCharactersNumbers{"[\\- . ’ % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
+    ExemplarCharacters{"[aä b c d e f g h i j k l m n oö p q r s t uü v w x y z]"}
+    ExemplarCharactersNumbers{"[\\- ‑ . ’ % ‰ + 0 1 2 3 4 5 6 7 8 9]"}
     NumberElements{
         latn{
             patterns{
                 currencyFormat{"¤ #,##0.00;¤-#,##0.00"}
                 percentFormat{"#,##0%"}
-            }
-            patternsShort{
-                currencyFormat{
-                    1000{
-                        one{"0"}
-                        other{"0"}
-                    }
-                    10000{
-                        one{"0"}
-                        other{"0"}
-                    }
-                    100000{
-                        one{"0"}
-                        other{"0"}
-                    }
-                }
             }
             symbols{
                 decimal{"."}
@@ -31,9 +16,11 @@ de_CH{
             }
         }
     }
-    Version{"2.1.44.50"}
     calendar{
         gregorian{
+            availableFormats{
+                GyMd{"dd.MM.y GGGGG"}
+            }
             dayNames{
                 format{
                     short{
@@ -45,6 +32,11 @@ de_CH{
                         "Fr",
                         "Sa",
                     }
+                }
+            }
+            intervalFormats{
+                M{
+                    M{"M – M"}
                 }
             }
         }
@@ -76,6 +68,21 @@ de_CH{
         }
         weekdayOfMonth-short{
             dn{"Wochent. i. Mo."}
+        }
+    }
+    parse{
+        general{
+            lenient{
+                "[.．․﹒ 。｡︒]",
+                "['＇’ ՚ ᾽᾿ ʼ]",
+                "[%％﹪ ٪]",
+                "[‰ ؉]",
+                "[\$＄﹩]",
+                "[£ ₤]",
+                "[¥￥]",
+                "[₩￦]",
+                "[₹ ₨ {Rp} {Rs}]",
+            }
         }
     }
 }

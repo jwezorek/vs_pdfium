@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,11 +8,12 @@
 
 #include "core/fpdfapi/page/cpdf_image.h"
 #include "core/fpdfapi/page/cpdf_imageobject.h"
+#include "core/fpdfapi/page/cpdf_pageimagecache.h"
 #include "core/fpdfapi/page/cpdf_pageobject.h"
 #include "core/fpdfapi/page/cpdf_pageobjectholder.h"
-#include "core/fpdfapi/render/cpdf_pagerendercache.h"
 #include "core/fpdfapi/render/cpdf_renderoptions.h"
 #include "core/fpdfapi/render/cpdf_renderstatus.h"
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/pauseindicator_iface.h"
 #include "core/fxge/cfx_renderdevice.h"
 
@@ -20,7 +21,10 @@ CPDF_ProgressiveRenderer::CPDF_ProgressiveRenderer(
     CPDF_RenderContext* pContext,
     CFX_RenderDevice* pDevice,
     const CPDF_RenderOptions* pOptions)
-    : m_pContext(pContext), m_pDevice(pDevice), m_pOptions(pOptions) {}
+    : m_pContext(pContext), m_pDevice(pDevice), m_pOptions(pOptions) {
+  CHECK(m_pContext);
+  CHECK(m_pDevice);
+}
 
 CPDF_ProgressiveRenderer::~CPDF_ProgressiveRenderer() {
   if (m_pRenderStatus) {
@@ -30,7 +34,7 @@ CPDF_ProgressiveRenderer::~CPDF_ProgressiveRenderer() {
 }
 
 void CPDF_ProgressiveRenderer::Start(PauseIndicatorIface* pPause) {
-  if (!m_pContext || !m_pDevice || m_Status != kReady) {
+  if (m_Status != kReady) {
     m_Status = kFailed;
     return;
   }
@@ -46,32 +50,32 @@ void CPDF_ProgressiveRenderer::Continue(PauseIndicatorIface* pPause) {
         return;
       }
       m_pCurrentLayer = m_pContext->GetLayer(m_LayerIndex);
-      m_LastObjectRendered = m_pCurrentLayer->m_pObjectHolder->end();
-      m_pRenderStatus = std::make_unique<CPDF_RenderStatus>(m_pContext.Get(),
-                                                            m_pDevice.Get());
+      m_LastObjectRendered = m_pCurrentLayer->GetObjectHolder()->end();
+      m_pRenderStatus =
+          std::make_unique<CPDF_RenderStatus>(m_pContext, m_pDevice);
       if (m_pOptions)
         m_pRenderStatus->SetOptions(*m_pOptions);
       m_pRenderStatus->SetTransparency(
-          m_pCurrentLayer->m_pObjectHolder->GetTransparency());
+          m_pCurrentLayer->GetObjectHolder()->GetTransparency());
       m_pRenderStatus->Initialize(nullptr, nullptr);
       m_pDevice->SaveState();
-      m_ClipRect = m_pCurrentLayer->m_Matrix.GetInverse().TransformRect(
+      m_ClipRect = m_pCurrentLayer->GetMatrix().GetInverse().TransformRect(
           CFX_FloatRect(m_pDevice->GetClipBox()));
     }
     CPDF_PageObjectHolder::const_iterator iter;
     CPDF_PageObjectHolder::const_iterator iterEnd =
-        m_pCurrentLayer->m_pObjectHolder->end();
+        m_pCurrentLayer->GetObjectHolder()->end();
     if (m_LastObjectRendered != iterEnd) {
       iter = m_LastObjectRendered;
       ++iter;
     } else {
-      iter = m_pCurrentLayer->m_pObjectHolder->begin();
+      iter = m_pCurrentLayer->GetObjectHolder()->begin();
     }
     int nObjsToGo = kStepLimit;
     bool is_mask = false;
     while (iter != iterEnd) {
       CPDF_PageObject* pCurObj = iter->get();
-      if (pCurObj && pCurObj->GetRect().left <= m_ClipRect.right &&
+      if (pCurObj->GetRect().left <= m_ClipRect.right &&
           pCurObj->GetRect().right >= m_ClipRect.left &&
           pCurObj->GetRect().bottom <= m_ClipRect.top &&
           pCurObj->GetRect().top >= m_ClipRect.bottom) {
@@ -79,14 +83,14 @@ void CPDF_ProgressiveRenderer::Continue(PauseIndicatorIface* pPause) {
             pCurObj->AsImage()->GetImage()->IsMask()) {
           if (m_pDevice->GetDeviceType() == DeviceType::kPrinter) {
             m_LastObjectRendered = iter;
-            m_pRenderStatus->ProcessClipPath(pCurObj->m_ClipPath,
-                                             m_pCurrentLayer->m_Matrix);
+            m_pRenderStatus->ProcessClipPath(pCurObj->clip_path(),
+                                             m_pCurrentLayer->GetMatrix());
             return;
           }
           is_mask = true;
         }
         if (m_pRenderStatus->ContinueSingleObject(
-                pCurObj, m_pCurrentLayer->m_Matrix, pPause)) {
+                pCurObj, m_pCurrentLayer->GetMatrix(), pPause)) {
           return;
         }
         if (pCurObj->IsImage() && m_pRenderStatus->GetRenderOptions()
@@ -110,7 +114,7 @@ void CPDF_ProgressiveRenderer::Continue(PauseIndicatorIface* pPause) {
       if (is_mask && iter != iterEnd)
         return;
     }
-    if (m_pCurrentLayer->m_pObjectHolder->GetParseState() ==
+    if (m_pCurrentLayer->GetObjectHolder()->GetParseState() ==
         CPDF_PageObjectHolder::ParseState::kParsed) {
       m_pRenderStatus.reset();
       m_pDevice->RestoreState(false);
@@ -121,8 +125,8 @@ void CPDF_ProgressiveRenderer::Continue(PauseIndicatorIface* pPause) {
     } else if (is_mask) {
       return;
     } else {
-      m_pCurrentLayer->m_pObjectHolder->ContinueParse(pPause);
-      if (m_pCurrentLayer->m_pObjectHolder->GetParseState() !=
+      m_pCurrentLayer->GetObjectHolder()->ContinueParse(pPause);
+      if (m_pCurrentLayer->GetObjectHolder()->GetParseState() !=
           CPDF_PageObjectHolder::ParseState::kParsed) {
         return;
       }

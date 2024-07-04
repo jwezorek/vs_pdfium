@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,9 +7,11 @@
 #ifndef CORE_FXCODEC_JBIG2_JBIG2_PDDPROC_H_
 #define CORE_FXCODEC_JBIG2_JBIG2_PDDPROC_H_
 
+#include <stdint.h>
+
 #include <memory>
 
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/span.h"
 
 class CJBig2_ArithDecoder;
 class CJBig2_BitStream;
@@ -22,7 +24,7 @@ class CJBig2_PDDProc {
  public:
   std::unique_ptr<CJBig2_PatternDict> DecodeArith(
       CJBig2_ArithDecoder* pArithDecoder,
-      JBig2ArithCtx* gbContext,
+      pdfium::span<JBig2ArithCtx> gbContexts,
       PauseIndicatorIface* pPause);
 
   std::unique_ptr<CJBig2_PatternDict> DecodeMMR(CJBig2_BitStream* pStream);

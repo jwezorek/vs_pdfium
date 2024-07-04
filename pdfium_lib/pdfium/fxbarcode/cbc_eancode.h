@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,9 +9,8 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/widestring.h"
 #include "fxbarcode/cbc_onecode.h"
-#include "fxbarcode/utils.h"
 
 class CBC_OneDimEANWriter;
 
@@ -20,13 +19,12 @@ class CBC_EANCode : public CBC_OneCode {
   explicit CBC_EANCode(std::unique_ptr<CBC_OneDimEANWriter> pWriter);
   ~CBC_EANCode() override;
 
-  virtual BCFORMAT GetFormat() const = 0;
   virtual size_t GetMaxLength() const = 0;
 
   // CBC_EANCode:
   bool Encode(WideStringView contents) override;
   bool RenderDevice(CFX_RenderDevice* device,
-                    const CFX_Matrix* matrix) override;
+                    const CFX_Matrix& matrix) override;
 
  protected:
   CBC_OneDimEANWriter* GetOneDimEANWriter();

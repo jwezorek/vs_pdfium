@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "core/fxcrt/css/cfx_csssyntaxparser.h"
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/widestring.h"
 
 class CFX_CSSStyleRule;
 
@@ -25,7 +25,7 @@ class CFX_CSSStyleSheet {
   CFX_CSSStyleRule* GetRule(size_t index) const;
 
  private:
-  CFX_CSSSyntaxStatus LoadStyleRule(CFX_CSSSyntaxParser* pSyntax);
+  CFX_CSSSyntaxParser::Status LoadStyleRule(CFX_CSSSyntaxParser* pSyntax);
   void SkipRuleSet(CFX_CSSSyntaxParser* pSyntax);
 
   std::vector<std::unique_ptr<CFX_CSSStyleRule>> m_RuleArray;

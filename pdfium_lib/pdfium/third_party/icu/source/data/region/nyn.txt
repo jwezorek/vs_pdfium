@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 nyn{
     Countries{
         AD{"Andora"}
@@ -92,7 +93,6 @@ nyn{
         IE{"Irerandi"}
         IL{"Isirairi"}
         IN{"Indiya"}
-        IO{"Ebizinga bya Indian ebya Bungyereza"}
         IQ{"Iraaka"}
         IR{"Iraani"}
         IS{"Aisilandi"}
@@ -127,7 +127,6 @@ nyn{
         MD{"Moridova"}
         MG{"Madagasika"}
         MH{"Ebizinga bya Marshaa"}
-        MK{"Masedoonia"}
         ML{"Mari"}
         MM{"Myanamar"}
         MN{"Mongoria"}
@@ -227,5 +226,4 @@ nyn{
         ZM{"Zambia"}
         ZW{"Zimbabwe"}
     }
-    Version{"2.1.39.11"}
 }

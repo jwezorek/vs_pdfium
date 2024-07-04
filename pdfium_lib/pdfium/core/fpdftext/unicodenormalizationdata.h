@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,10 +9,12 @@
 
 #include <stdint.h>
 
-extern const uint16_t g_UnicodeData_Normalization[];
-extern const uint16_t g_UnicodeData_Normalization_Map1[];
-extern const uint16_t g_UnicodeData_Normalization_Map2[];
-extern const uint16_t g_UnicodeData_Normalization_Map3[];
-extern const uint16_t g_UnicodeData_Normalization_Map4[];
+#include <array>
+
+extern const std::array<uint16_t, 65536> kUnicodeDataNormalization;
+extern const std::array<uint16_t, 5376> kUnicodeDataNormalizationMap1;
+extern const std::array<uint16_t, 1724> kUnicodeDataNormalizationMap2;
+extern const std::array<uint16_t, 1164> kUnicodeDataNormalizationMap3;
+extern const std::array<uint16_t, 488> kUnicodeDataNormalizationMap4;
 
 #endif  // CORE_FPDFTEXT_UNICODENORMALIZATIONDATA_H_

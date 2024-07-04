@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,15 @@
 #ifndef CORE_FXCODEC_JBIG2_JBIG2_SDDPROC_H_
 #define CORE_FXCODEC_JBIG2_JBIG2_SDDPROC_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
-#include <vector>
 
 #include "core/fxcodec/jbig2/JBig2_ArithDecoder.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
 class CJBig2_BitStream;
 class CJBig2_HuffmanTable;
@@ -26,13 +29,13 @@ class CJBig2_SDDProc {
 
   std::unique_ptr<CJBig2_SymbolDict> DecodeArith(
       CJBig2_ArithDecoder* pArithDecoder,
-      std::vector<JBig2ArithCtx>* gbContext,
-      std::vector<JBig2ArithCtx>* grContext);
+      pdfium::span<JBig2ArithCtx> gbContexts,
+      pdfium::span<JBig2ArithCtx> grContexts);
 
   std::unique_ptr<CJBig2_SymbolDict> DecodeHuffman(
       CJBig2_BitStream* pStream,
-      std::vector<JBig2ArithCtx>* gbContext,
-      std::vector<JBig2ArithCtx>* grContext);
+      pdfium::span<JBig2ArithCtx> gbContexts,
+      pdfium::span<JBig2ArithCtx> grContexts);
 
   bool SDHUFF;
   bool SDREFAGG;
@@ -41,13 +44,20 @@ class CJBig2_SDDProc {
   uint32_t SDNUMINSYMS;
   uint32_t SDNUMNEWSYMS;
   uint32_t SDNUMEXSYMS;
-  CJBig2_Image** SDINSYMS;
+  UNOWNED_PTR_EXCLUSION CJBig2_Image** SDINSYMS;
   UnownedPtr<const CJBig2_HuffmanTable> SDHUFFDH;
   UnownedPtr<const CJBig2_HuffmanTable> SDHUFFDW;
   UnownedPtr<const CJBig2_HuffmanTable> SDHUFFBMSIZE;
   UnownedPtr<const CJBig2_HuffmanTable> SDHUFFAGGINST;
-  int8_t SDAT[8];
-  int8_t SDRAT[4];
+  std::array<int8_t, 8> SDAT;
+  std::array<int8_t, 4> SDRAT;
+
+ private:
+  // Reads from `SDINSYMS` if `i` is in-bounds. Otherwise, reduce `i` by
+  // `SDNUMINSYMS` and read from `new_syms` at the new index.
+  CJBig2_Image* GetImage(
+      uint32_t i,
+      pdfium::span<const std::unique_ptr<CJBig2_Image>> new_syms) const;
 };
 
 #endif  // CORE_FXCODEC_JBIG2_JBIG2_SDDPROC_H_

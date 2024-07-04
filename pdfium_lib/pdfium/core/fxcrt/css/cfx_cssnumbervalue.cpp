@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,34 +6,37 @@
 
 #include "core/fxcrt/css/cfx_cssnumbervalue.h"
 
-CFX_CSSNumberValue::CFX_CSSNumberValue(CFX_CSSNumberType type, float value)
-    : CFX_CSSValue(CFX_CSSPrimitiveType::Number), type_(type), value_(value) {
-  if (type_ == CFX_CSSNumberType::Number && fabs(value_) < 0.001f)
-    value_ = 0.0f;
+#include <math.h>
+
+CFX_CSSNumberValue::CFX_CSSNumberValue(CFX_CSSNumber number)
+    : CFX_CSSValue(PrimitiveType::kNumber), number_(number) {
+  if (number_.unit == CFX_CSSNumber::Unit::kNumber &&
+      fabs(number_.value) < 0.001f) {
+    number_.value = 0.0f;
+  }
 }
 
 CFX_CSSNumberValue::~CFX_CSSNumberValue() = default;
 
 float CFX_CSSNumberValue::Apply(float percentBase) const {
-  switch (type_) {
-    case CFX_CSSNumberType::Pixels:
-    case CFX_CSSNumberType::Number:
-      return value_ * 72 / 96;
-    case CFX_CSSNumberType::EMS:
-    case CFX_CSSNumberType::EXS:
-      return value_ * percentBase;
-    case CFX_CSSNumberType::Percent:
-      return value_ * percentBase / 100.0f;
-    case CFX_CSSNumberType::CentiMeters:
-      return value_ * 28.3464f;
-    case CFX_CSSNumberType::MilliMeters:
-      return value_ * 2.8346f;
-    case CFX_CSSNumberType::Inches:
-      return value_ * 72.0f;
-    case CFX_CSSNumberType::Picas:
-      return value_ / 12.0f;
-    case CFX_CSSNumberType::Points:
-      return value_;
+  switch (number_.unit) {
+    case CFX_CSSNumber::Unit::kPixels:
+    case CFX_CSSNumber::Unit::kNumber:
+      return number_.value * 72 / 96;
+    case CFX_CSSNumber::Unit::kEMS:
+    case CFX_CSSNumber::Unit::kEXS:
+      return number_.value * percentBase;
+    case CFX_CSSNumber::Unit::kPercent:
+      return number_.value * percentBase / 100.0f;
+    case CFX_CSSNumber::Unit::kCentiMeters:
+      return number_.value * 28.3464f;
+    case CFX_CSSNumber::Unit::kMilliMeters:
+      return number_.value * 2.8346f;
+    case CFX_CSSNumber::Unit::kInches:
+      return number_.value * 72.0f;
+    case CFX_CSSNumber::Unit::kPicas:
+      return number_.value / 12.0f;
+    case CFX_CSSNumber::Unit::kPoints:
+      return number_.value;
   }
-  return value_;
 }

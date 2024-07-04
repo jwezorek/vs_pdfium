@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,12 @@
 #ifndef CORE_FXCODEC_BASIC_BASICMODULE_H_
 #define CORE_FXCODEC_BASIC_BASICMODULE_H_
 
+#include <stdint.h>
+
 #include <memory>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/span.h"
 
 namespace fxcodec {
 
@@ -26,13 +27,10 @@ class BasicModule {
       int nComps,
       int bpc);
 
-  static bool RunLengthEncode(pdfium::span<const uint8_t> src_span,
-                              std::unique_ptr<uint8_t, FxFreeDeleter>* dest_buf,
-                              uint32_t* dest_size);
+  static DataVector<uint8_t> RunLengthEncode(
+      pdfium::span<const uint8_t> src_span);
 
-  static bool A85Encode(pdfium::span<const uint8_t> src_span,
-                        std::unique_ptr<uint8_t, FxFreeDeleter>* dest_buf,
-                        uint32_t* dest_size);
+  static DataVector<uint8_t> A85Encode(pdfium::span<const uint8_t> src_span);
 
   BasicModule() = delete;
   BasicModule(const BasicModule&) = delete;

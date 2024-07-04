@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sr_Latn_ME{
     Languages{
         arn{"mapudungun"}
@@ -12,10 +13,8 @@ sr_Latn_ME{
         moh{"mohok"}
         nqo{"n’ko"}
         shi{"južni šilha"}
-        tzm{"centralnoatlaski tamašek"}
         xh{"isikosa"}
         zgh{"standardni marokanski tamašek"}
         zu{"isizulu"}
     }
-    Version{"2.1.44.88"}
 }

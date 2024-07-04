@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,27 +13,25 @@
 #include "core/fpdfapi/parser/cpdf_stream.h"
 #include "core/fpdfapi/parser/cpdf_stream_acc.h"
 #include "core/fpdfapi/parser/cpdf_syntax_parser.h"
-#include "core/fxcrt/cfx_readonlymemorystream.h"
+#include "core/fpdfapi/parser/fpdf_parser_utility.h"
+#include "core/fxcrt/cfx_read_only_span_stream.h"
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/check.h"
-#include "third_party/base/ptr_util.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/ptr_util.h"
 
-// static
-bool CPDF_ObjectStream::IsObjectsStreamObject(const CPDF_Object* object) {
-  const CPDF_Stream* stream = ToStream(object);
+namespace {
+
+bool IsObjectStream(const CPDF_Stream* stream) {
   if (!stream)
     return false;
 
-  const CPDF_Dictionary* stream_dict = stream->GetDict();
-  if (!stream_dict)
+  // See ISO 32000-1:2008 spec, table 16.
+  RetainPtr<const CPDF_Dictionary> stream_dict = stream->GetDict();
+  if (!ValidateDictType(stream_dict.Get(), "ObjStm"))
     return false;
 
-  if (stream_dict->GetNameFor("Type") != "ObjStm")
-    return false;
-
-  const CPDF_Number* number_of_objects =
-      ToNumber(stream_dict->GetObjectFor("N"));
+  RetainPtr<const CPDF_Number> number_of_objects =
+      stream_dict->GetNumberFor("N");
   if (!number_of_objects || !number_of_objects->IsInteger() ||
       number_of_objects->GetInteger() < 0 ||
       number_of_objects->GetInteger() >=
@@ -41,8 +39,8 @@ bool CPDF_ObjectStream::IsObjectsStreamObject(const CPDF_Object* object) {
     return false;
   }
 
-  const CPDF_Number* first_object_offset =
-      ToNumber(stream_dict->GetObjectFor("First"));
+  RetainPtr<const CPDF_Number> first_object_offset =
+      stream_dict->GetNumberFor("First");
   if (!first_object_offset || !first_object_offset->IsInteger() ||
       first_object_offset->GetInteger() < 0) {
     return false;
@@ -51,56 +49,49 @@ bool CPDF_ObjectStream::IsObjectsStreamObject(const CPDF_Object* object) {
   return true;
 }
 
+}  // namespace
+
 //  static
 std::unique_ptr<CPDF_ObjectStream> CPDF_ObjectStream::Create(
-    const CPDF_Stream* stream) {
-  if (!IsObjectsStreamObject(stream))
+    RetainPtr<const CPDF_Stream> stream) {
+  if (!IsObjectStream(stream.Get()))
     return nullptr;
 
   // Protected constructor.
-  return pdfium::WrapUnique(new CPDF_ObjectStream(stream));
+  return pdfium::WrapUnique(new CPDF_ObjectStream(std::move(stream)));
 }
 
-CPDF_ObjectStream::CPDF_ObjectStream(const CPDF_Stream* obj_stream)
-    : obj_num_(obj_stream->GetObjNum()),
+CPDF_ObjectStream::CPDF_ObjectStream(RetainPtr<const CPDF_Stream> obj_stream)
+    : stream_acc_(pdfium::MakeRetain<CPDF_StreamAcc>(obj_stream)),
       first_object_offset_(obj_stream->GetDict()->GetIntegerFor("First")) {
-  DCHECK(IsObjectsStreamObject(obj_stream));
-  if (const auto* extends_ref =
-          ToReference(obj_stream->GetDict()->GetObjectFor("Extends"))) {
-    extends_obj_num_ = extends_ref->GetRefObjNum();
-  }
-  Init(obj_stream);
+  DCHECK(IsObjectStream(obj_stream.Get()));
+  Init(obj_stream.Get());
 }
 
 CPDF_ObjectStream::~CPDF_ObjectStream() = default;
 
-bool CPDF_ObjectStream::HasObject(uint32_t obj_number) const {
-  return pdfium::Contains(objects_offsets_, obj_number);
-}
-
 RetainPtr<CPDF_Object> CPDF_ObjectStream::ParseObject(
     CPDF_IndirectObjectHolder* pObjList,
-    uint32_t obj_number) const {
-  const auto it = objects_offsets_.find(obj_number);
-  if (it == objects_offsets_.end())
+    uint32_t obj_number,
+    uint32_t archive_obj_index) const {
+  if (archive_obj_index >= object_info_.size())
     return nullptr;
 
-  RetainPtr<CPDF_Object> result = ParseObjectAtOffset(pObjList, it->second);
-  if (!result)
+  const auto& info = object_info_[archive_obj_index];
+  if (info.obj_num != obj_number)
     return nullptr;
 
-  result->SetObjNum(obj_number);
+  RetainPtr<CPDF_Object> result =
+      ParseObjectAtOffset(pObjList, info.obj_offset);
+  if (result)
+    result->SetObjNum(obj_number);
   return result;
 }
 
 void CPDF_ObjectStream::Init(const CPDF_Stream* stream) {
-  {
-    auto stream_acc = pdfium::MakeRetain<CPDF_StreamAcc>(stream);
-    stream_acc->LoadAllDataFiltered();
-    const uint32_t data_size = stream_acc->GetSize();
-    data_stream_ = pdfium::MakeRetain<CFX_ReadOnlyMemoryStream>(
-        stream_acc->DetachData(), data_size);
-  }
+  stream_acc_->LoadAllDataFiltered();
+  data_stream_ =
+      pdfium::MakeRetain<CFX_ReadOnlySpanStream>(stream_acc_->GetSpan());
 
   CPDF_SyntaxParser syntax(data_stream_);
   const int object_count = stream->GetDict()->GetIntegerFor("N");
@@ -113,7 +104,7 @@ void CPDF_ObjectStream::Init(const CPDF_Stream* stream) {
     if (!obj_num)
       continue;
 
-    objects_offsets_[obj_num] = obj_offset;
+    object_info_.emplace_back(obj_num, obj_offset);
   }
 }
 

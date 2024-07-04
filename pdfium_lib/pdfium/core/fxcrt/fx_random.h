@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,10 +9,12 @@
 
 #include <stdint.h>
 
+#include "core/fxcrt/span.h"
+
 void* FX_Random_MT_Start(uint32_t dwSeed);
 void FX_Random_MT_Close(void* pContext);
 uint32_t FX_Random_MT_Generate(void* pContext);
 
-void FX_Random_GenerateMT(uint32_t* pBuffer, int32_t iCount);
+void FX_Random_GenerateMT(pdfium::span<uint32_t> pBuffer);
 
 #endif  // CORE_FXCRT_FX_RANDOM_H_

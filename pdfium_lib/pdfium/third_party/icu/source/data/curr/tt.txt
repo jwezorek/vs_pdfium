@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 tt{
     Currencies{
         BRL{
@@ -8,7 +9,7 @@ tt{
         }
         CNY{
             "CN¥",
-            "Кытай юане",
+            "кытай юане",
         }
         EUR{
             "€",
@@ -24,7 +25,7 @@ tt{
         }
         JPY{
             "JP¥",
-            "Япония иенасы",
+            "япон иенасы",
         }
         RUB{
             "₽",
@@ -39,40 +40,15 @@ tt{
             "билгесез валюта",
         }
     }
-    Currencies%narrow{
-        BRL{"R$"}
-        CNY{"¥"}
-        EUR{"€"}
-        GBP{"£"}
-        INR{"₹"}
-        JPY{"¥"}
-        RUB{"₽"}
-        USD{"$"}
-    }
     CurrencyPlurals{
-        BRL{
-            other{"Бразилия реалы"}
-        }
         CNY{
             other{"юань"}
-        }
-        EUR{
-            other{"евро"}
-        }
-        GBP{
-            other{"фунт стерлинг"}
-        }
-        INR{
-            other{"Индия рупиясе"}
         }
         JPY{
             other{"иена"}
         }
         RUB{
             other{"сум"}
-        }
-        USD{
-            other{"АКШ доллары"}
         }
         XXX{
             other{"(билгесез валюта)"}
@@ -81,5 +57,4 @@ tt{
     CurrencyUnitPatterns{
         other{"{0} {1}"}
     }
-    Version{"2.1.44.88"}
 }

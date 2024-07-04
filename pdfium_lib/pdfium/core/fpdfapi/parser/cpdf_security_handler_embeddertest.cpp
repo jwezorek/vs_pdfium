@@ -1,15 +1,16 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <memory>
 #include <string>
+#include <type_traits>
 
 #include "build/build_config.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_parser.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxge/cfx_defaultrenderdevice.h"
 #include "public/cpp/fpdf_scopers.h"
 #include "public/fpdf_edit.h"
 #include "public/fpdf_save.h"
@@ -94,7 +95,7 @@ class CPDFSecurityHandlerEmbedderTest : public EmbedderTest {
     ASSERT_TRUE(page);
 
     ScopedFPDFBitmap page_bitmap = RenderPage(page);
-    CompareBitmap(page_bitmap.get(), 200, 200, pdfium::kHelloWorldChecksum);
+    CompareBitmap(page_bitmap.get(), 200, 200, pdfium::HelloWorldChecksum());
   }
 
   void VerifyModifiedHelloWorldPage(FPDF_PAGE page) {
@@ -102,18 +103,22 @@ class CPDFSecurityHandlerEmbedderTest : public EmbedderTest {
 
     ScopedFPDFBitmap page_bitmap = RenderPage(page);
     CompareBitmap(page_bitmap.get(), 200, 200,
-                  pdfium::kHelloWorldRemovedChecksum);
+                  pdfium::HelloWorldRemovedChecksum());
   }
 };
 
 TEST_F(CPDFSecurityHandlerEmbedderTest, Unencrypted) {
   ASSERT_TRUE(OpenDocument("about_blank.pdf"));
+  // parser is missing a security handler, so always results in 0xFFFFFFFF
   EXPECT_EQ(0xFFFFFFFF, FPDF_GetDocPermissions(document()));
+  EXPECT_EQ(0xFFFFFFFF, FPDF_GetDocUserPermissions(document()));
 }
 
 TEST_F(CPDFSecurityHandlerEmbedderTest, UnencryptedWithPassword) {
   ASSERT_TRUE(OpenDocumentWithPassword("about_blank.pdf", "foobar"));
+  // parser is missing a security handler, so always results in 0xFFFFFFFF
   EXPECT_EQ(0xFFFFFFFF, FPDF_GetDocPermissions(document()));
+  EXPECT_EQ(0xFFFFFFFF, FPDF_GetDocUserPermissions(document()));
 }
 
 TEST_F(CPDFSecurityHandlerEmbedderTest, NoPassword) {
@@ -127,29 +132,32 @@ TEST_F(CPDFSecurityHandlerEmbedderTest, BadPassword) {
 TEST_F(CPDFSecurityHandlerEmbedderTest, UserPassword) {
   ASSERT_TRUE(OpenDocumentWithPassword("encrypted.pdf", "1234"));
   EXPECT_EQ(0xFFFFF2C0, FPDF_GetDocPermissions(document()));
+  EXPECT_EQ(0xFFFFF2C0, FPDF_GetDocUserPermissions(document()));
 }
 
 TEST_F(CPDFSecurityHandlerEmbedderTest, OwnerPassword) {
   ASSERT_TRUE(OpenDocumentWithPassword("encrypted.pdf", "5678"));
   EXPECT_EQ(0xFFFFFFFC, FPDF_GetDocPermissions(document()));
+  EXPECT_EQ(0xFFFFF2C0, FPDF_GetDocUserPermissions(document()));
 }
 
 TEST_F(CPDFSecurityHandlerEmbedderTest, PasswordAfterGenerateSave) {
-#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
-#if defined(OS_WIN)
-  const char kChecksum[] = "06fe5a97341b3e0f0a22ccc242fd9040";
+  const char* checksum = []() {
+    if (CFX_DefaultRenderDevice::UseSkiaRenderer()) {
+#if BUILDFLAG(IS_WIN)
+      return "caa4bfda016a9c48a540ff7c6716468c";
+#elif BUILDFLAG(IS_APPLE)
+      return "6c1a242ce886df5cf578401eeeaa1929";
 #else
-  const char kChecksum[] = "169c8e3acea8fba5a40f695bbbc96273";
-#endif  // defined(OS_WIN)
-#else
-#if defined(OS_WIN)
-  const char kChecksum[] = "041c2fb541c8907cc22ce101b686c79e";
-#elif defined(OS_APPLE)
-  const char kChecksum[] = "1ace03eb7c466c132aacf319cb9d69d3";
-#else
-  const char kChecksum[] = "7048dca58e2ed8f93339008b91e4eb4e";
+      return "ad97491cab71c02f1f4ef5ba0a7b5593";
 #endif
-#endif  // defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
+    }
+#if BUILDFLAG(IS_APPLE)
+    return "2a308e8cc20a6221112c387d122075a8";
+#else
+    return "9fe7eef8e51d15a604001854be6ed1ee";
+#endif  // BUILDFLAG(IS_APPLE)
+  }();
   {
     ASSERT_TRUE(OpenDocumentWithOptions("encrypted.pdf", "5678",
                                         LinearizeOption::kMustLinearize,
@@ -162,15 +170,15 @@ TEST_F(CPDFSecurityHandlerEmbedderTest, PasswordAfterGenerateSave) {
     EXPECT_TRUE(FPDFPath_SetDrawMode(red_rect, FPDF_FILLMODE_ALTERNATE, 0));
     FPDFPage_InsertObject(page, red_rect);
     ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
-    CompareBitmap(bitmap.get(), 612, 792, kChecksum);
+    CompareBitmap(bitmap.get(), 612, 792, checksum);
     EXPECT_TRUE(FPDFPage_GenerateContent(page));
     SetWholeFileAvailable();
     EXPECT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
     UnloadPage(page);
   }
   std::string new_file = GetString();
-  FPDF_FILEACCESS file_access;
-  memset(&file_access, 0, sizeof(file_access));
+  FPDF_FILEACCESS file_access = {};  // Aggregate initialization.
+  static_assert(std::is_aggregate_v<decltype(file_access)>);
   file_access.m_FileLen = new_file.size();
   file_access.m_GetBlock = GetBlockFromString;
   file_access.m_Param = &new_file;
@@ -184,8 +192,9 @@ TEST_F(CPDFSecurityHandlerEmbedderTest, PasswordAfterGenerateSave) {
   for (const auto& test : tests) {
     ASSERT_TRUE(OpenSavedDocumentWithPassword(test.password));
     FPDF_PAGE page = LoadSavedPage(0);
-    VerifySavedRendering(page, 612, 792, kChecksum);
-    EXPECT_EQ(test.permissions, FPDF_GetDocPermissions(saved_document_));
+    ASSERT_TRUE(page);
+    VerifySavedRendering(page, 612, 792, checksum);
+    EXPECT_EQ(test.permissions, FPDF_GetDocPermissions(saved_document()));
 
     CloseSavedPage(page);
     CloseSavedDocument();
@@ -668,6 +677,6 @@ TEST_F(CPDFSecurityHandlerEmbedderTest, UserPasswordVersion6Latin1) {
   VerifySavedModifiedHelloWorldDocumentWithPassword(kHotelUTF8);
 }
 
-TEST_F(CPDFSecurityHandlerEmbedderTest, BUG_1124998) {
+TEST_F(CPDFSecurityHandlerEmbedderTest, Bug1124998) {
   OpenAndVerifyHelloWorldDocumentWithPassword("bug_1124998.pdf", "test");
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,10 +6,10 @@
 
 #include "core/fxge/cfx_gemodule.h"
 
+#include "core/fxcrt/check.h"
 #include "core/fxge/cfx_folderfontinfo.h"
 #include "core/fxge/cfx_fontcache.h"
 #include "core/fxge/cfx_fontmgr.h"
-#include "third_party/base/check.h"
 
 namespace {
 
@@ -30,7 +30,7 @@ void CFX_GEModule::Create(const char** pUserFontPaths) {
   DCHECK(!g_pGEModule);
   g_pGEModule = new CFX_GEModule(pUserFontPaths);
   g_pGEModule->m_pPlatform->Init();
-  g_pGEModule->GetFontMgr()->SetSystemFontInfo(
+  g_pGEModule->GetFontMgr()->GetBuiltinMapper()->SetSystemFontInfo(
       g_pGEModule->m_pPlatform->CreateDefaultSystemFontInfo());
 }
 

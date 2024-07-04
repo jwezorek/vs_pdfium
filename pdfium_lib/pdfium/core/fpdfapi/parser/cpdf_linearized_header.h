@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,13 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_LINEARIZED_HEADER_H_
 #define CORE_FPDFAPI_PARSER_CPDF_LINEARIZED_HEADER_H_
 
+#include <stdint.h>
+
 #include <memory>
 
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/fx_types.h"
 
 class CPDF_Dictionary;
-class CPDF_Object;
 class CPDF_SyntaxParser;
 
 class CPDF_LinearizedHeader {
@@ -31,7 +32,7 @@ class CPDF_LinearizedHeader {
   uint32_t GetPageCount() const { return m_PageCount; }
   // Will only return values > 0.
   FX_FILESIZE GetFirstPageEndOffset() const { return m_szFirstPageEndOffset; }
-  // Will only return values > 0.
+  // Will only return values in the range [1, `CPDF_Parser::kMaxObjectNumber`).
   uint32_t GetFirstPageObjNum() const { return m_FirstPageObjNum; }
   // Will only return values > 0.
   FX_FILESIZE GetLastXRefOffset() const { return m_szLastXRefOffset; }

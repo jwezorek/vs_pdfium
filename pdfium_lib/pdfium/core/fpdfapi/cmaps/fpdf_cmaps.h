@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,31 +9,32 @@
 
 #include <stdint.h>
 
-#include "core/fxcrt/fx_string.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
-struct FXCMAP_DWordCIDMap {
+namespace fxcmap {
+
+struct DWordCIDMap {
   uint16_t m_HiWord;
   uint16_t m_LoWordLow;
   uint16_t m_LoWordHigh;
   uint16_t m_CID;
 };
 
-struct FXCMAP_CMap {
-  enum MapType : uint8_t { Single, Range };
+struct CMap {
+  enum class Type : bool { kSingle, kRange };
 
-  const char* m_Name;                     // Raw, POD struct.
-  const uint16_t* m_pWordMap;             // Raw, POD struct.
-  const FXCMAP_DWordCIDMap* m_pDWordMap;  // Raw, POD struct.
+  UNOWNED_PTR_EXCLUSION const char* m_Name;              // POD struct.
+  UNOWNED_PTR_EXCLUSION const uint16_t* m_pWordMap;      // POD struct.
+  UNOWNED_PTR_EXCLUSION const DWordCIDMap* m_pDWordMap;  // POD struct.
   uint16_t m_WordCount;
   uint16_t m_DWordCount;
-  MapType m_WordMapType;
+  Type m_WordMapType;
   int8_t m_UseOffset;
 };
 
-const FXCMAP_CMap* FindEmbeddedCMap(pdfium::span<const FXCMAP_CMap> pCMaps,
-                                    ByteStringView name);
-uint16_t CIDFromCharCode(const FXCMAP_CMap* pMap, uint32_t charcode);
-uint32_t CharCodeFromCID(const FXCMAP_CMap* pMap, uint16_t cid);
+uint16_t CIDFromCharCode(const CMap* pMap, uint32_t charcode);
+uint32_t CharCodeFromCID(const CMap* pMap, uint16_t cid);
+
+}  // namespace fxcmap
 
 #endif  // CORE_FPDFAPI_CMAPS_FPDF_CMAPS_H_

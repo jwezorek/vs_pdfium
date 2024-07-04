@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -90,7 +90,7 @@ FPDF_EXPORT int FPDF_CALLCONV FPDFDoc_GetPageMode(FPDF_DOCUMENT document) {
   if (!pRoot)
     return PAGEMODE_UNKNOWN;
 
-  const CPDF_Object* pName = pRoot->GetObjectFor("PageMode");
+  RetainPtr<const CPDF_Object> pName = pRoot->GetObjectFor("PageMode");
   if (!pName)
     return PAGEMODE_USENONE;
 

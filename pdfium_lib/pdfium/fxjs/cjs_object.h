@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,10 @@
 #ifndef FXJS_CJS_OBJECT_H_
 #define FXJS_CJS_OBJECT_H_
 
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "fxjs/cfxjs_engine.h"
 #include "fxjs/cjs_runtime.h"
-#include "third_party/base/span.h"
-
-class CFXJS_Engine;
 
 struct JSConstSpec {
   enum Type { Number = 0, String = 1 };
@@ -24,8 +23,8 @@ struct JSConstSpec {
 
 struct JSPropertySpec {
   const char* pName;
-  v8::AccessorGetterCallback pPropGet;
-  v8::AccessorSetterCallback pPropPut;
+  v8::AccessorNameGetterCallback pPropGet;
+  v8::AccessorNameSetterCallback pPropPut;
 };
 
 struct JSMethodSpec {
@@ -33,7 +32,7 @@ struct JSMethodSpec {
   v8::FunctionCallback pMethodCall;
 };
 
-class CJS_Object {
+class CJS_Object : public CFXJS_PerObjectData::Binding {
  public:
   static void DefineConsts(CFXJS_Engine* pEngine,
                            uint32_t nObjDefnID,
@@ -46,14 +45,14 @@ class CJS_Object {
                             pdfium::span<const JSMethodSpec> consts);
 
   CJS_Object(v8::Local<v8::Object> pObject, CJS_Runtime* pRuntime);
-  virtual ~CJS_Object();
+  ~CJS_Object() override;
 
-  v8::Local<v8::Object> ToV8Object() { return m_pV8Object.Get(GetIsolate()); }
-  v8::Isolate* GetIsolate() const { return m_pIsolate.Get(); }
+  v8::Local<v8::Object> ToV8Object() {
+    return m_pV8Object.Get(GetRuntime()->GetIsolate());
+  }
   CJS_Runtime* GetRuntime() const { return m_pRuntime.Get(); }
 
  private:
-  UnownedPtr<v8::Isolate> m_pIsolate;
   v8::Global<v8::Object> m_pV8Object;
   ObservedPtr<CJS_Runtime> m_pRuntime;
 };

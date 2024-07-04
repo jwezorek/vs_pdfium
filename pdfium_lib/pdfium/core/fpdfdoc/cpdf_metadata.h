@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -34,7 +34,7 @@ enum class UnsupportedFeature : uint8_t {
 
 class CPDF_Metadata {
  public:
-  explicit CPDF_Metadata(const CPDF_Stream* pStream);
+  explicit CPDF_Metadata(RetainPtr<const CPDF_Stream> pStream);
   ~CPDF_Metadata();
 
   std::vector<UnsupportedFeature> CheckForSharedForm() const;

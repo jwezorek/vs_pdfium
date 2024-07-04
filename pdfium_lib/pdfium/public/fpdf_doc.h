@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -39,22 +39,11 @@ extern "C" {
 #define PDFDEST_VIEW_FITBV 8
 
 // The file identifier entry type. See section 14.4 "File Identifiers" of the
-// ISO 32000-1 standard.
+// ISO 32000-1:2008 spec.
 typedef enum {
   FILEIDTYPE_PERMANENT = 0,
   FILEIDTYPE_CHANGING = 1
 } FPDF_FILEIDTYPE;
-
-typedef struct _FS_QUADPOINTSF {
-  FS_FLOAT x1;
-  FS_FLOAT y1;
-  FS_FLOAT x2;
-  FS_FLOAT y2;
-  FS_FLOAT x3;
-  FS_FLOAT y3;
-  FS_FLOAT x4;
-  FS_FLOAT y4;
-} FS_QUADPOINTSF;
 
 // Get the first child of |bookmark|, or the first top-level bookmark item.
 //
@@ -64,6 +53,8 @@ typedef struct _FS_QUADPOINTSF {
 //
 // Returns a handle to the first child of |bookmark| or the first top-level
 // bookmark item. NULL if no child or top-level bookmark found.
+// Note that another name for the bookmarks is the document outline, as
+// described in ISO 32000-1:2008, section 12.3.3.
 FPDF_EXPORT FPDF_BOOKMARK FPDF_CALLCONV
 FPDFBookmark_GetFirstChild(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
 
@@ -74,6 +65,9 @@ FPDFBookmark_GetFirstChild(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
 //
 // Returns a handle to the next sibling of |bookmark|, or NULL if this is the
 // last bookmark at this level.
+//
+// Note that the caller is responsible for handling circular bookmark
+// references, as may arise from malformed documents.
 FPDF_EXPORT FPDF_BOOKMARK FPDF_CALLCONV
 FPDFBookmark_GetNextSibling(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
 
@@ -95,6 +89,18 @@ FPDFBookmark_GetTitle(FPDF_BOOKMARK bookmark,
                       void* buffer,
                       unsigned long buflen);
 
+// Experimental API.
+// Get the number of chlidren of |bookmark|.
+//
+//   bookmark - handle to the bookmark.
+//
+// Returns a signed integer that represents the number of sub-items the given
+// bookmark has. If the value is positive, child items shall be shown by default
+// (open state). If the value is negative, child items shall be hidden by
+// default (closed state). Please refer to PDF 32000-1:2008, Table 153.
+// Returns 0 if the bookmark has no children or is invalid.
+FPDF_EXPORT int FPDF_CALLCONV FPDFBookmark_GetCount(FPDF_BOOKMARK bookmark);
+
 // Find the bookmark with |title| in |document|.
 //
 //   document - handle to the document.
@@ -112,7 +118,7 @@ FPDFBookmark_Find(FPDF_DOCUMENT document, FPDF_WIDESTRING title);
 //   document - handle to the document.
 //   bookmark - handle to the bookmark.
 //
-// Returns the handle to the destination data,  NULL if no destination is
+// Returns the handle to the destination data, or NULL if no destination is
 // associated with |bookmark|.
 FPDF_EXPORT FPDF_DEST FPDF_CALLCONV
 FPDFBookmark_GetDest(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
@@ -122,8 +128,11 @@ FPDFBookmark_GetDest(FPDF_DOCUMENT document, FPDF_BOOKMARK bookmark);
 //   bookmark - handle to the bookmark.
 //
 // Returns the handle to the action data, or NULL if no action is associated
-// with |bookmark|. When NULL is returned, FPDFBookmark_GetDest() should be
-// called to get the |bookmark| destination data.
+// with |bookmark|.
+// If this function returns a valid handle, it is valid as long as |bookmark| is
+// valid.
+// If this function returns NULL, FPDFBookmark_GetDest() should be called to get
+// the |bookmark| destination data.
 FPDF_EXPORT FPDF_ACTION FPDF_CALLCONV
 FPDFBookmark_GetAction(FPDF_BOOKMARK bookmark);
 
@@ -182,8 +191,18 @@ FPDFAction_GetFilePath(FPDF_ACTION action, void* buffer, unsigned long buflen);
 // character, or 0 on error, typically because the arguments were bad or the
 // action was of the wrong type.
 //
-// The |buffer| is always encoded in 7-bit ASCII. If |buflen| is less than the
-// returned length, or |buffer| is NULL, |buffer| will not be modified.
+// The |buffer| may contain badly encoded data. The caller should validate the
+// output. e.g. Check to see if it is UTF-8.
+//
+// If |buflen| is less than the returned length, or |buffer| is NULL, |buffer|
+// will not be modified.
+//
+// Historically, the documentation for this API claimed |buffer| is always
+// encoded in 7-bit ASCII, but did not actually enforce it.
+// https://pdfium.googlesource.com/pdfium.git/+/d609e84cee2e14a18333247485af91df48a40592
+// added that enforcement, but that did not work well for real world PDFs that
+// used UTF-8. As of this writing, this API reverted back to its original
+// behavior prior to commit d609e84cee.
 FPDF_EXPORT unsigned long FPDF_CALLCONV
 FPDFAction_GetURIPath(FPDF_DOCUMENT document,
                       FPDF_ACTION action,
@@ -279,6 +298,8 @@ FPDF_EXPORT FPDF_DEST FPDF_CALLCONV FPDFLink_GetDest(FPDF_DOCUMENT document,
 //   link - handle to the link.
 //
 // Returns a handle to the action associated to |link|, or NULL if no action.
+// If this function returns a valid handle, it is valid as long as |link| is
+// valid.
 FPDF_EXPORT FPDF_ACTION FPDF_CALLCONV FPDFLink_GetAction(FPDF_LINK link);
 
 // Enumerates all the link annotations in |page|.
@@ -341,6 +362,8 @@ FPDFLink_GetQuadPoints(FPDF_LINK link_annot,
 //
 //   Returns the handle to the action data, or NULL if there is no
 //   additional-action of type |aa_type|.
+//   If this function returns a valid handle, it is valid as long as |page| is
+//   valid.
 FPDF_EXPORT FPDF_ACTION FPDF_CALLCONV FPDF_GetPageAAction(FPDF_PAGE page,
                                                           int aa_type);
 

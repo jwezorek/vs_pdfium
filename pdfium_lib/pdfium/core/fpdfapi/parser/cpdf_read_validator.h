@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,23 +6,23 @@
 #define CORE_FPDFAPI_PARSER_CPDF_READ_VALIDATOR_H_
 
 #include "core/fpdfapi/parser/cpdf_data_avail.h"
+#include "core/fxcrt/fx_memory.h"
 #include "core/fxcrt/fx_stream.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CPDF_ReadValidator : public IFX_SeekableReadStream {
  public:
   class ScopedSession {
    public:
+    FX_STACK_ALLOCATED();
+
     explicit ScopedSession(RetainPtr<CPDF_ReadValidator> validator);
     ScopedSession(const ScopedSession& that) = delete;
     ScopedSession& operator=(const ScopedSession& that) = delete;
     ~ScopedSession();
 
    private:
-    // Make stack-allocated.
-    void* operator new(size_t) = delete;
-    void* operator new(size_t, void*) = delete;
-
     RetainPtr<CPDF_ReadValidator> const validator_;
     const bool saved_read_error_;
     const bool saved_has_unavailable_data_;
@@ -45,13 +45,12 @@ class CPDF_ReadValidator : public IFX_SeekableReadStream {
   bool CheckWholeFileAndRequestIfUnavailable();
 
   // IFX_SeekableReadStream overrides:
-  bool ReadBlockAtOffset(void* buffer,
-                         FX_FILESIZE offset,
-                         size_t size) override;
+  bool ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                         FX_FILESIZE offset) override;
   FX_FILESIZE GetSize() override;
 
  protected:
-  CPDF_ReadValidator(const RetainPtr<IFX_SeekableReadStream>& file_read,
+  CPDF_ReadValidator(RetainPtr<IFX_SeekableReadStream> file_read,
                      CPDF_DataAvail::FileAvail* file_avail);
   ~CPDF_ReadValidator() override;
 

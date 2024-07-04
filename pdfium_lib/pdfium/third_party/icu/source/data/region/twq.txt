@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 twq{
     Countries{
         AD{"Andoora"}
@@ -92,7 +93,6 @@ twq{
         IE{"Irlandu"}
         IL{"Israyel"}
         IN{"Indu laboo"}
-        IO{"Britiši Indu teekoo laama"}
         IQ{"Iraak"}
         IR{"Iraan"}
         IS{"Ayseland"}
@@ -127,7 +127,6 @@ twq{
         MD{"Moldovi"}
         MG{"Madagascar"}
         MH{"Maršal gungey"}
-        MK{"Maacedooni"}
         ML{"Maali"}
         MM{"Maynamar"}
         MN{"Mongooli"}
@@ -227,5 +226,4 @@ twq{
         ZM{"Zambi"}
         ZW{"Zimbabwe"}
     }
-    Version{"2.1.39.11"}
 }

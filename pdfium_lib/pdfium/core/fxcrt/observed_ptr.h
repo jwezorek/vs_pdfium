@@ -1,14 +1,16 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef CORE_FXCRT_OBSERVED_PTR_H_
 #define CORE_FXCRT_OBSERVED_PTR_H_
 
+#include <stddef.h>
+
 #include <set>
 
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/check.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
 namespace fxcrt {
 
@@ -38,6 +40,11 @@ class Observable {
 };
 
 // Simple case of a self-nulling pointer.
+// Generally, pass ObservedPtr<> by non-const reference since this saves
+// considerable work compared to pass by value.
+// NOTE: Once an UnownedPtr<> is made from an underlying reference, the
+// best practice is to only refer to that object by the UnownedPtr<> and
+// not the original reference.
 template <typename T>
 class ObservedPtr final : public Observable::ObserverIface {
  public:
@@ -88,7 +95,7 @@ class ObservedPtr final : public Observable::ObserverIface {
   T* operator->() const { return m_pObservable; }
 
  private:
-  T* m_pObservable = nullptr;
+  UNOWNED_PTR_EXCLUSION T* m_pObservable = nullptr;
 };
 
 template <typename T, typename U>

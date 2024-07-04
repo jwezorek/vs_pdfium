@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,14 +22,16 @@
 
 #include "fxbarcode/datamatrix/BC_C40Encoder.h"
 
+#include <iterator>
+
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_extension.h"
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
 #include "fxbarcode/datamatrix/BC_Encoder.h"
 #include "fxbarcode/datamatrix/BC_EncoderContext.h"
 #include "fxbarcode/datamatrix/BC_HighLevelEncoder.h"
 #include "fxbarcode/datamatrix/BC_SymbolInfo.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -41,7 +43,7 @@ WideString EncodeToC40Codewords(const WideString& sb) {
   wchar_t cw[2];
   cw[0] = static_cast<wchar_t>(v / 256);
   cw[1] = static_cast<wchar_t>(v % 256);
-  return WideString(cw, pdfium::size(cw));
+  return UNSAFE_TODO(WideString(cw, std::size(cw)));
 }
 
 }  // namespace

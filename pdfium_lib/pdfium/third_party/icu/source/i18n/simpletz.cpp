@@ -33,6 +33,7 @@
 #include "unicode/gregocal.h"
 #include "unicode/smpdtfmt.h"
 
+#include "cmemory.h"
 #include "gregoimp.h"
 #include "umutex.h"
 
@@ -41,7 +42,7 @@ U_NAMESPACE_BEGIN
 UOBJECT_DEFINE_RTTI_IMPLEMENTATION(SimpleTimeZone)
 
 // Use only for decodeStartRule() and decodeEndRule() where the year is not
-// available. Set February to 29 days to accomodate rules with that date
+// available. Set February to 29 days to accommodate rules with that date
 // and day-of-week-on-or-before-that-date mode (DOW_LE_DOM_MODE).
 // The compareToRule() method adjusts to February 28 in non-leap years.
 //
@@ -52,8 +53,8 @@ UOBJECT_DEFINE_RTTI_IMPLEMENTATION(SimpleTimeZone)
 // Gregorian calendar started.
 const int8_t SimpleTimeZone::STATICMONTHLENGTH[] = {31,29,31,30,31,30,31,31,30,31,30,31};
 
-static const UChar DST_STR[] = {0x0028,0x0044,0x0053,0x0054,0x0029,0}; // "(DST)"
-static const UChar STD_STR[] = {0x0028,0x0053,0x0054,0x0044,0x0029,0}; // "(STD)"
+static const char16_t DST_STR[] = {0x0028,0x0044,0x0053,0x0054,0x0029,0}; // "(DST)"
+static const char16_t STD_STR[] = {0x0028,0x0053,0x0054,0x0044,0x0029,0}; // "(STD)"
 
 
 // *****************************************************************************
@@ -75,7 +76,7 @@ SimpleTimeZone::SimpleTimeZone(int32_t rawOffsetGMT, const UnicodeString& ID)
     endTime(0),
     startYear(0),
     rawOffset(rawOffsetGMT),
-    useDaylight(FALSE),
+    useDaylight(false),
     startMode(DOM_MODE),
     endMode(DOM_MODE),
     dstSavings(U_MILLIS_PER_HOUR)
@@ -230,7 +231,7 @@ SimpleTimeZone::operator=(const SimpleTimeZone &right)
 
 // -------------------------------------
 
-UBool
+bool
 SimpleTimeZone::operator==(const TimeZone& that) const
 {
     return ((this == &that) ||
@@ -242,7 +243,7 @@ SimpleTimeZone::operator==(const TimeZone& that) const
 // -------------------------------------
 
 // Called by TimeZone::createDefault() inside a Mutex - be careful.
-TimeZone*
+SimpleTimeZone*
 SimpleTimeZone::clone() const
 {
     return new SimpleTimeZone(*this);
@@ -261,7 +262,7 @@ void
 SimpleTimeZone::setStartYear(int32_t year)
 {
     startYear = year;
-    transitionRulesInitialized = FALSE;
+    transitionRulesInitialized = false;
 }
 
 // -------------------------------------
@@ -288,7 +289,7 @@ SimpleTimeZone::setStartYear(int32_t year)
  *       month, regardless of what day of the week it is (e.g., (-2, 0) is the
  *       next-to-last day of the month).
  *   <li>If dayOfWeek is negative and dayOfWeekInMonth is positive, they specify the
- *       first specified day of the week on or after the specfied day of the month.
+ *       first specified day of the week on or after the specified day of the month.
  *       (e.g., (15, -SUNDAY) is the first Sunday after the 15th of the month
  *       [or the 15th itself if the 15th is a Sunday].)
  *   <li>If dayOfWeek and DayOfWeekInMonth are both negative, they specify the
@@ -315,7 +316,7 @@ SimpleTimeZone::setStartRule(int32_t month, int32_t dayOfWeekInMonth, int32_t da
     startTime      = time;
     startTimeMode  = mode;
     decodeStartRule(status);
-    transitionRulesInitialized = FALSE;
+    transitionRulesInitialized = false;
 }
 
 // -------------------------------------
@@ -367,7 +368,7 @@ SimpleTimeZone::setEndRule(int32_t month, int32_t dayOfWeekInMonth, int32_t dayO
     endTime      = time;
     endTimeMode  = mode;
     decodeEndRule(status);
-    transitionRulesInitialized = FALSE;
+    transitionRulesInitialized = false;
 }
 
 // -------------------------------------
@@ -508,18 +509,25 @@ SimpleTimeZone::getOffset(uint8_t era, int32_t year, int32_t month, int32_t day,
 }
 
 void
-SimpleTimeZone::getOffsetFromLocal(UDate date, int32_t nonExistingTimeOpt, int32_t duplicatedTimeOpt,
-                                   int32_t& rawOffsetGMT, int32_t& savingsDST, UErrorCode& status) const {
+SimpleTimeZone::getOffsetFromLocal(UDate date, UTimeZoneLocalOption nonExistingTimeOpt,
+                                   UTimeZoneLocalOption duplicatedTimeOpt, int32_t& rawOffsetGMT,
+                                   int32_t& savingsDST, UErrorCode& status) const
+{
     if (U_FAILURE(status)) {
         return;
     }
 
     rawOffsetGMT = getRawOffset();
-    int32_t year, month, dom, dow;
-    double day = uprv_floor(date / U_MILLIS_PER_DAY);
-    int32_t millis = (int32_t) (date - day * U_MILLIS_PER_DAY);
+    int32_t year, month, dom, dow, millis;
+    double dday = ClockMath::floorDivide(date, U_MILLIS_PER_DAY, &millis);
+    if (dday > INT32_MAX || dday < INT32_MIN) {
+        status = U_ILLEGAL_ARGUMENT_ERROR;
+        return;
+    }
+    int32_t day = dday;
 
-    Grego::dayToFields(day, year, month, dom, dow);
+    Grego::dayToFields(day, year, month, dom, dow, status);
+    if (U_FAILURE(status)) return;
 
     savingsDST = getOffset(GregorianCalendar::AD, year, month, dom,
                           (uint8_t) dow, millis,
@@ -529,26 +537,26 @@ SimpleTimeZone::getOffsetFromLocal(UDate date, int32_t nonExistingTimeOpt, int32
         return;
     }
 
-    UBool recalc = FALSE;
+    UBool recalc = false;
 
     // Now we need some adjustment
     if (savingsDST > 0) {
         if ((nonExistingTimeOpt & kStdDstMask) == kStandard
             || ((nonExistingTimeOpt & kStdDstMask) != kDaylight && (nonExistingTimeOpt & kFormerLatterMask) != kLatter)) {
             date -= getDSTSavings();
-            recalc = TRUE;
+            recalc = true;
         }
     } else {
         if ((duplicatedTimeOpt & kStdDstMask) == kDaylight
                 || ((duplicatedTimeOpt & kStdDstMask) != kStandard && (duplicatedTimeOpt & kFormerLatterMask) == kFormer)) {
             date -= getDSTSavings();
-            recalc = TRUE;
+            recalc = true;
         }
     }
     if (recalc) {
-        day = uprv_floor(date / U_MILLIS_PER_DAY);
-        millis = (int32_t) (date - day * U_MILLIS_PER_DAY);
-        Grego::dayToFields(day, year, month, dom, dow);
+        day = ClockMath::floorDivide(date, U_MILLIS_PER_DAY, &millis);
+        Grego::dayToFields(day, year, month, dom, dow, status);
+        if (U_FAILURE(status)) return;
         savingsDST = getOffset(GregorianCalendar::AD, year, month, dom,
                           (uint8_t) dow, millis,
                           Grego::monthLength(year, month),
@@ -582,7 +590,7 @@ SimpleTimeZone::compareToRule(int8_t month, int8_t monthLen, int8_t prevMonthLen
         dayOfWeek = (int8_t)(1 + (dayOfWeek % 7)); // dayOfWeek is one-based
         if (dayOfMonth > monthLen) {
             dayOfMonth = 1;
-            /* When incrementing the month, it is desirible to overflow
+            /* When incrementing the month, it is desirable to overflow
              * from DECEMBER to DECEMBER+1, since we use the result to
              * compare against a real month. Wraparound of the value
              * leads to bug 4173604. */
@@ -678,7 +686,7 @@ void
 SimpleTimeZone::setRawOffset(int32_t offsetMillis)
 {
     rawOffset = offsetMillis;
-    transitionRulesInitialized = FALSE;
+    transitionRulesInitialized = false;
 }
 
 // -------------------------------------
@@ -692,7 +700,7 @@ SimpleTimeZone::setDSTSavings(int32_t millisSavedDuringDST, UErrorCode& status)
     else {
         dstSavings = millisSavedDuringDST;
     }
-    transitionRulesInitialized = FALSE;
+    transitionRulesInitialized = false;
 }
 
 // -------------------------------------
@@ -722,12 +730,12 @@ UBool SimpleTimeZone::inDaylightTime(UDate date, UErrorCode& status) const
     // This method is wasteful since it creates a new GregorianCalendar and
     // deletes it each time it is called.  However, this is a deprecated method
     // and provided only for Java compatibility as of 8/6/97 [LIU].
-    if (U_FAILURE(status)) return FALSE;
+    if (U_FAILURE(status)) return false;
     GregorianCalendar *gc = new GregorianCalendar(*this, status);
-    /* test for NULL */
-    if (gc == 0) {
+    /* test for nullptr */
+    if (gc == nullptr) {
         status = U_MEMORY_ALLOCATION_ERROR;
-        return FALSE;
+        return false;
     }
     gc->setTime(date, status);
     UBool result = gc->inDaylightTime(status);
@@ -745,8 +753,8 @@ UBool SimpleTimeZone::inDaylightTime(UDate date, UErrorCode& status) const
 UBool 
 SimpleTimeZone::hasSameRules(const TimeZone& other) const
 {
-    if (this == &other) return TRUE;
-    if (typeid(*this) != typeid(other)) return FALSE;
+    if (this == &other) return true;
+    if (typeid(*this) != typeid(other)) return false;
     SimpleTimeZone *that = (SimpleTimeZone*)&other;
     return rawOffset     == that->rawOffset &&
         useDaylight     == that->useDaylight &&
@@ -869,7 +877,7 @@ SimpleTimeZone::decodeStartRule(UErrorCode& status)
 {
     if(U_FAILURE(status)) return;
 
-    useDaylight = (UBool)((startDay != 0) && (endDay != 0) ? TRUE : FALSE);
+    useDaylight = (UBool)((startDay != 0) && (endDay != 0) ? true : false);
     if (useDaylight && dstSavings == 0) {
         dstSavings = U_MILLIS_PER_HOUR;
     }
@@ -924,7 +932,7 @@ SimpleTimeZone::decodeEndRule(UErrorCode& status)
 {
     if(U_FAILURE(status)) return;
 
-    useDaylight = (UBool)((startDay != 0) && (endDay != 0) ? TRUE : FALSE);
+    useDaylight = (UBool)((startDay != 0) && (endDay != 0) ? true : false);
     if (useDaylight && dstSavings == 0) {
         dstSavings = U_MILLIS_PER_HOUR;
     }
@@ -972,13 +980,13 @@ SimpleTimeZone::decodeEndRule(UErrorCode& status)
 UBool
 SimpleTimeZone::getNextTransition(UDate base, UBool inclusive, TimeZoneTransition& result) const {
     if (!useDaylight) {
-        return FALSE;
+        return false;
     }
 
     UErrorCode status = U_ZERO_ERROR;
     checkTransitionRules(status);
     if (U_FAILURE(status)) {
-        return FALSE;
+        return false;
     }
 
     UDate firstTransitionTime = firstTransition->getTime();
@@ -990,76 +998,68 @@ SimpleTimeZone::getNextTransition(UDate base, UBool inclusive, TimeZoneTransitio
     UBool dstAvail = dstRule->getNextStart(base, stdRule->getRawOffset(), stdRule->getDSTSavings(), inclusive, dstDate);
     if (stdAvail && (!dstAvail || stdDate < dstDate)) {
         result.setTime(stdDate);
-        result.setFrom((const TimeZoneRule&)*dstRule);
-        result.setTo((const TimeZoneRule&)*stdRule);
-        return TRUE;
+        result.setFrom(*dstRule);
+        result.setTo(*stdRule);
+        return true;
     }
     if (dstAvail && (!stdAvail || dstDate < stdDate)) {
         result.setTime(dstDate);
-        result.setFrom((const TimeZoneRule&)*stdRule);
-        result.setTo((const TimeZoneRule&)*dstRule);
-        return TRUE;
+        result.setFrom(*stdRule);
+        result.setTo(*dstRule);
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 UBool
 SimpleTimeZone::getPreviousTransition(UDate base, UBool inclusive, TimeZoneTransition& result) const {
     if (!useDaylight) {
-        return FALSE;
+        return false;
     }
 
     UErrorCode status = U_ZERO_ERROR;
     checkTransitionRules(status);
     if (U_FAILURE(status)) {
-        return FALSE;
+        return false;
     }
 
     UDate firstTransitionTime = firstTransition->getTime();
     if (base < firstTransitionTime || (!inclusive && base == firstTransitionTime)) {
-        return FALSE;
+        return false;
     }
     UDate stdDate, dstDate;
     UBool stdAvail = stdRule->getPreviousStart(base, dstRule->getRawOffset(), dstRule->getDSTSavings(), inclusive, stdDate);
     UBool dstAvail = dstRule->getPreviousStart(base, stdRule->getRawOffset(), stdRule->getDSTSavings(), inclusive, dstDate);
     if (stdAvail && (!dstAvail || stdDate > dstDate)) {
         result.setTime(stdDate);
-        result.setFrom((const TimeZoneRule&)*dstRule);
-        result.setTo((const TimeZoneRule&)*stdRule);
-        return TRUE;
+        result.setFrom(*dstRule);
+        result.setTo(*stdRule);
+        return true;
     }
     if (dstAvail && (!stdAvail || dstDate > stdDate)) {
         result.setTime(dstDate);
-        result.setFrom((const TimeZoneRule&)*stdRule);
-        result.setTo((const TimeZoneRule&)*dstRule);
-        return TRUE;
+        result.setFrom(*stdRule);
+        result.setTo(*dstRule);
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 void
-SimpleTimeZone::clearTransitionRules(void) {
-    initialRule = NULL;
-    firstTransition = NULL;
-    stdRule = NULL;
-    dstRule = NULL;
-    transitionRulesInitialized = FALSE;
+SimpleTimeZone::clearTransitionRules() {
+    initialRule = nullptr;
+    firstTransition = nullptr;
+    stdRule = nullptr;
+    dstRule = nullptr;
+    transitionRulesInitialized = false;
 }
 
 void
-SimpleTimeZone::deleteTransitionRules(void) {
-    if (initialRule != NULL) {
-        delete initialRule;
-    }
-    if (firstTransition != NULL) {
-        delete firstTransition;
-    }
-    if (stdRule != NULL) {
-        delete stdRule;
-    }
-    if (dstRule != NULL) {
-        delete dstRule;
-    }
+SimpleTimeZone::deleteTransitionRules() {
+    delete initialRule;
+    delete firstTransition;
+    delete stdRule;
+    delete dstRule;
     clearTransitionRules();
  }
 
@@ -1077,13 +1077,13 @@ SimpleTimeZone::deleteTransitionRules(void) {
  *         allocate it in the constructors. This would be a more intrusive change, but doable
  *         if performance turns out to be an issue.
  */
-static UMutex gLock = U_MUTEX_INITIALIZER;
 
 void
 SimpleTimeZone::checkTransitionRules(UErrorCode& status) const {
     if (U_FAILURE(status)) {
         return;
     }
+    static UMutex gLock;
     umtx_lock(&gLock);
     if (!transitionRulesInitialized) {
         SimpleTimeZone *ncThis = const_cast<SimpleTimeZone*>(this);
@@ -1130,7 +1130,7 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
             return;
         }
         // Check for Null pointer
-        if (dtRule == NULL) {
+        if (dtRule == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             return;
         }
@@ -1139,7 +1139,7 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
             dtRule, startYear, AnnualTimeZoneRule::MAX_YEAR);
         
         // Check for Null pointer
-        if (dstRule == NULL) {
+        if (dstRule == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             deleteTransitionRules();
             return;
@@ -1167,7 +1167,7 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
         }
         
         // Check for Null pointer
-        if (dtRule == NULL) {
+        if (dtRule == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             deleteTransitionRules();
             return;
@@ -1177,7 +1177,7 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
             dtRule, startYear, AnnualTimeZoneRule::MAX_YEAR);
         
         //Check for Null pointer
-        if (stdRule == NULL) {
+        if (stdRule == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             deleteTransitionRules();
             return;
@@ -1189,7 +1189,7 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
         // Create a TimeZoneRule for initial time
         if (firstStdStart < firstDstStart) {
             initialRule = new InitialTimeZoneRule(tzid+UnicodeString(DST_STR), getRawOffset(), dstRule->getDSTSavings());
-            if (initialRule == NULL) {
+            if (initialRule == nullptr) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 deleteTransitionRules();
                 return;
@@ -1197,14 +1197,14 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
             firstTransition = new TimeZoneTransition(firstStdStart, *initialRule, *stdRule);
         } else {
             initialRule = new InitialTimeZoneRule(tzid+UnicodeString(STD_STR), getRawOffset(), 0);
-            if (initialRule == NULL) {
+            if (initialRule == nullptr) {
                 status = U_MEMORY_ALLOCATION_ERROR;
                 deleteTransitionRules();
                 return;
             }
             firstTransition = new TimeZoneTransition(firstDstStart, *initialRule, *dstRule);
         }
-        if (firstTransition == NULL) {
+        if (firstTransition == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             deleteTransitionRules();
             return;
@@ -1214,14 +1214,14 @@ SimpleTimeZone::initTransitionRules(UErrorCode& status) {
         // Create a TimeZoneRule for initial time
         initialRule = new InitialTimeZoneRule(tzid, getRawOffset(), 0);
         // Check for null pointer.
-        if (initialRule == NULL) {
+        if (initialRule == nullptr) {
             status = U_MEMORY_ALLOCATION_ERROR;
             deleteTransitionRules();
             return;
         }
     }
 
-    transitionRulesInitialized = TRUE;
+    transitionRulesInitialized = true;
 }
 
 int32_t
@@ -1243,7 +1243,7 @@ SimpleTimeZone::getTimeZoneRules(const InitialTimeZoneRule*& initial,
     }
     initial = initialRule;
     int32_t cnt = 0;
-    if (stdRule != NULL) {
+    if (stdRule != nullptr) {
         if (cnt < trscount) {
             trsrules[cnt++] = stdRule;
         }

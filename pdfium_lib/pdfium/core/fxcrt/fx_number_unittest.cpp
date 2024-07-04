@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -43,6 +43,18 @@ TEST(fxnumber, FromFloat) {
   EXPECT_TRUE(number2.IsSigned());
   EXPECT_EQ(-100, number2.GetSigned());
   EXPECT_FLOAT_EQ(-100.001f, number2.GetFloat());
+
+  // Show positive saturation.
+  FX_Number number3(1e17f);
+  EXPECT_FALSE(number3.IsInteger());
+  EXPECT_TRUE(number3.IsSigned());
+  EXPECT_EQ(std::numeric_limits<int32_t>::max(), number3.GetSigned());
+
+  // Show negative saturation.
+  FX_Number number4(-1e17f);
+  EXPECT_FALSE(number4.IsInteger());
+  EXPECT_TRUE(number4.IsSigned());
+  EXPECT_EQ(std::numeric_limits<int32_t>::min(), number4.GetSigned());
 }
 
 TEST(fxnumber, FromStringUnsigned) {

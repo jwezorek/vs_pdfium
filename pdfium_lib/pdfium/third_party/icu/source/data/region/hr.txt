@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 hr{
     Countries{
         001{"Svijet"}
@@ -78,7 +79,7 @@ hr{
         CG{"Kongo - Brazzaville"}
         CH{"Švicarska"}
         CI{"Obala Bjelokosti"}
-        CK{"Cookovi Otoci"}
+        CK{"Cookovi otoci"}
         CL{"Čile"}
         CM{"Kamerun"}
         CN{"Kina"}
@@ -110,7 +111,7 @@ hr{
         EZ{"eurozona"}
         FI{"Finska"}
         FJ{"Fidži"}
-        FK{"Falklandski otoci (Malvini)"}
+        FK{"Falklandski otoci"}
         FM{"Mikronezija"}
         FO{"Farski otoci"}
         FR{"Francuska"}
@@ -133,7 +134,7 @@ hr{
         GU{"Guam"}
         GW{"Gvineja Bisau"}
         GY{"Gvajana"}
-        HK{"Hong Kong"}
+        HK{"PUP Hong Kong Kina"}
         HM{"Otoci Heard i McDonald"}
         HN{"Honduras"}
         HR{"Hrvatska"}
@@ -183,13 +184,13 @@ hr{
         MF{"Saint Martin"}
         MG{"Madagaskar"}
         MH{"Maršalovi Otoci"}
-        MK{"Makedonija (BJRM)"}
+        MK{"Sjeverna Makedonija"}
         ML{"Mali"}
         MM{"Mjanmar (Burma)"}
         MN{"Mongolija"}
-        MO{"Makao"}
+        MO{"PUP Makao Kina"}
         MP{"Sjevernomarijanski otoci"}
-        MQ{"Martinique"}
+        MQ{"Martinik"}
         MR{"Mauretanija"}
         MS{"Montserrat"}
         MT{"Malta"}
@@ -222,7 +223,7 @@ hr{
         PM{"Sveti Petar i Mikelon"}
         PN{"Otoci Pitcairn"}
         PR{"Portoriko"}
-        PS{"Palestina"}
+        PS{"Palestinsko područje"}
         PT{"Portugal"}
         PW{"Palau"}
         PY{"Paragvaj"}
@@ -253,7 +254,7 @@ hr{
         SV{"Salvador"}
         SX{"Sint Maarten"}
         SY{"Sirija"}
-        SZ{"Svazi"}
+        SZ{"Esvatini"}
         TA{"Tristan da Cunha"}
         TC{"Otoci Turks i Caicos"}
         TD{"Čad"}
@@ -287,6 +288,8 @@ hr{
         VU{"Vanuatu"}
         WF{"Wallis i Futuna"}
         WS{"Samoa"}
+        XA{"pseudo naglasci"}
+        XB{"pseudo bidi"}
         XK{"Kosovo"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -295,17 +298,26 @@ hr{
         ZW{"Zimbabve"}
         ZZ{"nepoznato područje"}
     }
+    Countries%chagos{
+        IO{"Otočje Chagos"}
+    }
     Countries%short{
         GB{"UK"}
+        HK{"Hong Kong"}
+        MO{"Makao"}
+        PS{"Palestina"}
         UN{"UN"}
         US{"SAD"}
     }
     Countries%variant{
-        CD{"Kongo (DRK)"}
+        CD{"Kongo (DR)"}
         CG{"Kongo (RK)"}
         CI{"Bjelokosna Obala"}
         CZ{"Češka Republika"}
+        FK{"Falklandski otoci (Malvini)"}
+        NZ{"Aotearoa Novi Zeland"}
+        SZ{"Svazi"}
         TL{"Istočni Timor"}
+        TR{"Türkiye"}
     }
-    Version{"2.1.43.50"}
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -36,10 +36,8 @@ class CPDF_ScaledRenderBuffer {
 
  private:
   UnownedPtr<CFX_RenderDevice> m_pDevice;
-  UnownedPtr<CPDF_RenderContext> m_pContext;
-  FX_RECT m_Rect;
-  UnownedPtr<const CPDF_PageObject> m_pObject;
   std::unique_ptr<CFX_DefaultRenderDevice> m_pBitmapDevice;
+  FX_RECT m_Rect;
   CFX_Matrix m_Matrix;
 };
 

@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,8 +9,8 @@ source_set("fxcodec") {
   sources = [
     "basic/basicmodule.cpp",
     "basic/basicmodule.h",
-    "cfx_codec_memory.cpp",
-    "cfx_codec_memory.h",
+    "data_and_bytes_consumed.cpp",
+    "data_and_bytes_consumed.h",
     "fax/faxmodule.cpp",
     "fax/faxmodule.h",
     "flate/flatemodule.cpp",
@@ -18,8 +18,8 @@ source_set("fxcodec") {
     "fx_codec.cpp",
     "fx_codec.h",
     "fx_codec_def.h",
-    "icc/iccmodule.cpp",
-    "icc/iccmodule.h",
+    "icc/icc_transform.cpp",
+    "icc/icc_transform.h",
     "jbig2/JBig2_ArithDecoder.cpp",
     "jbig2/JBig2_ArithDecoder.h",
     "jbig2/JBig2_ArithIntDecoder.cpp",
@@ -69,19 +69,22 @@ source_set("fxcodec") {
     "scanlinedecoder.cpp",
     "scanlinedecoder.h",
   ]
-  configs += [ "../../:pdfium_core_config" ]
-  include_dirs = []
+  configs += [
+    "../../:pdfium_strict_config",
+    "../../:pdfium_noshorten_config",
+  ]
+  public_deps = [ "../fxcrt" ]
   deps = [
     "../../third_party:lcms2",
     "../../third_party:libopenjpeg2",
     "../../third_party:zlib",
-    "../fxcrt",
     "../fxge",
     "//third_party:jpeg",
   ]
-
   if (pdf_enable_xfa) {
     sources += [
+      "cfx_codec_memory.cpp",
+      "cfx_codec_memory.h",
       "jpeg/jpeg_progressive_decoder.cpp",
       "jpeg/jpeg_progressive_decoder.h",
       "progressive_decoder.cpp",
@@ -107,12 +110,12 @@ source_set("fxcodec") {
         "gif/cfx_gif.h",
         "gif/cfx_gifcontext.cpp",
         "gif/cfx_gifcontext.h",
-        "gif/cfx_lzwdecompressor.cpp",
-        "gif/cfx_lzwdecompressor.h",
         "gif/gif_decoder.cpp",
         "gif/gif_decoder.h",
         "gif/gif_progressive_decoder.cpp",
         "gif/gif_progressive_decoder.h",
+        "gif/lzw_decompressor.cpp",
+        "gif/lzw_decompressor.h",
       ]
     }
     if (pdf_enable_xfa_png) {
@@ -127,7 +130,7 @@ source_set("fxcodec") {
         "tiff/tiff_decoder.cpp",
         "tiff/tiff_decoder.h",
       ]
-      deps += [ "../../third_party:fx_tiff" ]
+      deps += [ "../../third_party:tiff" ]
     }
   }
 
@@ -138,6 +141,7 @@ pdfium_unittest_source_set("unittests") {
   sources = [
     "basic/a85_unittest.cpp",
     "basic/rle_unittest.cpp",
+    "flate/flatemodule_unittest.cpp",
     "jbig2/JBig2_BitStream_unittest.cpp",
     "jbig2/JBig2_Image_unittest.cpp",
     "jpx/jpx_unittest.cpp",
@@ -155,7 +159,7 @@ pdfium_unittest_source_set("unittests") {
     if (pdf_enable_xfa_gif) {
       sources += [
         "gif/cfx_gifcontext_unittest.cpp",
-        "gif/cfx_lzwdecompressor_unittest.cpp",
+        "gif/lzw_decompressor_unittest.cpp",
       ]
     }
   }

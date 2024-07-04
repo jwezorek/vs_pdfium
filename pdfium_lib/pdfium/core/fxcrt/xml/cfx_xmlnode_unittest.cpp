@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -36,7 +36,7 @@ TEST(CFX_XMLNodeTest, GetParent) {
   node1.AppendLastChild(&node2);
   node2.AppendLastChild(&node3);
 
-  EXPECT_EQ(nullptr, node1.GetParent());
+  EXPECT_FALSE(node1.GetParent());
   EXPECT_EQ(&node1, node2.GetParent());
   EXPECT_EQ(&node2, node3.GetParent());
 }

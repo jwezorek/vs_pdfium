@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,13 @@
 #ifndef FPDFSDK_FPDFXFA_CPDFXFA_PAGE_H_
 #define FPDFSDK_FPDFXFA_CPDFXFA_PAGE_H_
 
+#include <optional>
+
 #include "core/fpdfapi/page/cpdf_page.h"
 #include "core/fpdfapi/page/ipdf_page.h"
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "third_party/base/optional.h"
 
 class CFX_RenderDevice;
 class CPDF_Dictionary;
@@ -33,23 +33,24 @@ class CPDFXFA_Page final : public IPDF_Page {
   float GetPageWidth() const override;
   float GetPageHeight() const override;
   CFX_Matrix GetDisplayMatrix(const FX_RECT& rect, int iRotate) const override;
-  Optional<CFX_PointF> DeviceToPage(
+  std::optional<CFX_PointF> DeviceToPage(
       const FX_RECT& rect,
       int rotate,
       const CFX_PointF& device_point) const override;
-  Optional<CFX_PointF> PageToDevice(
+  std::optional<CFX_PointF> PageToDevice(
       const FX_RECT& rect,
       int rotate,
       const CFX_PointF& page_point) const override;
 
   bool LoadPage();
-  void LoadPDFPageFromDict(CPDF_Dictionary* pPageDict);
+  void LoadPDFPageFromDict(RetainPtr<CPDF_Dictionary> pPageDict);
   int GetPageIndex() const { return m_iPageIndex; }
   void SetXFAPageViewIndex(int index) { m_iPageIndex = index; }
   CXFA_FFPageView* GetXFAPageView() const;
-  CPDFSDK_Annot* GetNextXFAAnnot(CPDFSDK_Annot* pSDKAnnot, bool bNext);
-  CPDFSDK_Annot* GetFirstOrLastXFAAnnot(CPDFSDK_PageView* page_view,
-                                        bool last) const;
+  CPDFSDK_Annot* GetNextXFAAnnot(CPDFSDK_Annot* pSDKAnnot) const;
+  CPDFSDK_Annot* GetPrevXFAAnnot(CPDFSDK_Annot* pSDKAnnot) const;
+  CPDFSDK_Annot* GetFirstXFAAnnot(CPDFSDK_PageView* page_view) const;
+  CPDFSDK_Annot* GetLastXFAAnnot(CPDFSDK_PageView* page_view) const;
   int HasFormFieldAtPoint(const CFX_PointF& point) const;
   void DrawFocusAnnot(CFX_RenderDevice* pDevice,
                       CPDFSDK_Annot* pAnnot,

@@ -1,11 +1,12 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fpdftext/cpdf_linkextract.h"
 
+#include <utility>
+
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/stl_util.h"
 
 // Class to help test functions in CPDF_LinkExtract class.
 class CPDF_TestLinkExtract final : public CPDF_LinkExtract {
@@ -22,7 +23,7 @@ class CPDF_TestLinkExtract final : public CPDF_LinkExtract {
 TEST(CPDF_LinkExtractTest, CheckMailLink) {
   CPDF_TestLinkExtract extractor;
   // Check cases that fail to extract valid mail link.
-  const wchar_t* const invalid_strs[] = {
+  const wchar_t* const kInvalidStrings[] = {
       L"",
       L"peter.pan",       // '@' is required.
       L"abc@server",      // Domain name needs at least one '.'.
@@ -31,15 +32,18 @@ TEST(CPDF_LinkExtractTest, CheckMailLink) {
       L"abc@.xyz.org",    // Domain name should not start with '.'.
       L"fan@g..com"       // Domain name should not have consecutive '.'
   };
-  for (size_t i = 0; i < pdfium::size(invalid_strs); ++i) {
-    const wchar_t* const input = invalid_strs[i];
+  for (const wchar_t* input : kInvalidStrings) {
     WideString text_str(input);
     EXPECT_FALSE(extractor.CheckMailLink(&text_str)) << input;
   }
 
+  // A struct of {input_string, expected_extracted_email_address}.
+  struct IOPair {
+    const wchar_t* input;
+    const wchar_t* expected_output;
+  };
   // Check cases that can extract valid mail link.
-  // An array of {input_string, expected_extracted_email_address}.
-  const wchar_t* const valid_strs[][2] = {
+  constexpr IOPair kValidStrings[] = {
       {L"peter@abc.d", L"peter@abc.d"},
       {L"red.teddy.b@abc.com", L"red.teddy.b@abc.com"},
       {L"abc_@gmail.com", L"abc_@gmail.com"},  // '_' is ok before '@'.
@@ -52,13 +56,12 @@ TEST(CPDF_LinkExtractTest, CheckMailLink) {
       {L"fan@g.com..", L"fan@g.com"},           // Trim the ending periods.
       {L"CAP.cap@Gmail.Com", L"CAP.cap@Gmail.Com"},  // Keep the original case.
   };
-  for (size_t i = 0; i < pdfium::size(valid_strs); ++i) {
-    const wchar_t* const input = valid_strs[i][0];
-    WideString text_str(input);
+  for (const auto& it : kValidStrings) {
+    WideString text_str(it.input);
     WideString expected_str(L"mailto:");
-    expected_str += valid_strs[i][1];
-    EXPECT_TRUE(extractor.CheckMailLink(&text_str)) << input;
-    EXPECT_STREQ(expected_str.c_str(), text_str.c_str());
+    expected_str += it.expected_output;
+    EXPECT_TRUE(extractor.CheckMailLink(&text_str)) << it.input;
+    EXPECT_EQ(expected_str.c_str(), text_str);
   }
 }
 
@@ -66,8 +69,11 @@ TEST(CPDF_LinkExtractTest, CheckWebLink) {
   CPDF_TestLinkExtract extractor;
   // Check cases that fail to extract valid web link.
   // The last few are legit web addresses that we don't handle now.
-  const wchar_t* const invalid_cases[] = {
-      L"", L"http", L"www.", L"https-and-www",
+  const wchar_t* const kInvalidCases[] = {
+      L"",                          // Blank.
+      L"http",                      // No colon.
+      L"www.",                      // Missing domain.
+      L"https-and-www",             // Dash not colon.
       L"http:/abc.com",             // Missing slash.
       L"http://((()),",             // Only invalid chars in host name.
       L"ftp://example.com",         // Ftp scheme is not supported.
@@ -75,19 +81,11 @@ TEST(CPDF_LinkExtractTest, CheckWebLink) {
       L"http//[example.com",        // Invalid IPv6 address.
       L"http//[00:00:00:00:00:00",  // Invalid IPv6 address.
       L"http//[]",                  // Empty IPv6 address.
-      // Web addresses that in correct format that we don't handle.
-      L"abc.example.com",  // URL without scheme.
+      L"abc.example.com",           // URL without scheme.
   };
-  const int32_t DEFAULT_VALUE = -42;
-  for (size_t i = 0; i < pdfium::size(invalid_cases); ++i) {
-    const wchar_t* const input = invalid_cases[i];
-    WideString text_str(input);
-    int32_t start_offset = DEFAULT_VALUE;
-    int32_t count = DEFAULT_VALUE;
-    EXPECT_FALSE(extractor.CheckWebLink(&text_str, &start_offset, &count))
-        << input;
-    EXPECT_EQ(DEFAULT_VALUE, start_offset) << input;
-    EXPECT_EQ(DEFAULT_VALUE, count) << input;
+  for (const wchar_t* input : kInvalidCases) {
+    auto maybe_link = extractor.CheckWebLink(input);
+    EXPECT_FALSE(maybe_link.has_value()) << input;
   }
 
   // Check cases that can extract valid web link.
@@ -95,10 +93,10 @@ TEST(CPDF_LinkExtractTest, CheckWebLink) {
   struct ValidCase {
     const wchar_t* const input_string;
     const wchar_t* const url_extracted;
-    const int32_t start_offset;
-    const int32_t count;
+    const size_t start_offset;
+    const size_t count;
   };
-  const ValidCase valid_cases[] = {
+  const ValidCase kValidCases[] = {
       {L"http://www.example.com", L"http://www.example.com", 0,
        22},  // standard URL.
       {L"http://www.example.com:88", L"http://www.example.com:88", 0,
@@ -174,15 +172,11 @@ TEST(CPDF_LinkExtractTest, CheckWebLink) {
       {L"www.测试。net。", L"http://www.测试。net。", 0, 11},
       {L"www.测试.net；", L"http://www.测试.net；", 0, 11},
   };
-  for (size_t i = 0; i < pdfium::size(valid_cases); ++i) {
-    const wchar_t* const input = valid_cases[i].input_string;
-    WideString text_str(input);
-    int32_t start_offset = DEFAULT_VALUE;
-    int32_t count = DEFAULT_VALUE;
-    EXPECT_TRUE(extractor.CheckWebLink(&text_str, &start_offset, &count))
-        << input;
-    EXPECT_STREQ(valid_cases[i].url_extracted, text_str.c_str());
-    EXPECT_EQ(valid_cases[i].start_offset, start_offset) << input;
-    EXPECT_EQ(valid_cases[i].count, count) << input;
+  for (const auto& it : kValidCases) {
+    auto maybe_link = extractor.CheckWebLink(it.input_string);
+    ASSERT_TRUE(maybe_link.has_value()) << it.input_string;
+    EXPECT_EQ(it.url_extracted, maybe_link.value().m_strUrl);
+    EXPECT_EQ(it.start_offset, maybe_link.value().m_Start) << it.input_string;
+    EXPECT_EQ(it.count, maybe_link.value().m_Count) << it.input_string;
   }
 }

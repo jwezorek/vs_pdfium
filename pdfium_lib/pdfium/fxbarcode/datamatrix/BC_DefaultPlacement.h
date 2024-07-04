@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,35 +7,34 @@
 #ifndef FXBARCODE_DATAMATRIX_BC_DEFAULTPLACEMENT_H_
 #define FXBARCODE_DATAMATRIX_BC_DEFAULTPLACEMENT_H_
 
-#include <vector>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/widestring.h"
 
 class CBC_DefaultPlacement final {
  public:
   CBC_DefaultPlacement(WideString codewords, int32_t numcols, int32_t numrows);
   ~CBC_DefaultPlacement();
 
-  int32_t getNumrows();
-  int32_t getNumcols();
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>>& getBits();
-  bool getBit(int32_t col, int32_t row);
-  void setBit(int32_t col, int32_t row, bool bit);
-  bool hasBit(int32_t col, int32_t row);
-  void place();
+  bool GetBit(int32_t col, int32_t row) const;
 
  private:
-  WideString m_codewords;
-  int32_t m_numrows;
-  int32_t m_numcols;
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_bits;
-  void module(int32_t row, int32_t col, int32_t pos, int32_t bit);
-  void utah(int32_t row, int32_t col, int32_t pos);
-  void corner1(int32_t pos);
-  void corner2(int32_t pos);
-  void corner3(int32_t pos);
-  void corner4(int32_t pos);
+  void Init();
+  void SetModule(int32_t row, int32_t col, int32_t pos, int32_t bit);
+  void SetUtah(int32_t row, int32_t col, int32_t pos);
+  void SetCorner1(int32_t pos);
+  void SetCorner2(int32_t pos);
+  void SetCorner3(int32_t pos);
+  void SetCorner4(int32_t pos);
+
+  void SetBit(int32_t col, int32_t row, bool bit);
+  bool HasBit(int32_t col, int32_t row) const;
+
+  const WideString m_codewords;
+  const int32_t m_numrows;
+  const int32_t m_numcols;
+  DataVector<uint8_t> m_bits;
 };
 
 #endif  // FXBARCODE_DATAMATRIX_BC_DEFAULTPLACEMENT_H_

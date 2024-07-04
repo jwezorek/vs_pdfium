@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,7 @@
 
 #include "core/fxcodec/jbig2/JBig2_Image.h"
 
-CJBig2_SymbolDict::CJBig2_SymbolDict() {}
+CJBig2_SymbolDict::CJBig2_SymbolDict() = default;
 
 CJBig2_SymbolDict::~CJBig2_SymbolDict() = default;
 
@@ -18,7 +18,7 @@ std::unique_ptr<CJBig2_SymbolDict> CJBig2_SymbolDict::DeepCopy() const {
     dst->m_SDEXSYMS.push_back(image ? std::make_unique<CJBig2_Image>(*image)
                                     : nullptr);
   }
-  dst->m_gbContext = m_gbContext;
-  dst->m_grContext = m_grContext;
+  dst->m_gbContexts = m_gbContexts;
+  dst->m_grContexts = m_grContexts;
   return dst;
 }

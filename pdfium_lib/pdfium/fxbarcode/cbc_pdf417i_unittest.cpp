@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,5 +16,5 @@ TEST(CBC_PDF417ITest, Normal) {
 TEST(CBC_PDF417ITest, MaxLength) {
   std::vector<wchar_t> input(2711, L'1');
   CBC_PDF417I encoder;
-  EXPECT_FALSE(encoder.Encode(WideStringView(input.data(), input.size())));
+  EXPECT_FALSE(encoder.Encode(WideStringView(input)));
 }

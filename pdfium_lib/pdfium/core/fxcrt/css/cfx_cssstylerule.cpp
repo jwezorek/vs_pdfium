@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +6,7 @@
 
 #include "core/fxcrt/css/cfx_cssstylerule.h"
 
-#include "third_party/base/check.h"
+#include "core/fxcrt/check.h"
 
 CFX_CSSStyleRule::CFX_CSSStyleRule() = default;
 
@@ -16,7 +16,7 @@ size_t CFX_CSSStyleRule::CountSelectorLists() const {
   return m_ppSelector.size();
 }
 
-CFX_CSSSelector* CFX_CSSStyleRule::GetSelectorList(int32_t index) const {
+CFX_CSSSelector* CFX_CSSStyleRule::GetSelectorList(size_t index) const {
   return m_ppSelector[index].get();
 }
 

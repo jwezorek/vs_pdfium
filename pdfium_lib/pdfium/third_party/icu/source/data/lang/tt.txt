@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 tt{
     Languages{
         af{"африкаанс"}
@@ -33,6 +34,8 @@ tt{
         dz{"дзонг-кха"}
         el{"грек"}
         en{"инглиз"}
+        en_GB{"Британия инглизчәсе"}
+        en_US{"Америка инглизчәсе"}
         eo{"эсперанто"}
         es{"испан"}
         es_419{"испан (Латин Америкасы)"}
@@ -156,6 +159,17 @@ tt{
         zh_Hans{"гадиләштерелгән кытай"}
         zh_Hant{"традицион кытай"}
     }
+    Languages%long{
+        zh_Hans{"гадиләштерелгән мандарин кытайчасы"}
+        zh_Hant{"традицион мандарин кытайчасы"}
+    }
+    Languages%menu{
+        zh{"мандарин кытайчасы"}
+    }
+    Languages%short{
+        en_GB{"инглиз (Берләшкән Корольлек)"}
+        en_US{"инглиз (АКШ)"}
+    }
     Scripts{
         Arab{"гарәп"}
         Cyrl{"кирилл"}
@@ -180,15 +194,9 @@ tt{
             latn{"көнбатыш цифрлары"}
         }
     }
-    Version{"2.1.44.88"}
     codePatterns{
         language{"Тел: {0}"}
         script{"Язу: {0}"}
         territory{"Төбәк: {0}"}
-    }
-    localeDisplayPattern{
-        keyTypePattern{"{0}: {1}"}
-        pattern{"{0} ({1})"}
-        separator{"{0}, {1}"}
     }
 }

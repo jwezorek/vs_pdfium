@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,6 +10,7 @@ class CPDF_Transparency {
   CPDF_Transparency();
 
   CPDF_Transparency(const CPDF_Transparency& other);
+  CPDF_Transparency& operator=(const CPDF_Transparency& other);
 
   bool IsGroup() const { return m_bGroup; }
   bool IsIsolated() const { return m_bIsolated; }

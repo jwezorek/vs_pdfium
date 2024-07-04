@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,24 +6,29 @@
 
 #include "fxjs/js_define.h"
 
+#include <math.h>
+#include <stdarg.h>
+
 #include <algorithm>
-#include <cmath>
 #include <limits>
 #include <vector>
 
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_extension.h"
+#include "core/fxcrt/span.h"
 #include "fxjs/cjs_document.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/fx_date_helpers.h"
 #include "fxjs/fxv8.h"
-#include "third_party/base/check.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-function.h"
+#include "v8/include/v8-isolate.h"
 
 void JSDestructor(v8::Local<v8::Object> obj) {
-  CFXJS_Engine::SetObjectPrivate(obj, nullptr);
+  CFXJS_Engine::SetBinding(obj, nullptr);
 }
 
-double JS_DateParse(const WideString& str) {
-  v8::Isolate* pIsolate = v8::Isolate::GetCurrent();
+double JS_DateParse(v8::Isolate* pIsolate, const WideString& str) {
   v8::Isolate::Scope isolate_scope(pIsolate);
   v8::HandleScope scope(pIsolate);
 
@@ -52,17 +57,17 @@ double JS_DateParse(const WideString& str) {
     return 0;
 
   double date = value.As<v8::Number>()->Value();
-  return std::isfinite(date) ? FX_LocalTime(date) : date;
+  return isfinite(date) ? FX_LocalTime(date) : date;
 }
 
-std::vector<v8::Local<v8::Value>> ExpandKeywordParams(
+v8::LocalVector<v8::Value> ExpandKeywordParams(
     CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& originals,
+    pdfium::span<v8::Local<v8::Value>> originals,
     size_t nKeywords,
     ...) {
   DCHECK(nKeywords);
 
-  std::vector<v8::Local<v8::Value>> result(nKeywords, v8::Local<v8::Value>());
+  v8::LocalVector<v8::Value> result(pRuntime->GetIsolate(), nKeywords);
   size_t size = std::min(originals.size(), nKeywords);
   for (size_t i = 0; i < size; ++i)
     result[i] = originals[i];

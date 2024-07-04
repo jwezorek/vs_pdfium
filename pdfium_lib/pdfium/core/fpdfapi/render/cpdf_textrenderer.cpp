@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,7 +13,7 @@
 #include "core/fpdfapi/render/charposlist.h"
 #include "core/fpdfapi/render/cpdf_renderoptions.h"
 #include "core/fxge/cfx_graphstatedata.h"
-#include "core/fxge/cfx_pathdata.h"
+#include "core/fxge/cfx_path.h"
 #include "core/fxge/cfx_renderdevice.h"
 #include "core/fxge/cfx_textrenderoptions.h"
 #include "core/fxge/fx_font.h"
@@ -58,7 +58,7 @@ bool CPDF_TextRenderer::DrawTextPath(
     const CFX_GraphStateData* pGraphState,
     FX_ARGB fill_argb,
     FX_ARGB stroke_argb,
-    CFX_PathData* pClippingPath,
+    CFX_Path* pClippingPath,
     const CFX_FillRenderOptions& fill_options) {
   std::vector<TextCharPos> pos =
       GetCharPosList(char_codes, char_pos, pFont, font_size);
@@ -74,17 +74,17 @@ bool CPDF_TextRenderer::DrawTextPath(
       continue;
 
     CFX_Font* font = GetFont(pFont, fontPosition);
-    if (!pDevice->DrawTextPath(i - startIndex, &pos[startIndex], font,
-                               font_size, mtText2User, pUser2Device,
-                               pGraphState, fill_argb, stroke_argb,
-                               pClippingPath, fill_options)) {
+    if (!pDevice->DrawTextPath(
+            pdfium::make_span(pos).subspan(startIndex, i - startIndex), font,
+            font_size, mtText2User, pUser2Device, pGraphState, fill_argb,
+            stroke_argb, pClippingPath, fill_options)) {
       bDraw = false;
     }
     fontPosition = curFontPosition;
     startIndex = i;
   }
   CFX_Font* font = GetFont(pFont, fontPosition);
-  if (!pDevice->DrawTextPath(pos.size() - startIndex, &pos[startIndex], font,
+  if (!pDevice->DrawTextPath(pdfium::make_span(pos).subspan(startIndex), font,
                              font_size, mtText2User, pUser2Device, pGraphState,
                              fill_argb, stroke_argb, pClippingPath,
                              fill_options)) {
@@ -106,8 +106,8 @@ void CPDF_TextRenderer::DrawTextString(CFX_RenderDevice* pDevice,
   if (pFont->IsType3Font())
     return;
 
-  int nChars = pFont->CountChar(str.AsStringView());
-  if (nChars <= 0)
+  size_t nChars = pFont->CountChar(str.AsStringView());
+  if (nChars == 0)
     return;
 
   size_t offset = 0;
@@ -116,7 +116,7 @@ void CPDF_TextRenderer::DrawTextString(CFX_RenderDevice* pDevice,
   codes.resize(nChars);
   positions.resize(nChars - 1);
   float cur_pos = 0;
-  for (int i = 0; i < nChars; i++) {
+  for (size_t i = 0; i < nChars; i++) {
     codes[i] = pFont->GetNextChar(str.AsStringView(), &offset);
     if (i)
       positions[i - 1] = cur_pos;
@@ -154,16 +154,16 @@ bool CPDF_TextRenderer::DrawNormalText(CFX_RenderDevice* pDevice,
       continue;
 
     CFX_Font* font = GetFont(pFont, fontPosition);
-    if (!pDevice->DrawNormalText(i - startIndex, &pos[startIndex], font,
-                                 font_size, mtText2Device, fill_argb,
-                                 text_options)) {
+    if (!pDevice->DrawNormalText(
+            pdfium::make_span(pos).subspan(startIndex, i - startIndex), font,
+            font_size, mtText2Device, fill_argb, text_options)) {
       bDraw = false;
     }
     fontPosition = curFontPosition;
     startIndex = i;
   }
   CFX_Font* font = GetFont(pFont, fontPosition);
-  if (!pDevice->DrawNormalText(pos.size() - startIndex, &pos[startIndex], font,
+  if (!pDevice->DrawNormalText(pdfium::make_span(pos).subspan(startIndex), font,
                                font_size, mtText2Device, fill_argb,
                                text_options)) {
     bDraw = false;

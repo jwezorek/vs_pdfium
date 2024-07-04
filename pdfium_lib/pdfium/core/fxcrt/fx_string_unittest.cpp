@@ -1,72 +1,68 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include <limits>
 
+#include "build/build_config.h"
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/utf16.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-char* TerminatedFloatToString(float value, char* buf) {
+char* TerminatedFloatToString(float value, pdfium::span<char> buf) {
   size_t buflen = FloatToString(value, buf);
   buf[buflen] = '\0';
-  return buf;
+  return buf.data();
 }
 
-char* TerminatedDoubleToString(double value, char* buf) {
+char* TerminatedDoubleToString(double value, pdfium::span<char> buf) {
   size_t buflen = DoubleToString(value, buf);
   buf[buflen] = '\0';
-  return buf;
+  return buf.data();
 }
 
-TEST(fxstring, FX_UTF8Encode) {
+TEST(fxstring, FXUTF8Encode) {
   EXPECT_EQ("", FX_UTF8Encode(WideStringView()));
   EXPECT_EQ(
       "x"
-      "\xc2\x80"
-      "\xc3\xbf"
-      "\xef\xbc\xac"
+      "\u0080"
+      "\u00ff"
+      "\ud7ff"
+      "\ue000"
+      "\uff2c"
+      "\uffff"
       "y",
       FX_UTF8Encode(L"x"
                     L"\u0080"
                     L"\u00ff"
+                    L"\ud7ff"
+                    L"\ue000"
                     L"\uff2c"
+                    L"\uffff"
                     L"y"));
 }
 
-TEST(fxstring, FX_UTF8Decode) {
-  EXPECT_EQ(L"", FX_UTF8Decode(ByteStringView()));
+TEST(fxstring, FXUTF8EncodeSupplementary) {
   EXPECT_EQ(
-      L"x"
-      L"\u0080"
-      L"\u00ff"
-      L"\uff2c"
-      L"y",
-      FX_UTF8Decode("x"
-                    "\xc2\x80"
-                    "\xc3\xbf"
-                    "\xef\xbc\xac"
-                    "y"));
-  EXPECT_EQ(L"a(A) b() c() d() e().",
-            FX_UTF8Decode("a(\xc2\x41) "      // Invalid continuation.
-                          "b(\xc2\xc2) "      // Invalid continuation.
-                          "c(\xc2\xff\x80) "  // Invalid continuation.
-                          "d(\x80\x80) "      // Invalid leading.
-                          "e(\xff\x80\x80)"   // Invalid leading.
-                          "."));
+      "\U00010000"
+      "🎨"
+      "\U0010ffff",
+      FX_UTF8Encode(L"\U00010000"
+                    L"\U0001f3a8"
+                    L"\U0010ffff"));
 }
 
-TEST(fxstring, FX_UTF8EncodeDecodeConsistency) {
-  WideString wstr;
-  wstr.Reserve(0x10000);
-  for (int w = 0; w < 0x10000; ++w)
-    wstr += static_cast<wchar_t>(w);
-
-  ByteString bstr = FX_UTF8Encode(wstr.AsStringView());
-  WideString wstr2 = FX_UTF8Decode(bstr.AsStringView());
-  EXPECT_EQ(0x10000u, wstr2.GetLength());
-  EXPECT_EQ(wstr, wstr2);
+#if defined(WCHAR_T_IS_16_BIT)
+TEST(fxstring, FXUTF8EncodeSurrogateErrorRecovery) {
+  EXPECT_EQ("(\xed\xa0\x80)", FX_UTF8Encode(L"(\xd800)")) << "High";
+  EXPECT_EQ("(\xed\xb0\x80)", FX_UTF8Encode(L"(\xdc00)")) << "Low";
+  EXPECT_EQ("(\xed\xa0\x80🎨)", FX_UTF8Encode(L"(\xd800\xd83c\xdfa8)"))
+      << "High-high";
+  EXPECT_EQ("(🎨\xed\xb0\x80)", FX_UTF8Encode(L"(\xd83c\xdfa8\xdc00)"))
+      << "Low-low";
 }
+#endif  // defined(WCHAR_T_IS_16_BIT)
 
 TEST(fxstring, ByteStringToFloat) {
   EXPECT_FLOAT_EQ(0.0f, StringToFloat(""));
@@ -434,7 +430,7 @@ TEST(fxstring, SplitWideStringView) {
 
 TEST(fxstring, ByteStringSplitEfficiency) {
   std::vector<char> commas(50000, ',');
-  ByteString input(commas.data(), commas.size());
+  auto input = ByteString(ByteStringView(commas));
   std::vector<ByteString> result;
   result = fxcrt::Split(input, ',');
   ASSERT_EQ(commas.size() + 1, result.size());
@@ -444,7 +440,7 @@ TEST(fxstring, ByteStringSplitEfficiency) {
 
 TEST(fxstring, ByteStringViewSplitEfficiency) {
   std::vector<char> commas(50000, ',');
-  ByteStringView input(commas.data(), commas.size());
+  ByteStringView input(commas);
   std::vector<ByteStringView> result;
   result = fxcrt::Split(input, ',');
   ASSERT_EQ(commas.size() + 1, result.size());
@@ -454,7 +450,7 @@ TEST(fxstring, ByteStringViewSplitEfficiency) {
 
 TEST(fxstring, WideStringSplitEfficiency) {
   std::vector<wchar_t> commas(50000, L',');
-  WideString input(commas.data(), commas.size());
+  auto input = WideString(WideStringView(commas));
   std::vector<WideString> result;
   result = fxcrt::Split(input, ',');
   ASSERT_EQ(commas.size() + 1, result.size());
@@ -464,7 +460,7 @@ TEST(fxstring, WideStringSplitEfficiency) {
 
 TEST(fxstring, WideStringViewSplitEfficiency) {
   std::vector<wchar_t> commas(50000, L',');
-  WideStringView input(commas.data(), commas.size());
+  WideStringView input(commas);
   std::vector<WideStringView> result;
   result = fxcrt::Split(input, ',');
   ASSERT_EQ(commas.size() + 1, result.size());

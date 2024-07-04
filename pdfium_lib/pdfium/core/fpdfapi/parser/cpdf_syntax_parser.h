@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,17 +7,21 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_SYNTAX_PARSER_H_
 #define CORE_FPDFAPI_PARSER_CPDF_SYNTAX_PARSER_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "core/fpdfapi/parser/cpdf_stream.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/fx_types.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/string_pool_template.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxcrt/weak_ptr.h"
 
-class CPDF_CryptoHandler;
 class CPDF_Dictionary;
 class CPDF_IndirectObjectHolder;
 class CPDF_Object;
@@ -27,15 +31,19 @@ class IFX_SeekableReadStream;
 
 class CPDF_SyntaxParser {
  public:
-  enum class ParseType { kStrict, kLoose };
+  enum class ParseType : bool { kStrict, kLoose };
+
+  struct WordResult {
+    ByteString word;
+    bool is_number;
+  };
 
   static std::unique_ptr<CPDF_SyntaxParser> CreateForTesting(
-      const RetainPtr<IFX_SeekableReadStream>& pFileAccess,
+      RetainPtr<IFX_SeekableReadStream> pFileAccess,
       FX_FILESIZE HeaderOffset);
 
-  explicit CPDF_SyntaxParser(
-      const RetainPtr<IFX_SeekableReadStream>& pFileAccess);
-  CPDF_SyntaxParser(const RetainPtr<CPDF_ReadValidator>& pValidator,
+  explicit CPDF_SyntaxParser(RetainPtr<IFX_SeekableReadStream> pFileAccess);
+  CPDF_SyntaxParser(RetainPtr<CPDF_ReadValidator> pValidator,
                     FX_FILESIZE HeaderOffset);
   ~CPDF_SyntaxParser();
 
@@ -47,7 +55,6 @@ class CPDF_SyntaxParser {
   void SetPos(FX_FILESIZE pos);
 
   RetainPtr<CPDF_Object> GetObjectBody(CPDF_IndirectObjectHolder* pObjList);
-
   RetainPtr<CPDF_Object> GetIndirectObject(CPDF_IndirectObjectHolder* pObjList,
                                            ParseType parse_type);
 
@@ -57,14 +64,12 @@ class CPDF_SyntaxParser {
   void RecordingToNextWord();
   bool BackwardsSearchToWord(ByteStringView word, FX_FILESIZE limit);
   FX_FILESIZE FindTag(ByteStringView tag);
-  bool ReadBlock(uint8_t* pBuf, uint32_t size);
+  bool ReadBlock(pdfium::span<uint8_t> buffer);
   bool GetCharAt(FX_FILESIZE pos, uint8_t& ch);
-  ByteString GetNextWord(bool* bIsNumber);
-  ByteString PeekNextWord(bool* bIsNumber);
+  WordResult GetNextWord();
+  ByteString PeekNextWord();
 
-  const RetainPtr<CPDF_ReadValidator>& GetValidator() const {
-    return m_pFileAccess;
-  }
+  RetainPtr<CPDF_ReadValidator> GetValidator() const;
   uint32_t GetDirectNum();
   bool GetNextChar(uint8_t& ch);
 
@@ -77,13 +82,15 @@ class CPDF_SyntaxParser {
   FX_FILESIZE GetDocumentSize() const;
 
   ByteString ReadString();
-  ByteString ReadHexString();
+  DataVector<uint8_t> ReadHexString();
 
   void SetTrailerEnds(std::vector<unsigned int>* trailer_ends) {
     m_TrailerEnds = trailer_ends;
   }
 
  private:
+  enum class WordType : bool { kWord, kNumber };
+
   friend class CPDF_DataAvail;
   friend class cpdf_syntax_parser_ReadHexString_Test;
 
@@ -92,7 +99,7 @@ class CPDF_SyntaxParser {
 
   bool ReadBlockAt(FX_FILESIZE read_pos);
   bool GetCharAtBackward(FX_FILESIZE pos, uint8_t* ch);
-  void GetNextWordInternal(bool* bIsNumber);
+  WordType GetNextWordInternal();
   bool IsWholeWord(FX_FILESIZE startpos,
                    FX_FILESIZE limit,
                    ByteStringView tag,
@@ -117,11 +124,11 @@ class CPDF_SyntaxParser {
   const FX_FILESIZE m_FileLen;
   FX_FILESIZE m_Pos = 0;
   WeakPtr<ByteStringPool> m_pPool;
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_pFileBuf;
+  DataVector<uint8_t> m_pFileBuf;
   FX_FILESIZE m_BufOffset = 0;
   uint32_t m_WordSize = 0;
-  uint8_t m_WordBuffer[257];
   uint32_t m_ReadBufferSize = CPDF_Stream::kFileBufSize;
+  std::array<uint8_t, 257> m_WordBuffer = {};
 
   // The syntax parser records traversed trailer end byte offsets here.
   UnownedPtr<std::vector<unsigned int>> m_TrailerEnds;

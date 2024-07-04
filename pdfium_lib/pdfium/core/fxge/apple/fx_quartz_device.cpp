@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,20 +6,22 @@
 
 #include "core/fxge/apple/fx_quartz_device.h"
 
+#include <CoreGraphics/CoreGraphics.h>
+
+#include "core/fxcrt/fixed_size_data_vector.h"
 #include "core/fxcrt/fx_extension.h"
+#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/zip.h"
 #include "core/fxge/cfx_graphstatedata.h"
-#include "core/fxge/cfx_pathdata.h"
+#include "core/fxge/cfx_path.h"
 #include "core/fxge/cfx_renderdevice.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
-#include "core/fxge/fx_freetype.h"
-
-#if !defined(_SKIA_SUPPORT_) && !defined(_SKIA_SUPPORT_PATHS_)
-#include "core/fxge/agg/fx_agg_driver.h"
-#endif
 
 #ifndef CGFLOAT_IS_DOUBLE
 #error Expected CGFLOAT_IS_DOUBLE to be defined by CoreGraphics headers
 #endif
+
+FX_DATA_PARTITION_EXCEPTION(CGPoint);
 
 void* CQuartz2D::CreateGraphics(const RetainPtr<CFX_DIBitmap>& pBitmap) {
   if (!pBitmap)
@@ -35,8 +37,8 @@ void* CQuartz2D::CreateGraphics(const RetainPtr<CFX_DIBitmap>& pBitmap) {
   }
   CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
   CGContextRef context = CGBitmapContextCreate(
-      pBitmap->GetBuffer(), pBitmap->GetWidth(), pBitmap->GetHeight(), 8,
-      pBitmap->GetPitch(), colorSpace, bmpInfo);
+      pBitmap->GetWritableBuffer().data(), pBitmap->GetWidth(),
+      pBitmap->GetHeight(), 8, pBitmap->GetPitch(), colorSpace, bmpInfo);
   CGColorSpaceRelease(colorSpace);
   return context;
 }
@@ -46,19 +48,20 @@ void CQuartz2D::DestroyGraphics(void* graphics) {
     CGContextRelease((CGContextRef)graphics);
 }
 
-void* CQuartz2D::CreateFont(const uint8_t* pFontData, uint32_t dwFontSize) {
-  CGDataProviderRef pDataProvider = CGDataProviderCreateWithData(
-      nullptr, pFontData, static_cast<size_t>(dwFontSize), nullptr);
-  if (!pDataProvider)
+void* CQuartz2D::CreateFont(pdfium::span<const uint8_t> font_data) {
+  CGDataProviderRef data_provider = CGDataProviderCreateWithData(
+      nullptr, font_data.data(), font_data.size(), nullptr);
+  if (!data_provider) {
     return nullptr;
+  }
 
-  CGFontRef pCGFont = CGFontCreateWithDataProvider(pDataProvider);
-  CGDataProviderRelease(pDataProvider);
-  return pCGFont;
+  CGFontRef cg_font = CGFontCreateWithDataProvider(data_provider);
+  CGDataProviderRelease(data_provider);
+  return cg_font;
 }
 
-void CQuartz2D::DestroyFont(void* pFont) {
-  CGFontRelease((CGFontRef)pFont);
+void CQuartz2D::DestroyFont(void* font) {
+  CGFontRelease((CGFontRef)font);
 }
 
 void CQuartz2D::SetGraphicsTextMatrix(void* graphics,
@@ -74,40 +77,36 @@ void CQuartz2D::SetGraphicsTextMatrix(void* graphics,
 
 bool CQuartz2D::DrawGraphicsString(void* graphics,
                                    void* font,
-                                   float fontSize,
-                                   uint16_t* glyphIndices,
-                                   CGPoint* glyphPositions,
-                                   int32_t charsCount,
+                                   float font_size,
+                                   pdfium::span<uint16_t> glyph_indices,
+                                   pdfium::span<CGPoint> glyph_positions,
                                    FX_ARGB argb) {
   if (!graphics)
     return false;
 
   CGContextRef context = (CGContextRef)graphics;
   CGContextSetFont(context, (CGFontRef)font);
-  CGContextSetFontSize(context, fontSize);
+  CGContextSetFontSize(context, font_size);
 
-  int32_t a;
-  int32_t r;
-  int32_t g;
-  int32_t b;
-  std::tie(a, r, g, b) = ArgbDecode(argb);
-  CGContextSetRGBFillColor(context, r / 255.f, g / 255.f, b / 255.f, a / 255.f);
+  const FX_BGRA_STRUCT<uint8_t> bgra = ArgbToBGRAStruct(argb);
+  CGContextSetRGBFillColor(context, bgra.red / 255.f, bgra.green / 255.f,
+                           bgra.blue / 255.f, bgra.alpha / 255.f);
   CGContextSaveGState(context);
 #if CGFLOAT_IS_DOUBLE
-  CGPoint* glyphPositionsCG = new CGPoint[charsCount];
-  for (int index = 0; index < charsCount; ++index) {
-    glyphPositionsCG[index].x = glyphPositions[index].x;
-    glyphPositionsCG[index].y = glyphPositions[index].y;
+  auto glyph_positions_cg =
+      FixedSizeDataVector<CGPoint>::Uninit(glyph_positions.size());
+  for (auto [input, output] :
+       fxcrt::Zip(glyph_positions, glyph_positions_cg.span())) {
+    output.x = input.x;
+    output.y = input.y;
   }
+  const CGPoint* glyph_positions_cg_ptr = glyph_positions_cg.span().data();
 #else
-  CGPoint* glyphPositionsCG = glyphPositions;
+  const CGPoint* glyph_positions_cg_ptr = glyph_positions.data();
 #endif
-  CGContextShowGlyphsAtPositions(context,
-                                 reinterpret_cast<CGGlyph*>(glyphIndices),
-                                 glyphPositionsCG, charsCount);
-#if CGFLOAT_IS_DOUBLE
-  delete[] glyphPositionsCG;
-#endif
+  CGContextShowGlyphsAtPositions(
+      context, reinterpret_cast<CGGlyph*>(glyph_indices.data()),
+      glyph_positions_cg_ptr, glyph_positions.size());
   CGContextRestoreGState(context);
   return true;
 }

@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,6 +11,13 @@
 // core/fxcodec/jpeg/. Not intended to be included in headers.
 
 #include <stdio.h>
+
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_WIN)
+// windows.h must come before the third_party/libjpeg_turbo includes.
+#include <windows.h>
+#endif
 
 extern "C" {
 

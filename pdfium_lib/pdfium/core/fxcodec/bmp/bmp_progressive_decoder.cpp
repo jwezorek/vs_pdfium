@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,13 +8,31 @@
 
 #include "core/fxcodec/bmp/bmp_decoder.h"
 #include "core/fxcodec/cfx_codec_memory.h"
+#include "core/fxcrt/check.h"
 
 namespace fxcodec {
 
+namespace {
+
+BmpProgressiveDecoder* g_bmp_decoder = nullptr;
+
+}  // namespace
+
+// static
+void BmpProgressiveDecoder::InitializeGlobals() {
+  CHECK(!g_bmp_decoder);
+  g_bmp_decoder = new BmpProgressiveDecoder();
+}
+
+// static
+void BmpProgressiveDecoder::DestroyGlobals() {
+  delete g_bmp_decoder;
+  g_bmp_decoder = nullptr;
+}
+
 // static
 BmpProgressiveDecoder* BmpProgressiveDecoder::GetInstance() {
-  static pdfium::base::NoDestructor<BmpProgressiveDecoder> s;
-  return s.get();
+  return g_bmp_decoder;
 }
 
 BmpProgressiveDecoder::BmpProgressiveDecoder() = default;
@@ -26,9 +44,8 @@ FX_FILESIZE BmpProgressiveDecoder::GetAvailInput(Context* context) const {
 }
 
 bool BmpProgressiveDecoder::Input(Context* context,
-                                  RetainPtr<CFX_CodecMemory> codec_memory,
-                                  CFX_DIBAttribute* pAttribute) {
-  return BmpDecoder::Input(context, codec_memory, pAttribute);
+                                  RetainPtr<CFX_CodecMemory> codec_memory) {
+  return BmpDecoder::Input(context, codec_memory);
 }
 
 }  // namespace fxcodec

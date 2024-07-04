@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,15 +9,9 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/xfa/cjx_object.h"
 #include "fxjs/xfa/jse_define.h"
-
-enum XFA_LAYOUTMODEL_HWXY {
-  XFA_LAYOUTMODEL_H,
-  XFA_LAYOUTMODEL_W,
-  XFA_LAYOUTMODEL_X,
-  XFA_LAYOUTMODEL_Y
-};
 
 class CScript_LayoutPseudoModel;
 class CXFA_LayoutProcessor;
@@ -54,6 +48,8 @@ class CJX_LayoutPseudoModel final : public CJX_Object {
   JSE_PROP(ready);
 
  private:
+  enum class HWXY { kH, kW, kX, kY };
+
   explicit CJX_LayoutPseudoModel(CScript_LayoutPseudoModel* model);
 
   using Type__ = CJX_LayoutPseudoModel;
@@ -62,16 +58,17 @@ class CJX_LayoutPseudoModel final : public CJX_Object {
   static const TypeTag static_type__ = TypeTag::LayoutPseudoModel;
   static const CJX_MethodSpec MethodSpecs[];
 
-  CJS_Result NumberedPageCount(CFX_V8* runtime, bool bNumbered);
-  CJS_Result HWXY(CFX_V8* runtime,
-                  const std::vector<v8::Local<v8::Value>>& params,
-                  XFA_LAYOUTMODEL_HWXY layoutModel);
+  CJS_Result AllPageCount(CFXJSE_Engine* runtime);
+  CJS_Result NumberedPageCount(CFXJSE_Engine* runtime);
+  CJS_Result DoHWXYInternal(CFXJSE_Engine* runtime,
+                            pdfium::span<v8::Local<v8::Value>> params,
+                            HWXY layoutModel);
   std::vector<CXFA_Node*> GetObjArray(CXFA_LayoutProcessor* pDocLayout,
                                       int32_t iPageNo,
                                       const WideString& wsType,
                                       bool bOnPageArea);
-  CJS_Result PageInternals(CFX_V8* runtime,
-                           const std::vector<v8::Local<v8::Value>>& params,
+  CJS_Result PageInternals(CFXJSE_Engine* runtime,
+                           pdfium::span<v8::Local<v8::Value>> params,
                            bool bAbsPage);
 };
 

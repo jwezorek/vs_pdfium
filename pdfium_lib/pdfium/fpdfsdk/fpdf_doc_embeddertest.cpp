@@ -1,13 +1,18 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <memory>
+#include <array>
 #include <set>
+#include <string>
 #include <vector>
 
+#include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
-#include "core/fxcrt/fx_string.h"
+#include "core/fpdfapi/parser/cpdf_reference.h"
+#include "core/fxcrt/bytestring.h"
+#include "core/fxcrt/fx_safe_types.h"
+#include "core/fxge/cfx_defaultrenderdevice.h"
 #include "fpdfsdk/cpdfsdk_helpers.h"
 #include "public/cpp/fpdf_scopers.h"
 #include "public/fpdf_doc.h"
@@ -16,6 +21,57 @@
 #include "testing/embedder_test.h"
 #include "testing/fx_string_testhelpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
+namespace {
+
+// Look for "/Type/Page" but ignore "/Type/Pages".
+int CountPageEntries(const std::string& data) {
+  static constexpr char kNeedle[] = "/Type/Page";
+  static constexpr size_t kNeedleLen = std::size(kNeedle) - 1;
+
+  size_t pos = 0;
+  int count = 0;
+  while (pos < data.size()) {
+    const size_t found_pos = data.find(kNeedle, pos);
+    if (found_pos == std::string::npos) {
+      break;
+    }
+
+    FX_SAFE_SIZE_T next_pos = found_pos;
+    next_pos += kNeedleLen;
+    pos = next_pos.ValueOrDefault(std::string::npos);
+    if (pos < data.size() && data[pos] == 's') {
+      // Ignore "/Type/Pages".
+      ++pos;
+    } else {
+      ++count;
+    }
+  }
+  return count;
+}
+
+// Look for ">stream\r\n".
+int CountStreamEntries(const std::string& data) {
+  static constexpr char kNeedle[] = ">stream\r\n";
+  static constexpr size_t kNeedleLen = std::size(kNeedle) - 1;
+
+  size_t pos = 0;
+  int count = 0;
+  while (pos < data.size()) {
+    const size_t found_pos = data.find(kNeedle, pos);
+    if (found_pos == std::string::npos) {
+      break;
+    }
+
+    FX_SAFE_SIZE_T next_pos = found_pos;
+    next_pos += kNeedleLen;
+    pos = next_pos.ValueOrDefault(std::string::npos);
+    ++count;
+  }
+  return count;
+}
+
+}  // namespace
 
 class FPDFDocEmbedderTest : public EmbedderTest {};
 
@@ -153,7 +209,7 @@ TEST_F(FPDFDocEmbedderTest, DestGetLocationInPage) {
   EXPECT_EQ(1, zoom);
 }
 
-TEST_F(FPDFDocEmbedderTest, BUG_1506_1) {
+TEST_F(FPDFDocEmbedderTest, Bug1506First) {
   ASSERT_TRUE(OpenDocument("bug_1506.pdf"));
 
   FPDF_DEST dest = FPDF_GetNamedDestByName(document(), "First");
@@ -161,7 +217,7 @@ TEST_F(FPDFDocEmbedderTest, BUG_1506_1) {
   EXPECT_EQ(3, FPDFDest_GetDestPageIndex(document(), dest));
 }
 
-TEST_F(FPDFDocEmbedderTest, BUG_1506_2) {
+TEST_F(FPDFDocEmbedderTest, Bug1506Second) {
   ASSERT_TRUE(OpenDocument("bug_1506.pdf"));
 
   std::vector<FPDF_PAGE> pages;
@@ -176,7 +232,7 @@ TEST_F(FPDFDocEmbedderTest, BUG_1506_2) {
     UnloadPage(page);
 }
 
-TEST_F(FPDFDocEmbedderTest, BUG_1506_3) {
+TEST_F(FPDFDocEmbedderTest, Bug1506Third) {
   ASSERT_TRUE(OpenDocument("bug_1506.pdf"));
 
   std::vector<FPDF_PAGE> pages;
@@ -191,7 +247,7 @@ TEST_F(FPDFDocEmbedderTest, BUG_1506_3) {
     UnloadPage(page);
 }
 
-TEST_F(FPDFDocEmbedderTest, BUG_680376) {
+TEST_F(FPDFDocEmbedderTest, Bug680376) {
   ASSERT_TRUE(OpenDocument("bug_680376.pdf"));
 
   // Page number directly in item from Dests NameTree.
@@ -200,7 +256,7 @@ TEST_F(FPDFDocEmbedderTest, BUG_680376) {
   EXPECT_EQ(-1, FPDFDest_GetDestPageIndex(document(), dest));
 }
 
-TEST_F(FPDFDocEmbedderTest, BUG_821454) {
+TEST_F(FPDFDocEmbedderTest, Bug821454) {
   ASSERT_TRUE(OpenDocument("bug_821454.pdf"));
 
   FPDF_PAGE page = LoadPage(0);
@@ -272,8 +328,8 @@ TEST_F(FPDFDocEmbedderTest, ActionBadArguments) {
   EXPECT_EQ(static_cast<unsigned long>(PDFACTION_UNSUPPORTED),
             FPDFAction_GetType(nullptr));
 
-  EXPECT_EQ(nullptr, FPDFAction_GetDest(nullptr, nullptr));
-  EXPECT_EQ(nullptr, FPDFAction_GetDest(document(), nullptr));
+  EXPECT_FALSE(FPDFAction_GetDest(nullptr, nullptr));
+  EXPECT_FALSE(FPDFAction_GetDest(document(), nullptr));
   EXPECT_EQ(0u, FPDFAction_GetFilePath(nullptr, nullptr, 0));
   EXPECT_EQ(0u, FPDFAction_GetURIPath(nullptr, nullptr, nullptr, 0));
   EXPECT_EQ(0u, FPDFAction_GetURIPath(document(), nullptr, nullptr, 0));
@@ -304,13 +360,13 @@ TEST_F(FPDFDocEmbedderTest, ActionLaunch) {
   EXPECT_STREQ(kExpectedResult, buf);
 
   // Other public methods are not appropriate for launch actions.
-  EXPECT_EQ(nullptr, FPDFAction_GetDest(document(), action));
+  EXPECT_FALSE(FPDFAction_GetDest(document(), action));
   EXPECT_EQ(0u, FPDFAction_GetURIPath(document(), action, buf, sizeof(buf)));
 
   UnloadPage(page);
 }
 
-TEST_F(FPDFDocEmbedderTest, ActionURI) {
+TEST_F(FPDFDocEmbedderTest, ActionUri) {
   ASSERT_TRUE(OpenDocument("uri_action.pdf"));
 
   FPDF_PAGE page = LoadPage(0);
@@ -335,8 +391,39 @@ TEST_F(FPDFDocEmbedderTest, ActionURI) {
   EXPECT_STREQ(kExpectedResult, buf);
 
   // Other public methods are not appropriate for URI actions
-  EXPECT_EQ(nullptr, FPDFAction_GetDest(document(), action));
+  EXPECT_FALSE(FPDFAction_GetDest(document(), action));
   EXPECT_EQ(0u, FPDFAction_GetFilePath(action, buf, sizeof(buf)));
+
+  UnloadPage(page);
+}
+
+TEST_F(FPDFDocEmbedderTest, ActionUriNonAscii) {
+  ASSERT_TRUE(OpenDocument("uri_action_nonascii.pdf"));
+
+  FPDF_PAGE page = LoadPage(0);
+  ASSERT_TRUE(page);
+
+  // The target action is nearly the size of the whole page.
+  FPDF_LINK link = FPDFLink_GetLinkAtPoint(page, 100, 100);
+  ASSERT_TRUE(link);
+
+  FPDF_ACTION action = FPDFLink_GetAction(link);
+  ASSERT_TRUE(action);
+  EXPECT_EQ(static_cast<unsigned long>(PDFACTION_URI),
+            FPDFAction_GetType(action));
+
+  // FPDFAction_GetURIPath() may return data in any encoding, or even with bad
+  // encoding.
+  const char kExpectedResult[] =
+      "https://example.com/\xA5octal\xC7"
+      "chars";
+  const unsigned long kExpectedLength = sizeof(kExpectedResult);
+  unsigned long bufsize = FPDFAction_GetURIPath(document(), action, nullptr, 0);
+  ASSERT_EQ(kExpectedLength, bufsize);
+
+  char buf[1024];
+  EXPECT_EQ(bufsize, FPDFAction_GetURIPath(document(), action, buf, bufsize));
+  EXPECT_STREQ(kExpectedResult, buf);
 
   UnloadPage(page);
 }
@@ -457,49 +544,65 @@ TEST_F(FPDFDocEmbedderTest, NoBookmarks) {
 
   // NULL argument cases.
   EXPECT_EQ(0u, FPDFBookmark_GetTitle(nullptr, buf, sizeof(buf)));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetFirstChild(nullptr, nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetFirstChild(document(), nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetNextSibling(nullptr, nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetNextSibling(document(), nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_Find(nullptr, nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_Find(document(), nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetDest(nullptr, nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetDest(document(), nullptr));
-  EXPECT_EQ(nullptr, FPDFBookmark_GetAction(nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetFirstChild(nullptr, nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetFirstChild(document(), nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetNextSibling(nullptr, nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetNextSibling(document(), nullptr));
+  EXPECT_FALSE(FPDFBookmark_Find(nullptr, nullptr));
+  EXPECT_FALSE(FPDFBookmark_Find(document(), nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetDest(nullptr, nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetDest(document(), nullptr));
+  EXPECT_FALSE(FPDFBookmark_GetAction(nullptr));
 }
 
 TEST_F(FPDFDocEmbedderTest, Bookmarks) {
   unsigned short buf[128];
 
-  // Open a file with two bookmarks.
+  // Open a file with many bookmarks.
   ASSERT_TRUE(OpenDocument("bookmarks.pdf"));
 
   FPDF_BOOKMARK child = FPDFBookmark_GetFirstChild(document(), nullptr);
   EXPECT_TRUE(child);
   EXPECT_EQ(34u, FPDFBookmark_GetTitle(child, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(L"A Good Beginning"), WideString::FromUTF16LE(buf, 16));
+  EXPECT_EQ(L"A Good Beginning", GetPlatformWString(buf));
+  EXPECT_EQ(0, FPDFBookmark_GetCount(child));
+  EXPECT_EQ(0, FPDFBookmark_GetCount(nullptr));
 
-  FPDF_DEST dest = FPDFBookmark_GetDest(document(), child);
-  EXPECT_FALSE(dest);  // TODO(tsepez): put real dest into bookmarks.pdf
-
-  FPDF_ACTION action = FPDFBookmark_GetAction(child);
-  EXPECT_FALSE(action);  // TODO(tsepez): put real action into bookmarks.pdf
+  EXPECT_FALSE(FPDFBookmark_GetDest(document(), child));
+  EXPECT_FALSE(FPDFBookmark_GetAction(child));
 
   FPDF_BOOKMARK grand_child = FPDFBookmark_GetFirstChild(document(), child);
   EXPECT_FALSE(grand_child);
 
   FPDF_BOOKMARK sibling = FPDFBookmark_GetNextSibling(document(), child);
   EXPECT_TRUE(sibling);
-  EXPECT_EQ(28u, FPDFBookmark_GetTitle(sibling, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(L"A Good Ending"), WideString::FromUTF16LE(buf, 13));
+  EXPECT_EQ(24u, FPDFBookmark_GetTitle(sibling, buf, sizeof(buf)));
+  EXPECT_EQ(L"Open Middle", GetPlatformWString(buf));
+  EXPECT_TRUE(FPDFBookmark_GetAction(sibling));
+  EXPECT_EQ(1, FPDFBookmark_GetCount(sibling));
 
-  EXPECT_EQ(nullptr, FPDFBookmark_GetNextSibling(document(), sibling));
+  FPDF_BOOKMARK sibling2 = FPDFBookmark_GetNextSibling(document(), sibling);
+  EXPECT_TRUE(sibling2);
+  EXPECT_EQ(42u, FPDFBookmark_GetTitle(sibling2, buf, sizeof(buf)));
+  EXPECT_EQ(L"A Good Closed Ending", GetPlatformWString(buf));
+  EXPECT_EQ(-2, FPDFBookmark_GetCount(sibling2));
+
+  EXPECT_FALSE(FPDFBookmark_GetNextSibling(document(), sibling2));
+
+  grand_child = FPDFBookmark_GetFirstChild(document(), sibling);
+  EXPECT_TRUE(grand_child);
+  EXPECT_EQ(46u, FPDFBookmark_GetTitle(grand_child, buf, sizeof(buf)));
+  EXPECT_EQ(L"Open Middle Descendant", GetPlatformWString(buf));
+  EXPECT_EQ(0, FPDFBookmark_GetCount(grand_child));
+  EXPECT_TRUE(FPDFBookmark_GetDest(document(), grand_child));
+
+  EXPECT_FALSE(FPDFBookmark_GetNextSibling(document(), grand_child));
 }
 
 TEST_F(FPDFDocEmbedderTest, FindBookmarks) {
   unsigned short buf[128];
 
-  // Open a file with two bookmarks.
+  // Open a file with many bookmarks.
   ASSERT_TRUE(OpenDocument("bookmarks.pdf"));
 
   // Find the first one, based on its known title.
@@ -509,14 +612,14 @@ TEST_F(FPDFDocEmbedderTest, FindBookmarks) {
 
   // Check that the string matches.
   EXPECT_EQ(34u, FPDFBookmark_GetTitle(child, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(L"A Good Beginning"), WideString::FromUTF16LE(buf, 16));
+  EXPECT_EQ(L"A Good Beginning", GetPlatformWString(buf));
 
   // Check that it is them same as the one returned by GetFirstChild.
   EXPECT_EQ(child, FPDFBookmark_GetFirstChild(document(), nullptr));
 
   // Try to find one using a non-existent title.
   ScopedFPDFWideString bad_title = GetFPDFWideString(L"A BAD Beginning");
-  EXPECT_EQ(nullptr, FPDFBookmark_Find(document(), bad_title.get()));
+  EXPECT_FALSE(FPDFBookmark_Find(document(), bad_title.get()));
 }
 
 // Check circular bookmarks will not cause infinite loop.
@@ -526,7 +629,7 @@ TEST_F(FPDFDocEmbedderTest, FindBookmarks_bug420) {
 
   // Try to find a title.
   ScopedFPDFWideString title = GetFPDFWideString(L"anything");
-  EXPECT_EQ(nullptr, FPDFBookmark_Find(document(), title.get()));
+  EXPECT_FALSE(FPDFBookmark_Find(document(), title.get()));
 }
 
 TEST_F(FPDFDocEmbedderTest, DeletePage) {
@@ -543,6 +646,177 @@ TEST_F(FPDFDocEmbedderTest, DeletePage) {
 
   FPDFPage_Delete(document(), 0);
   EXPECT_EQ(0, FPDF_GetPageCount(document()));
+}
+
+TEST_F(FPDFDocEmbedderTest, DeletePageAndRender) {
+  struct PageData {
+    int width;
+    int height;
+    const char* checksum;
+  };
+  const std::array<const PageData, 5> expected_page_data = {{
+      {200, 250,
+       []() {
+         return CFX_DefaultRenderDevice::UseSkiaRenderer()
+                    ? "4b6590a267eae90b8be1607e808fb57f"
+                    : "1e5d1cf19ffbb9cf9dbf099483cea327";
+       }()},
+      {250, 200,
+       []() {
+         return CFX_DefaultRenderDevice::UseSkiaRenderer()
+                    ? "e8edd3655f6629ff489bd8c3bb110c82"
+                    : "65c80685916aa36e767dd2270ba4d72b";
+       }()},
+      {200, 250,
+       []() {
+         return CFX_DefaultRenderDevice::UseSkiaRenderer()
+                    ? "a2bde6b68d7981e665ab25bc633746aa"
+                    : "a53b21c68edf43c1cddb5c06e361bb45";
+       }()},
+      {200, 250,
+       []() {
+         return CFX_DefaultRenderDevice::UseSkiaRenderer()
+                    ? "a8c5b3e626f665eddf593c6d4c32ae9e"
+                    : "dcd768be15efb9c6e5093cf74508752c";
+       }()},
+      {200, 250,
+       []() {
+         return CFX_DefaultRenderDevice::UseSkiaRenderer()
+                    ? "72eb157853ae2d19b70ea62e3f5ac202"
+                    : "7a3f8f79ebcb350854c0d69607729ec5";
+       }()},
+  }};
+
+  // Render the original document. (page indices 0-4)
+  ASSERT_TRUE(OpenDocument("rectangles_multi_pages.pdf"));
+  EXPECT_EQ(5, FPDF_GetPageCount(document()));
+  for (int i = 0; i < 5; ++i) {
+    FPDF_PAGE page = LoadPage(i);
+    ASSERT_TRUE(page);
+    ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+    const PageData& expected = expected_page_data[i];
+    CompareBitmap(bitmap.get(), expected.width, expected.height,
+                  expected.checksum);
+    UnloadPage(page);
+  }
+
+  // Delete the first page and render again. (original page indices 1-4)
+  FPDFPage_Delete(document(), 0);
+  EXPECT_EQ(4, FPDF_GetPageCount(document()));
+  for (int i = 0; i < 4; ++i) {
+    FPDF_PAGE page = LoadPage(i);
+    ASSERT_TRUE(page);
+    ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+    const PageData& expected = expected_page_data[i + 1];
+    CompareBitmap(bitmap.get(), expected.width, expected.height,
+                  expected.checksum);
+    UnloadPage(page);
+  }
+
+  // Delete the last page and render again. (original page indices 1-3)
+  FPDFPage_Delete(document(), 3);
+  EXPECT_EQ(3, FPDF_GetPageCount(document()));
+  for (int i = 0; i < 3; ++i) {
+    FPDF_PAGE page = LoadPage(i);
+    ASSERT_TRUE(page);
+    ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+    const PageData& expected = expected_page_data[i + 1];
+    CompareBitmap(bitmap.get(), expected.width, expected.height,
+                  expected.checksum);
+    UnloadPage(page);
+  }
+
+  // Delete the middle page and render again. (original page indices 1, 3)
+  FPDFPage_Delete(document(), 1);
+  EXPECT_EQ(2, FPDF_GetPageCount(document()));
+  for (int i = 0; i < 2; ++i) {
+    FPDF_PAGE page = LoadPage(i);
+    ASSERT_TRUE(page);
+    ScopedFPDFBitmap bitmap = RenderLoadedPage(page);
+    int adjusted_index = i == 0 ? 1 : 3;
+    const PageData& expected = expected_page_data[adjusted_index];
+    CompareBitmap(bitmap.get(), expected.width, expected.height,
+                  expected.checksum);
+    UnloadPage(page);
+  }
+}
+
+TEST_F(FPDFDocEmbedderTest, DeletePageAndSaveWithBookmarks) {
+  // The bookmarks reference the deleted page.
+  ASSERT_TRUE(OpenDocument("bookmarks.pdf"));
+
+  EXPECT_EQ(2, FPDF_GetPageCount(document()));
+  FPDFPage_Delete(document(), 0);
+  EXPECT_EQ(1, FPDF_GetPageCount(document()));
+
+  ASSERT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+  EXPECT_EQ(1, CountPageEntries(GetString()));
+  EXPECT_EQ(1, CountStreamEntries(GetString()));
+}
+
+TEST_F(FPDFDocEmbedderTest, DeletePageAndSaveWithCustomObject) {
+  // There exists a non-standard object that references the deleted page.
+  ASSERT_TRUE(OpenDocument("hello_world_2_pages_custom_object.pdf"));
+
+  EXPECT_EQ(2, FPDF_GetPageCount(document()));
+  FPDFPage_Delete(document(), 0);
+  EXPECT_EQ(1, FPDF_GetPageCount(document()));
+
+  ASSERT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+  EXPECT_EQ(1, CountPageEntries(GetString()));
+  EXPECT_EQ(1, CountStreamEntries(GetString()));
+}
+
+TEST_F(FPDFDocEmbedderTest, DeletePageAndSaveWithCustomObjectForNewPage) {
+  ASSERT_TRUE(OpenDocument("hello_world.pdf"));
+
+  EXPECT_EQ(1, FPDF_GetPageCount(document()));
+
+  {
+    ScopedFPDFPage new_page(FPDFPage_New(document(), 1, 300, 200));
+    ASSERT_TRUE(new_page);
+    EXPECT_EQ(2, FPDF_GetPageCount(document()));
+
+    // Add a non-standard object that references the newly created page.
+    CPDF_Document* doc = CPDFDocumentFromFPDFDocument(document());
+    ASSERT_TRUE(doc);
+
+    CPDF_Page* page = CPDFPageFromFPDFPage(new_page.get());
+    ASSERT_TRUE(page);
+
+    RetainPtr<CPDF_Dictionary> root_dict = doc->GetMutableRoot();
+    ASSERT_TRUE(root_dict);
+    root_dict->SetNewFor<CPDF_Reference>("CustomField", doc,
+                                         page->GetDict()->GetObjNum());
+  }
+
+  FPDFPage_Delete(document(), 1);
+  EXPECT_EQ(1, FPDF_GetPageCount(document()));
+
+  ASSERT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+  EXPECT_EQ(1, CountPageEntries(GetString()));
+  EXPECT_EQ(1, CountStreamEntries(GetString()));
+}
+
+TEST_F(FPDFDocEmbedderTest, DeletePageAndSaveForPageWithMultipleUses) {
+  // The deleted pages both use the same /Page object.
+  ASSERT_TRUE(OpenDocument("bug_1229106.pdf"));
+
+  EXPECT_EQ(4, FPDF_GetPageCount(document()));
+  FPDFPage_Delete(document(), 0);
+  EXPECT_EQ(3, FPDF_GetPageCount(document()));
+
+  ASSERT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+  EXPECT_EQ(2, CountPageEntries(GetString()));
+  EXPECT_EQ(2, CountStreamEntries(GetString()));
+
+  ClearString();
+  FPDFPage_Delete(document(), 0);
+  EXPECT_EQ(2, FPDF_GetPageCount(document()));
+
+  ASSERT_TRUE(FPDF_SaveAsCopy(document(), this, 0));
+  EXPECT_EQ(1, CountPageEntries(GetString()));
+  EXPECT_EQ(1, CountStreamEntries(GetString()));
 }
 
 TEST_F(FPDFDocEmbedderTest, GetFileIdentifier) {
@@ -613,32 +887,38 @@ TEST_F(FPDFDocEmbedderTest, GetMetaText) {
   ASSERT_EQ(2u, FPDF_GetMetaText(document(), "Keywords", buf, sizeof(buf)));
   ASSERT_EQ(2u, FPDF_GetMetaText(document(), "Producer", buf, sizeof(buf)));
 
-  constexpr wchar_t kExpectedCreator[] = L"Microsoft Word";
   ASSERT_EQ(30u, FPDF_GetMetaText(document(), "Creator", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedCreator),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedCreator)));
+  EXPECT_EQ(L"Microsoft Word", GetPlatformWString(buf));
 
-  constexpr wchar_t kExpectedCreationDate[] = L"D:20160411190039+00'00'";
   ASSERT_EQ(48u,
             FPDF_GetMetaText(document(), "CreationDate", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedCreationDate),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedCreationDate)));
+  EXPECT_EQ(L"D:20160411190039+00'00'", GetPlatformWString(buf));
 
-  constexpr wchar_t kExpectedModDate[] = L"D:20160411190039+00'00'";
   ASSERT_EQ(48u, FPDF_GetMetaText(document(), "ModDate", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedModDate),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedModDate)));
+  EXPECT_EQ(L"D:20160411190039+00'00'", GetPlatformWString(buf));
 }
 
-TEST_F(FPDFDocEmbedderTest, Bug_182) {
+TEST_F(FPDFDocEmbedderTest, Utf8Metadata) {
+  ASSERT_TRUE(OpenDocument("utf-8.pdf"));
+
+  unsigned short buf[128];
+
+  ASSERT_EQ(34u, FPDF_GetMetaText(document(), "Producer", buf, sizeof(buf)));
+  EXPECT_EQ(L"Manüally Created", GetPlatformWString(buf));
+
+  FPDF_BOOKMARK child = FPDFBookmark_GetFirstChild(document(), nullptr);
+  EXPECT_TRUE(child);
+  EXPECT_EQ(16u, FPDFBookmark_GetTitle(child, buf, sizeof(buf)));
+  EXPECT_EQ(L"Titlè 1", GetPlatformWString(buf));
+}
+
+TEST_F(FPDFDocEmbedderTest, Bug182) {
   ASSERT_TRUE(OpenDocument("bug_182.pdf"));
 
   unsigned short buf[128];
-  constexpr wchar_t kExpectedTitle[] = L"Super Visual Formade 印刷";
 
   ASSERT_EQ(48u, FPDF_GetMetaText(document(), "Title", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedTitle),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedTitle)));
+  EXPECT_EQ(L"Super Visual Formade 印刷", GetPlatformWString(buf));
 }
 
 TEST_F(FPDFDocEmbedderTest, GetMetaTextSameObjectNumber) {
@@ -648,10 +928,8 @@ TEST_F(FPDFDocEmbedderTest, GetMetaTextSameObjectNumber) {
   // (1 0). Both objects are /Info dictionaries, but contain different data.
   // Make sure ModDate is the date of the last modification.
   unsigned short buf[128];
-  constexpr wchar_t kExpectedModDate[] = L"D:20170612232940-04'00'";
   ASSERT_EQ(48u, FPDF_GetMetaText(document(), "ModDate", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedModDate),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedModDate)));
+  EXPECT_EQ(L"D:20170612232940-04'00'", GetPlatformWString(buf));
 }
 
 TEST_F(FPDFDocEmbedderTest, GetMetaTextInAttachmentFile) {
@@ -659,17 +937,14 @@ TEST_F(FPDFDocEmbedderTest, GetMetaTextInAttachmentFile) {
 
   // Make sure this is the date from the PDF itself and not the attached PDF.
   unsigned short buf[128];
-  constexpr wchar_t kExpectedModDate[] = L"D:20170712214448-07'00'";
   ASSERT_EQ(48u, FPDF_GetMetaText(document(), "ModDate", buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedModDate),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedModDate)));
+  EXPECT_EQ(L"D:20170712214448-07'00'", GetPlatformWString(buf));
 }
 
 TEST_F(FPDFDocEmbedderTest, GetMetaTextFromNewDocument) {
-  FPDF_DOCUMENT empty_doc = FPDF_CreateNewDocument();
+  ScopedFPDFDocument empty_doc(FPDF_CreateNewDocument());
   unsigned short buf[128];
-  EXPECT_EQ(2u, FPDF_GetMetaText(empty_doc, "Title", buf, sizeof(buf)));
-  FPDF_CloseDocument(empty_doc);
+  EXPECT_EQ(2u, FPDF_GetMetaText(empty_doc.get(), "Title", buf, sizeof(buf)));
 }
 
 TEST_F(FPDFDocEmbedderTest, GetPageAAction) {
@@ -677,10 +952,10 @@ TEST_F(FPDFDocEmbedderTest, GetPageAAction) {
   FPDF_PAGE page = LoadPage(0);
   EXPECT_TRUE(page);
 
-  EXPECT_EQ(nullptr, FPDF_GetPageAAction(nullptr, FPDFPAGE_AACTION_OPEN));
-  EXPECT_EQ(nullptr, FPDF_GetPageAAction(page, FPDFPAGE_AACTION_CLOSE));
-  EXPECT_EQ(nullptr, FPDF_GetPageAAction(page, -1));
-  EXPECT_EQ(nullptr, FPDF_GetPageAAction(page, 999));
+  EXPECT_FALSE(FPDF_GetPageAAction(nullptr, FPDFPAGE_AACTION_OPEN));
+  EXPECT_FALSE(FPDF_GetPageAAction(page, FPDFPAGE_AACTION_CLOSE));
+  EXPECT_FALSE(FPDF_GetPageAAction(page, -1));
+  EXPECT_FALSE(FPDF_GetPageAAction(page, 999));
 
   FPDF_ACTION action = FPDF_GetPageAAction(page, FPDFPAGE_AACTION_OPEN);
   EXPECT_EQ(static_cast<unsigned long>(PDFACTION_EMBEDDEDGOTO),
@@ -699,7 +974,7 @@ TEST_F(FPDFDocEmbedderTest, GetPageAAction) {
 
   page = LoadPage(1);
   EXPECT_TRUE(page);
-  EXPECT_EQ(nullptr, FPDF_GetPageAAction(page, -1));
+  EXPECT_FALSE(FPDF_GetPageAAction(page, -1));
 
   UnloadPage(page);
 }
@@ -723,40 +998,26 @@ TEST_F(FPDFDocEmbedderTest, GetPageLabels) {
   EXPECT_EQ(0u, FPDF_GetPageLabel(document(), -2, buf, sizeof(buf)));
   EXPECT_EQ(0u, FPDF_GetPageLabel(document(), -1, buf, sizeof(buf)));
 
-  const wchar_t kExpectedPageLabel0[] = L"i";
   ASSERT_EQ(4u, FPDF_GetPageLabel(document(), 0, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel0),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel0)));
+  EXPECT_EQ(L"i", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel1[] = L"ii";
   ASSERT_EQ(6u, FPDF_GetPageLabel(document(), 1, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel1),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel1)));
+  EXPECT_EQ(L"ii", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel2[] = L"1";
   ASSERT_EQ(4u, FPDF_GetPageLabel(document(), 2, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel2),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel2)));
+  EXPECT_EQ(L"1", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel3[] = L"2";
   ASSERT_EQ(4u, FPDF_GetPageLabel(document(), 3, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel3),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel3)));
+  EXPECT_EQ(L"2", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel4[] = L"zzA";
   ASSERT_EQ(8u, FPDF_GetPageLabel(document(), 4, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel4),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel4)));
+  EXPECT_EQ(L"zzA", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel5[] = L"zzB";
   ASSERT_EQ(8u, FPDF_GetPageLabel(document(), 5, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel5),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel5)));
+  EXPECT_EQ(L"zzB", GetPlatformWString(buf));
 
-  const wchar_t kExpectedPageLabel6[] = L"";
   ASSERT_EQ(2u, FPDF_GetPageLabel(document(), 6, buf, sizeof(buf)));
-  EXPECT_EQ(WideString(kExpectedPageLabel6),
-            WideString::FromUTF16LE(buf, FXSYS_len(kExpectedPageLabel6)));
+  EXPECT_EQ(L"", GetPlatformWString(buf));
 
   ASSERT_EQ(0u, FPDF_GetPageLabel(document(), 7, buf, sizeof(buf)));
   ASSERT_EQ(0u, FPDF_GetPageLabel(document(), 8, buf, sizeof(buf)));

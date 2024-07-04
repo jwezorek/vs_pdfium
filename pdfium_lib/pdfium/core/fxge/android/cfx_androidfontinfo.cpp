@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -16,12 +16,14 @@ CFX_AndroidFontInfo::CFX_AndroidFontInfo() = default;
 
 CFX_AndroidFontInfo::~CFX_AndroidFontInfo() = default;
 
-bool CFX_AndroidFontInfo::Init(CFPF_SkiaFontMgr* pFontMgr) {
-  if (!pFontMgr)
+bool CFX_AndroidFontInfo::Init(CFPF_SkiaFontMgr* pFontMgr,
+                               const char** user_paths) {
+  if (!pFontMgr) {
     return false;
+  }
 
-  pFontMgr->LoadSystemFonts();
   m_pFontMgr = pFontMgr;
+  m_pFontMgr->LoadFonts(user_paths);
   return true;
 }
 
@@ -31,9 +33,9 @@ bool CFX_AndroidFontInfo::EnumFontList(CFX_FontMapper* pMapper) {
 
 void* CFX_AndroidFontInfo::MapFont(int weight,
                                    bool bItalic,
-                                   int charset,
+                                   FX_Charset charset,
                                    int pitch_family,
-                                   const char* face) {
+                                   const ByteString& face) {
   if (!m_pFontMgr)
     return nullptr;
 
@@ -48,16 +50,16 @@ void* CFX_AndroidFontInfo::MapFont(int weight,
     dwStyle |= FXFONT_SCRIPT;
   if (FontFamilyIsRoman(pitch_family))
     dwStyle |= FXFONT_SERIF;
-  return m_pFontMgr->CreateFont(face, charset, dwStyle);
+  return m_pFontMgr->CreateFont(face.AsStringView(), charset, dwStyle);
 }
 
-void* CFX_AndroidFontInfo::GetFont(const char* face) {
+void* CFX_AndroidFontInfo::GetFont(const ByteString& face) {
   return nullptr;
 }
 
-uint32_t CFX_AndroidFontInfo::GetFontData(void* hFont,
-                                          uint32_t table,
-                                          pdfium::span<uint8_t> buffer) {
+size_t CFX_AndroidFontInfo::GetFontData(void* hFont,
+                                        uint32_t table,
+                                        pdfium::span<uint8_t> buffer) {
   if (!hFont)
     return 0;
   return static_cast<CFPF_SkiaFont*>(hFont)->GetFontData(table, buffer);
@@ -71,7 +73,7 @@ bool CFX_AndroidFontInfo::GetFaceName(void* hFont, ByteString* name) {
   return true;
 }
 
-bool CFX_AndroidFontInfo::GetFontCharset(void* hFont, int* charset) {
+bool CFX_AndroidFontInfo::GetFontCharset(void* hFont, FX_Charset* charset) {
   if (!hFont)
     return false;
 

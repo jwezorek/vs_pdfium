@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,13 +15,13 @@ class CFX_Font;
 
 class CFX_UnicodeEncoding {
  public:
-  explicit CFX_UnicodeEncoding(CFX_Font* pFont);
+  explicit CFX_UnicodeEncoding(const CFX_Font* pFont);
   virtual ~CFX_UnicodeEncoding();
 
   virtual uint32_t GlyphFromCharCode(uint32_t charcode);
 
  protected:
-  UnownedPtr<CFX_Font> const m_pFont;
+  UnownedPtr<const CFX_Font> const m_pFont;
 };
 
 #endif  // CORE_FXGE_CFX_UNICODEENCODING_H_

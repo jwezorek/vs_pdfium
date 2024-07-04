@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,17 +8,18 @@
 #define FXJS_JS_DEFINE_H_
 
 #include <memory>
-#include <vector>
 
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "fxjs/cfxjs_engine.h"
 #include "fxjs/cjs_result.h"
 #include "fxjs/cjs_runtime.h"
 #include "fxjs/js_resources.h"
+#include "v8/include/v8-local-handle.h"
 
 class CJS_Object;
 
-double JS_DateParse(const WideString& str);
+double JS_DateParse(v8::Isolate* pIsolate, const WideString& str);
 
 // Some JS methods have the bizarre convention that they may also be called
 // with a single argument which is an object containing the actual arguments
@@ -26,9 +27,9 @@ double JS_DateParse(const WideString& str);
 // names as wchar_t string literals corresponding to each positional argument.
 // The result will always contain |nKeywords| value, check for the unspecified
 // ones in the result using IsExpandedParamKnown() below.
-std::vector<v8::Local<v8::Value>> ExpandKeywordParams(
+v8::LocalVector<v8::Value> ExpandKeywordParams(
     CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& originals,
+    pdfium::span<v8::Local<v8::Value>> originals,
     size_t nKeywords,
     ...);
 
@@ -42,32 +43,38 @@ bool IsExpandedParamKnown(v8::Local<v8::Value> value);
 // to construct native object state.
 
 template <class T>
-static void JSConstructor(CFXJS_Engine* pEngine, v8::Local<v8::Object> obj) {
-  pEngine->SetObjectPrivate(
-      obj, std::make_unique<T>(obj, static_cast<CJS_Runtime*>(pEngine)));
+static void JSConstructor(CFXJS_Engine* pEngine,
+                          v8::Local<v8::Object> obj,
+                          v8::Local<v8::Object> proxy) {
+  pEngine->SetBinding(
+      obj, std::make_unique<T>(proxy, static_cast<CJS_Runtime*>(pEngine)));
 }
 
 // CJS_Object has virtual dtor, template not required.
 void JSDestructor(v8::Local<v8::Object> obj);
 
 template <class C>
-UnownedPtr<C> JSGetObject(v8::Local<v8::Object> obj) {
-  if (CFXJS_Engine::GetObjDefnID(obj) != C::GetObjDefnID())
+UnownedPtr<C> JSGetObject(v8::Isolate* isolate, v8::Local<v8::Object> obj) {
+  CFXJS_PerObjectData* pData = CFXJS_PerObjectData::GetFromObject(obj);
+  if (!pData) {
     return nullptr;
-
-  CJS_Object* pJSObj = CFXJS_Engine::GetObjectPrivate(obj);
-  if (!pJSObj)
+  }
+  if (pData->GetObjDefnID() != C::GetObjDefnID()) {
     return nullptr;
-
-  return UnownedPtr<C>(static_cast<C*>(pJSObj));
+  }
+  CFXJS_PerObjectData::Binding* pBinding = pData->GetBinding();
+  if (!pBinding) {
+    return nullptr;
+  }
+  return UnownedPtr<C>(static_cast<C*>(pBinding));
 }
 
 template <class C, CJS_Result (C::*M)(CJS_Runtime*)>
 void JSPropGetter(const char* prop_name_string,
                   const char* class_name_string,
-                  v8::Local<v8::String> property,
+                  v8::Local<v8::Name> property,
                   const v8::PropertyCallbackInfo<v8::Value>& info) {
-  auto pObj = JSGetObject<C>(info.Holder());
+  auto pObj = JSGetObject<C>(info.GetIsolate(), info.Holder());
   if (!pObj)
     return;
 
@@ -75,7 +82,7 @@ void JSPropGetter(const char* prop_name_string,
   if (!pRuntime)
     return;
 
-  CJS_Result result = (pObj.Get()->*M)(pRuntime);
+  CJS_Result result = (pObj.get()->*M)(pRuntime);
   if (result.HasError()) {
     pRuntime->Error(JSFormatErrorString(class_name_string, prop_name_string,
                                         result.Error()));
@@ -89,10 +96,10 @@ void JSPropGetter(const char* prop_name_string,
 template <class C, CJS_Result (C::*M)(CJS_Runtime*, v8::Local<v8::Value>)>
 void JSPropSetter(const char* prop_name_string,
                   const char* class_name_string,
-                  v8::Local<v8::String> property,
+                  v8::Local<v8::Name> property,
                   v8::Local<v8::Value> value,
                   const v8::PropertyCallbackInfo<void>& info) {
-  auto pObj = JSGetObject<C>(info.Holder());
+  auto pObj = JSGetObject<C>(info.GetIsolate(), info.Holder());
   if (!pObj)
     return;
 
@@ -100,7 +107,7 @@ void JSPropSetter(const char* prop_name_string,
   if (!pRuntime)
     return;
 
-  CJS_Result result = (pObj.Get()->*M)(pRuntime, value);
+  CJS_Result result = (pObj.get()->*M)(pRuntime, value);
   if (result.HasError()) {
     pRuntime->Error(JSFormatErrorString(class_name_string, prop_name_string,
                                         result.Error()));
@@ -108,12 +115,11 @@ void JSPropSetter(const char* prop_name_string,
 }
 
 template <class C,
-          CJS_Result (C::*M)(CJS_Runtime*,
-                             const std::vector<v8::Local<v8::Value>>&)>
+          CJS_Result (C::*M)(CJS_Runtime*, pdfium::span<v8::Local<v8::Value>>)>
 void JSMethod(const char* method_name_string,
               const char* class_name_string,
               const v8::FunctionCallbackInfo<v8::Value>& info) {
-  auto pObj = JSGetObject<C>(info.Holder());
+  auto pObj = JSGetObject<C>(info.GetIsolate(), info.This());
   if (!pObj)
     return;
 
@@ -121,11 +127,11 @@ void JSMethod(const char* method_name_string,
   if (!pRuntime)
     return;
 
-  std::vector<v8::Local<v8::Value>> parameters;
+  v8::LocalVector<v8::Value> parameters(info.GetIsolate());
   for (unsigned int i = 0; i < (unsigned int)info.Length(); i++)
     parameters.push_back(info[i]);
 
-  CJS_Result result = (pObj.Get()->*M)(pRuntime, parameters);
+  CJS_Result result = (pObj.get()->*M)(pRuntime, parameters);
   if (result.HasError()) {
     pRuntime->Error(JSFormatErrorString(class_name_string, method_name_string,
                                         result.Error()));
@@ -136,18 +142,18 @@ void JSMethod(const char* method_name_string,
     info.GetReturnValue().Set(result.Return());
 }
 
-#define JS_STATIC_PROP(err_name, prop_name, class_name)           \
-  static void get_##prop_name##_static(                           \
-      v8::Local<v8::String> property,                             \
-      const v8::PropertyCallbackInfo<v8::Value>& info) {          \
-    JSPropGetter<class_name, &class_name::get_##prop_name>(       \
-        #err_name, class_name::kName, property, info);            \
-  }                                                               \
-  static void set_##prop_name##_static(                           \
-      v8::Local<v8::String> property, v8::Local<v8::Value> value, \
-      const v8::PropertyCallbackInfo<void>& info) {               \
-    JSPropSetter<class_name, &class_name::set_##prop_name>(       \
-        #err_name, class_name::kName, property, value, info);     \
+#define JS_STATIC_PROP(err_name, prop_name, class_name)         \
+  static void get_##prop_name##_static(                         \
+      v8::Local<v8::Name> property,                             \
+      const v8::PropertyCallbackInfo<v8::Value>& info) {        \
+    JSPropGetter<class_name, &class_name::get_##prop_name>(     \
+        #err_name, class_name::kName, property, info);          \
+  }                                                             \
+  static void set_##prop_name##_static(                         \
+      v8::Local<v8::Name> property, v8::Local<v8::Value> value, \
+      const v8::PropertyCallbackInfo<void>& info) {             \
+    JSPropSetter<class_name, &class_name::set_##prop_name>(     \
+        #err_name, class_name::kName, property, value, info);   \
   }
 
 #define JS_STATIC_METHOD(method_name, class_name)                            \

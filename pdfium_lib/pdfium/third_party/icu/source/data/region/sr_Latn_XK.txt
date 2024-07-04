@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sr_Latn_XK{
     Countries{
         CG{"Kongo"}
@@ -7,12 +8,10 @@ sr_Latn_XK{
         CZ{"Češka Republika"}
         HK{"SAR Hongkong"}
         KN{"Sveti Kits i Nevis"}
-        MK{"BJR Makedonija"}
         MO{"SAR Makao"}
         PM{"Sveti Pjer i Mikelon"}
         RE{"Reunion"}
         UM{"Manja udaljena ostrva SAD"}
         VC{"Sveti Vinsent i Grenadini"}
     }
-    Version{"2.1.38.69"}
 }

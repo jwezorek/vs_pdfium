@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,14 @@
 #ifndef CORE_FPDFAPI_FONT_CPDF_SIMPLEFONT_H_
 #define CORE_FPDFAPI_FONT_CPDF_SIMPLEFONT_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <vector>
 
 #include "core/fpdfapi/font/cpdf_font.h"
 #include "core/fpdfapi/font/cpdf_fontencoding.h"
 #include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
 
 class CPDF_SimpleFont : public CPDF_Font {
  public:
@@ -31,22 +33,27 @@ class CPDF_SimpleFont : public CPDF_Font {
   bool HasFontWidths() const override;
 
  protected:
-  CPDF_SimpleFont(CPDF_Document* pDocument, CPDF_Dictionary* pFontDict);
+  static constexpr size_t kInternalTableSize = 256;
+
+  CPDF_SimpleFont(CPDF_Document* pDocument,
+                  RetainPtr<CPDF_Dictionary> pFontDict);
 
   virtual void LoadGlyphMap() = 0;
 
   bool LoadCommon();
   void LoadSubstFont();
   void LoadCharMetrics(int charcode);
+  void LoadCharWidths(const CPDF_Dictionary* font_desc);
+  void LoadDifferences(const CPDF_Dictionary* encoding);
   void LoadPDFEncoding(bool bEmbedded, bool bTrueType);
 
-  CPDF_FontEncoding m_Encoding{PDFFONT_ENCODING_BUILTIN};
-  int m_BaseEncoding = PDFFONT_ENCODING_BUILTIN;
-  bool m_bUseFontWidth;
+  CPDF_FontEncoding m_Encoding{FontEncoding::kBuiltin};
+  FontEncoding m_BaseEncoding = FontEncoding::kBuiltin;
+  bool m_bUseFontWidth = false;
   std::vector<ByteString> m_CharNames;
-  uint16_t m_GlyphIndex[256];
-  uint16_t m_CharWidth[256];
-  FX_RECT m_CharBBox[256];
+  std::array<uint16_t, kInternalTableSize> m_GlyphIndex;
+  std::array<uint16_t, kInternalTableSize> m_CharWidth;
+  std::array<FX_RECT, kInternalTableSize> m_CharBBox;
 };
 
 #endif  // CORE_FPDFAPI_FONT_CPDF_SIMPLEFONT_H_

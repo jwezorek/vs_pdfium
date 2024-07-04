@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,12 +6,19 @@
 
 #include "core/fxcodec/jpx/jpx_decode_utils.h"
 
-#include <string.h>
-
 #include <algorithm>
 #include <limits>
+#include <type_traits>
+
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/fx_memcpy_wrappers.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
 
 namespace fxcodec {
+
+DecodeData::DecodeData(pdfium::span<const uint8_t> data)
+    : src_data(data.data()),
+      src_size(pdfium::checked_cast<OPJ_SIZE_T>(data.size())) {}
 
 OPJ_SIZE_T opj_read_from_memory(void* p_buffer,
                                 OPJ_SIZE_T nb_bytes,
@@ -24,11 +31,13 @@ OPJ_SIZE_T opj_read_from_memory(void* p_buffer,
   if (srcData->offset >= srcData->src_size)
     return static_cast<OPJ_SIZE_T>(-1);
 
-  OPJ_SIZE_T bufferLength = srcData->src_size - srcData->offset;
-  OPJ_SIZE_T readlength = nb_bytes < bufferLength ? nb_bytes : bufferLength;
-  memcpy(p_buffer, &srcData->src_data[srcData->offset], readlength);
-  srcData->offset += readlength;
-  return readlength;
+  UNSAFE_TODO({
+    OPJ_SIZE_T bufferLength = srcData->src_size - srcData->offset;
+    OPJ_SIZE_T readlength = nb_bytes < bufferLength ? nb_bytes : bufferLength;
+    FXSYS_memcpy(p_buffer, &srcData->src_data[srcData->offset], readlength);
+    srcData->offset += readlength;
+    return readlength;
+  })
 }
 
 OPJ_OFF_T opj_skip_from_memory(OPJ_OFF_T nb_bytes, void* p_user_data) {

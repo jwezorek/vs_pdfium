@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,6 +8,7 @@
 #define FPDFSDK_CPDFSDK_CUSTOMACCESS_H_
 
 #include "core/fxcrt/fx_stream.h"
+#include "core/fxcrt/retain_ptr.h"
 #include "public/fpdfview.h"
 
 class CPDFSDK_CustomAccess final : public IFX_SeekableReadStream {
@@ -16,9 +17,8 @@ class CPDFSDK_CustomAccess final : public IFX_SeekableReadStream {
 
   // IFX_SeekableReadStream
   FX_FILESIZE GetSize() override;
-  bool ReadBlockAtOffset(void* buffer,
-                         FX_FILESIZE offset,
-                         size_t size) override;
+  bool ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                         FX_FILESIZE offset) override;
 
  private:
   explicit CPDFSDK_CustomAccess(FPDF_FILEACCESS* pFileAccess);

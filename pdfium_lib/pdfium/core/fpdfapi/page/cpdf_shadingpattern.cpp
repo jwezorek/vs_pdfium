@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,7 @@
 #include "core/fpdfapi/page/cpdf_shadingpattern.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "core/fpdfapi/page/cpdf_docpagedata.h"
 #include "core/fpdfapi/page/cpdf_function.h"
@@ -15,9 +16,9 @@
 #include "core/fpdfapi/parser/cpdf_document.h"
 #include "core/fpdfapi/parser/cpdf_object.h"
 #include "core/fpdfapi/parser/cpdf_stream.h"
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/check.h"
-#include "third_party/base/notreached.h"
+#include "core/fxcrt/notreached.h"
 
 namespace {
 
@@ -30,10 +31,11 @@ ShadingType ToShadingType(int type) {
 }  // namespace
 
 CPDF_ShadingPattern::CPDF_ShadingPattern(CPDF_Document* pDoc,
-                                         CPDF_Object* pPatternObj,
+                                         RetainPtr<CPDF_Object> pPatternObj,
                                          bool bShading,
                                          const CFX_Matrix& parentMatrix)
-    : CPDF_Pattern(pDoc, pPatternObj, parentMatrix), m_bShading(bShading) {
+    : CPDF_Pattern(pDoc, std::move(pPatternObj), parentMatrix),
+      m_bShading(bShading) {
   DCHECK(document());
   if (!bShading)
     SetPatternToFormMatrix();
@@ -49,40 +51,43 @@ bool CPDF_ShadingPattern::Load() {
   if (m_ShadingType != kInvalidShading)
     return true;
 
-  const CPDF_Object* pShadingObj = GetShadingObject();
-  const CPDF_Dictionary* pShadingDict =
+  RetainPtr<const CPDF_Object> pShadingObj = GetShadingObject();
+  RetainPtr<const CPDF_Dictionary> pShadingDict =
       pShadingObj ? pShadingObj->GetDict() : nullptr;
   if (!pShadingDict)
     return false;
 
   m_pFunctions.clear();
-  const CPDF_Object* pFunc = pShadingDict->GetDirectObjectFor("Function");
+  RetainPtr<const CPDF_Object> pFunc =
+      pShadingDict->GetDirectObjectFor("Function");
   if (pFunc) {
     if (const CPDF_Array* pArray = pFunc->AsArray()) {
       m_pFunctions.resize(std::min<size_t>(pArray->size(), 4));
-      for (size_t i = 0; i < m_pFunctions.size(); ++i)
+      for (size_t i = 0; i < m_pFunctions.size(); ++i) {
         m_pFunctions[i] = CPDF_Function::Load(pArray->GetDirectObjectAt(i));
+      }
     } else {
-      m_pFunctions.push_back(CPDF_Function::Load(pFunc));
+      m_pFunctions.push_back(CPDF_Function::Load(std::move(pFunc)));
     }
   }
-  const CPDF_Object* pCSObj = pShadingDict->GetDirectObjectFor("ColorSpace");
+  RetainPtr<const CPDF_Object> pCSObj =
+      pShadingDict->GetDirectObjectFor("ColorSpace");
   if (!pCSObj)
     return false;
 
   auto* pDocPageData = CPDF_DocPageData::FromDocument(document());
-  m_pCS = pDocPageData->GetColorSpace(pCSObj, nullptr);
+  m_pCS = pDocPageData->GetColorSpace(pCSObj.Get(), nullptr);
 
   // The color space is required and cannot be a Pattern space, according to the
   // PDF 1.7 spec, page 305.
-  if (!m_pCS || m_pCS->GetFamily() == PDFCS_PATTERN)
+  if (!m_pCS || m_pCS->GetFamily() == CPDF_ColorSpace::Family::kPattern)
     return false;
 
   m_ShadingType = ToShadingType(pShadingDict->GetIntegerFor("ShadingType"));
   return Validate();
 }
 
-const CPDF_Object* CPDF_ShadingPattern::GetShadingObject() const {
+RetainPtr<const CPDF_Object> CPDF_ShadingPattern::GetShadingObject() const {
   return m_bShading ? pattern_obj()
                     : pattern_obj()->GetDict()->GetDirectObjectFor("Shading");
 }
@@ -100,7 +105,7 @@ bool CPDF_ShadingPattern::Validate() const {
     case kFunctionBasedShading:
     case kAxialShading:
     case kRadialShading: {
-      if (m_pCS->GetFamily() == PDFCS_INDEXED)
+      if (m_pCS->GetFamily() == CPDF_ColorSpace::Family::kIndexed)
         return false;
       break;
     }
@@ -108,17 +113,18 @@ bool CPDF_ShadingPattern::Validate() const {
     case kLatticeFormGouraudTriangleMeshShading:
     case kCoonsPatchMeshShading:
     case kTensorProductPatchMeshShading: {
-      if (!m_pFunctions.empty() && m_pCS->GetFamily() == PDFCS_INDEXED)
+      if (!m_pFunctions.empty() &&
+          m_pCS->GetFamily() == CPDF_ColorSpace::Family::kIndexed) {
         return false;
+      }
       break;
     }
     default: {
-      NOTREACHED();
-      return false;
+      NOTREACHED_NORETURN();
     }
   }
 
-  uint32_t nNumColorSpaceComponents = m_pCS->CountComponents();
+  uint32_t nNumColorSpaceComponents = m_pCS->ComponentCount();
   switch (m_ShadingType) {
     case kFunctionBasedShading: {
       // Either one 2-to-N function or N 2-to-1 functions.
@@ -141,10 +147,8 @@ bool CPDF_ShadingPattern::Validate() const {
              ValidateFunctions(nNumColorSpaceComponents, 1, 1);
     }
     default:
-      break;
+      NOTREACHED_NORETURN();
   }
-  NOTREACHED();
-  return false;
 }
 
 bool CPDF_ShadingPattern::ValidateFunctions(
@@ -159,12 +163,12 @@ bool CPDF_ShadingPattern::ValidateFunctions(
     if (!function)
       return false;
 
-    if (function->CountInputs() != nExpectedNumInputs ||
-        function->CountOutputs() != nExpectedNumOutputs) {
+    if (function->InputCount() != nExpectedNumInputs ||
+        function->OutputCount() != nExpectedNumOutputs) {
       return false;
     }
 
-    nTotalOutputs += function->CountOutputs();
+    nTotalOutputs += function->OutputCount();
   }
 
   return nTotalOutputs.IsValid();

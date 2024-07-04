@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sk{
     Countries{
         001{"svet"}
@@ -110,7 +111,7 @@ sk{
         EZ{"eurozóna"}
         FI{"Fínsko"}
         FJ{"Fidži"}
-        FK{"Falklandy (Malvíny)"}
+        FK{"Falklandy"}
         FM{"Mikronézia"}
         FO{"Faerské ostrovy"}
         FR{"Francúzsko"}
@@ -133,7 +134,7 @@ sk{
         GU{"Guam"}
         GW{"Guinea-Bissau"}
         GY{"Guyana"}
-        HK{"Hongkong"}
+        HK{"Hongkong – OAO Číny"}
         HM{"Heardov ostrov a Macdonaldove ostrovy"}
         HN{"Honduras"}
         HR{"Chorvátsko"}
@@ -183,11 +184,11 @@ sk{
         MF{"Svätý Martin (fr.)"}
         MG{"Madagaskar"}
         MH{"Marshallove ostrovy"}
-        MK{"Macedónsko (BJRM)"}
+        MK{"Severné Macedónsko"}
         ML{"Mali"}
         MM{"Mjanmarsko"}
         MN{"Mongolsko"}
-        MO{"Macao"}
+        MO{"Macao – OAO Číny"}
         MP{"Severné Mariány"}
         MQ{"Martinik"}
         MR{"Mauritánia"}
@@ -222,7 +223,7 @@ sk{
         PM{"Saint Pierre a Miquelon"}
         PN{"Pitcairnove ostrovy"}
         PR{"Portoriko"}
-        PS{"Palestínska samospráva"}
+        PS{"Palestínske územia"}
         PT{"Portugalsko"}
         PW{"Palau"}
         PY{"Paraguaj"}
@@ -253,7 +254,7 @@ sk{
         SV{"Salvádor"}
         SX{"Svätý Martin (hol.)"}
         SY{"Sýria"}
-        SZ{"Svazijsko"}
+        SZ{"Eswatini"}
         TA{"Tristan da Cunha"}
         TC{"Turks a Caicos"}
         TD{"Čad"}
@@ -287,6 +288,8 @@ sk{
         VU{"Vanuatu"}
         WF{"Wallis a Futuna"}
         WS{"Samoa"}
+        XA{"falošná diakritika"}
+        XB{"obrátenie sprava doľava"}
         XK{"Kosovo"}
         YE{"Jemen"}
         YT{"Mayotte"}
@@ -295,13 +298,23 @@ sk{
         ZW{"Zimbabwe"}
         ZZ{"neznámy región"}
     }
+    Countries%chagos{
+        IO{"Čagoské ostrovy"}
+    }
     Countries%short{
         GB{"UK"}
+        HK{"Hongkong"}
+        MO{"Macao"}
+        PS{"Palestínska samospráva"}
         UN{"OSN"}
         US{"USA"}
     }
     Countries%variant{
+        CD{"Kongo (DRK)"}
+        CG{"Kongo (republika)"}
         CZ{"Česká republika"}
+        FK{"Falklandy (Malvíny)"}
+        NZ{"Aotearoa – Nový Zéland"}
+        SZ{"Svazijsko"}
     }
-    Version{"2.1.43.65"}
 }

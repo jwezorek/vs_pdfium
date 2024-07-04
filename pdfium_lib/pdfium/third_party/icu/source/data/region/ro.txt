@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 ro{
     Countries{
         001{"Lume"}
@@ -110,7 +111,7 @@ ro{
         EZ{"Zona euro"}
         FI{"Finlanda"}
         FJ{"Fiji"}
-        FK{"Insulele Falkland (Insulele Malvine)"}
+        FK{"Insulele Falkland"}
         FM{"Micronezia"}
         FO{"Insulele Feroe"}
         FR{"Franța"}
@@ -133,7 +134,7 @@ ro{
         GU{"Guam"}
         GW{"Guineea-Bissau"}
         GY{"Guyana"}
-        HK{"Hong Kong"}
+        HK{"R.A.S. Hong Kong, China"}
         HM{"Insula Heard și Insulele McDonald"}
         HN{"Honduras"}
         HR{"Croația"}
@@ -183,11 +184,11 @@ ro{
         MF{"Sfântul Martin"}
         MG{"Madagascar"}
         MH{"Insulele Marshall"}
-        MK{"Republica Macedonia (FRIM)"}
+        MK{"Macedonia de Nord"}
         ML{"Mali"}
         MM{"Myanmar (Birmania)"}
         MN{"Mongolia"}
-        MO{"Macao"}
+        MO{"R.A.S. Macao, China"}
         MP{"Insulele Mariane de Nord"}
         MQ{"Martinica"}
         MR{"Mauritania"}
@@ -222,7 +223,7 @@ ro{
         PM{"Saint-Pierre și Miquelon"}
         PN{"Insulele Pitcairn"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Teritoriile Palestiniene"}
         PT{"Portugalia"}
         PW{"Palau"}
         PY{"Paraguay"}
@@ -249,11 +250,11 @@ ro{
         SO{"Somalia"}
         SR{"Suriname"}
         SS{"Sudanul de Sud"}
-        ST{"Sao Tome și Principe"}
+        ST{"São Tomé și Príncipe"}
         SV{"El Salvador"}
         SX{"Sint-Maarten"}
         SY{"Siria"}
-        SZ{"Swaziland"}
+        SZ{"Eswatini"}
         TA{"Tristan da Cunha"}
         TC{"Insulele Turks și Caicos"}
         TD{"Ciad"}
@@ -287,6 +288,8 @@ ro{
         VU{"Vanuatu"}
         WF{"Wallis și Futuna"}
         WS{"Samoa"}
+        XA{"Pseudo-accente"}
+        XB{"Pseudo-Bidi"}
         XK{"Kosovo"}
         YE{"Yemen"}
         YT{"Mayotte"}
@@ -295,8 +298,13 @@ ro{
         ZW{"Zimbabwe"}
         ZZ{"Regiune necunoscută"}
     }
+    Countries%chagos{
+        IO{"Arhipelagul Chagos"}
+    }
     Countries%short{
-        GB{"Regatul Unit"}
+        HK{"Hong Kong"}
+        MO{"Macao"}
+        PS{"Palestina"}
         UN{"ONU"}
         US{"S.U.A."}
     }
@@ -305,7 +313,10 @@ ro{
         CG{"Congo (Republica)"}
         CI{"Coasta de Fildeș"}
         CZ{"Republica Cehă"}
+        FK{"Insulele Falkland (Insulele Malvine)"}
+        NZ{"Aotearoa Noua Zeelandă"}
+        SZ{"Swaziland"}
         TL{"Timorul de Est"}
+        TR{"Türkiye"}
     }
-    Version{"2.1.43.94"}
 }

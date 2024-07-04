@@ -1,10 +1,12 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
 #include "core/fxcrt/fx_random.h"
+
+#include <array>
 
 #include "build/build_config.h"
 #include "core/fxcrt/fx_memory.h"
@@ -17,7 +19,7 @@
 #define MT_Upper_Mask 0x80000000
 #define MT_Lower_Mask 0x7fffffff
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include <wincrypt.h>
 #else
 #include <sys/time.h>
@@ -28,13 +30,13 @@ namespace {
 
 struct MTContext {
   uint32_t mti;
-  uint32_t mt[MT_N];
+  std::array<uint32_t, MT_N> mt;
 };
 
 bool g_bHaveGlobalSeed = false;
 uint32_t g_nGlobalSeed = 0;
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
 bool GenerateSeedFromCryptoRandom(uint32_t* pSeed) {
   HCRYPTPROV hCP = 0;
   if (!::CryptAcquireContext(&hCP, nullptr, nullptr, PROV_RSA_FULL, 0) ||
@@ -51,7 +53,7 @@ uint32_t GenerateSeedFromEnvironment() {
   char c;
   uintptr_t p = reinterpret_cast<uintptr_t>(&c);
   uint32_t seed = ~static_cast<uint32_t>(p >> 3);
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
   SYSTEMTIME st;
   GetSystemTime(&st);
   seed ^= static_cast<uint32_t>(st.wSecond) * 1000000;
@@ -59,7 +61,7 @@ uint32_t GenerateSeedFromEnvironment() {
   seed ^= GetCurrentProcessId();
 #else
   struct timeval tv;
-  gettimeofday(&tv, 0);
+  gettimeofday(&tv, nullptr);
   seed ^= static_cast<uint32_t>(tv.tv_sec) * 1000000;
   seed ^= static_cast<uint32_t>(tv.tv_usec);
   seed ^= static_cast<uint32_t>(getpid());
@@ -69,7 +71,7 @@ uint32_t GenerateSeedFromEnvironment() {
 
 void* ContextFromNextGlobalSeed() {
   if (!g_bHaveGlobalSeed) {
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
     if (!GenerateSeedFromCryptoRandom(&g_nGlobalSeed))
       g_nGlobalSeed = GenerateSeedFromEnvironment();
 #else
@@ -84,35 +86,34 @@ void* ContextFromNextGlobalSeed() {
 
 void* FX_Random_MT_Start(uint32_t dwSeed) {
   MTContext* pContext = FX_Alloc(MTContext, 1);
-  uint32_t* pBuf = pContext->mt;
-  pBuf[0] = dwSeed;
-  for (uint32_t i = 1; i < MT_N; i++)
-    pBuf[i] = (1812433253UL * (pBuf[i - 1] ^ (pBuf[i - 1] >> 30)) + i);
-
+  pContext->mt[0] = dwSeed;
+  for (uint32_t i = 1; i < MT_N; i++) {
+    const uint32_t prev = pContext->mt[i - 1];
+    pContext->mt[i] = (1812433253UL * (prev ^ (prev >> 30)) + i);
+  }
   pContext->mti = MT_N;
   return pContext;
 }
 
 uint32_t FX_Random_MT_Generate(void* pContext) {
   MTContext* pMTC = static_cast<MTContext*>(pContext);
-  uint32_t* pBuf = pMTC->mt;
   uint32_t v;
   if (pMTC->mti >= MT_N) {
-    static const uint32_t mag[2] = {0, MT_Matrix_A};
+    static constexpr std::array<uint32_t, 2> mag = {{0, MT_Matrix_A}};
     uint32_t kk;
     for (kk = 0; kk < MT_N - MT_M; kk++) {
-      v = (pBuf[kk] & MT_Upper_Mask) | (pBuf[kk + 1] & MT_Lower_Mask);
-      pBuf[kk] = pBuf[kk + MT_M] ^ (v >> 1) ^ mag[v & 1];
+      v = (pMTC->mt[kk] & MT_Upper_Mask) | (pMTC->mt[kk + 1] & MT_Lower_Mask);
+      pMTC->mt[kk] = pMTC->mt[kk + MT_M] ^ (v >> 1) ^ mag[v & 1];
     }
     for (; kk < MT_N - 1; kk++) {
-      v = (pBuf[kk] & MT_Upper_Mask) | (pBuf[kk + 1] & MT_Lower_Mask);
-      pBuf[kk] = pBuf[kk + (MT_M - MT_N)] ^ (v >> 1) ^ mag[v & 1];
+      v = (pMTC->mt[kk] & MT_Upper_Mask) | (pMTC->mt[kk + 1] & MT_Lower_Mask);
+      pMTC->mt[kk] = pMTC->mt[kk + (MT_M - MT_N)] ^ (v >> 1) ^ mag[v & 1];
     }
-    v = (pBuf[MT_N - 1] & MT_Upper_Mask) | (pBuf[0] & MT_Lower_Mask);
-    pBuf[MT_N - 1] = pBuf[MT_M - 1] ^ (v >> 1) ^ mag[v & 1];
+    v = (pMTC->mt[MT_N - 1] & MT_Upper_Mask) | (pMTC->mt[0] & MT_Lower_Mask);
+    pMTC->mt[MT_N - 1] = pMTC->mt[MT_M - 1] ^ (v >> 1) ^ mag[v & 1];
     pMTC->mti = 0;
   }
-  v = pBuf[pMTC->mti++];
+  v = pMTC->mt[pMTC->mti++];
   v ^= (v >> 11);
   v ^= (v << 7) & 0x9d2c5680UL;
   v ^= (v << 15) & 0xefc60000UL;
@@ -124,10 +125,10 @@ void FX_Random_MT_Close(void* pContext) {
   FX_Free(pContext);
 }
 
-void FX_Random_GenerateMT(uint32_t* pBuffer, int32_t iCount) {
+void FX_Random_GenerateMT(pdfium::span<uint32_t> pBuffer) {
   void* pContext = ContextFromNextGlobalSeed();
-  while (iCount-- > 0)
-    *pBuffer++ = FX_Random_MT_Generate(pContext);
-
+  for (size_t i = 0; i < pBuffer.size(); ++i) {
+    pBuffer[i] = FX_Random_MT_Generate(pContext);
+  }
   FX_Random_MT_Close(pContext);
 }

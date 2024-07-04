@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------------
 //
 //  Little Color Management System
-//  Copyright (c) 1998-2017 Marti Maria Saguer
+//  Copyright (c) 1998-2023 Marti Maria Saguer
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the "Software"),
@@ -75,19 +75,19 @@ cmsBool  CMSEXPORT cmsWhitePointFromTemp(cmsCIExyY* WhitePoint, cmsFloat64Number
             return FALSE;
         }
 
-        // Obtain y(x)
-        y = -3.000*(x*x) + 2.870*x - 0.275;
+    // Obtain y(x)
+    y = -3.000*(x*x) + 2.870*x - 0.275;
 
-        // wave factors (not used, but here for futures extensions)
+    // wave factors (not used, but here for futures extensions)
 
-        // M1 = (-1.3515 - 1.7703*x + 5.9114 *y)/(0.0241 + 0.2562*x - 0.7341*y);
-        // M2 = (0.0300 - 31.4424*x + 30.0717*y)/(0.0241 + 0.2562*x - 0.7341*y);
+    // M1 = (-1.3515 - 1.7703*x + 5.9114 *y)/(0.0241 + 0.2562*x - 0.7341*y);
+    // M2 = (0.0300 - 31.4424*x + 30.0717*y)/(0.0241 + 0.2562*x - 0.7341*y);
 
-        WhitePoint -> x = x;
-        WhitePoint -> y = y;
-        WhitePoint -> Y = 1.0;
+    WhitePoint -> x = x;
+    WhitePoint -> y = y;
+    WhitePoint -> Y = 1.0;
 
-        return TRUE;
+    return TRUE;
 }
 
 
@@ -215,11 +215,14 @@ cmsBool ComputeChromaticAdaptation(cmsMAT3* Conversion,
     _cmsMAT3eval(&ConeSourceRGB, Chad, &ConeSourceXYZ);
     _cmsMAT3eval(&ConeDestRGB,   Chad, &ConeDestXYZ);
 
+    if ((fabs(ConeSourceRGB.n[0]) < MATRIX_DET_TOLERANCE) ||
+        (fabs(ConeSourceRGB.n[1]) < MATRIX_DET_TOLERANCE) ||
+        (fabs(ConeSourceRGB.n[2]) < MATRIX_DET_TOLERANCE)) return FALSE;
+
     // Build matrix
     _cmsVEC3init(&Cone.v[0], ConeDestRGB.n[0]/ConeSourceRGB.n[0],    0.0,  0.0);
     _cmsVEC3init(&Cone.v[1], 0.0,   ConeDestRGB.n[1]/ConeSourceRGB.n[1],   0.0);
     _cmsVEC3init(&Cone.v[2], 0.0,   0.0,   ConeDestRGB.n[2]/ConeSourceRGB.n[2]);
-
 
     // Normalize
     _cmsMAT3per(&Tmp, &Cone, Chad);
@@ -264,16 +267,16 @@ cmsBool _cmsAdaptMatrixToD50(cmsMAT3* r, const cmsCIExyY* SourceWhitePt)
 
 // Build a White point, primary chromas transfer matrix from RGB to CIE XYZ
 // This is just an approximation, I am not handling all the non-linear
-// aspects of the RGB to XYZ process, and assumming that the gamma correction
+// aspects of the RGB to XYZ process, and assuming that the gamma correction
 // has transitive property in the transformation chain.
 //
-// the alghoritm:
+// the algorithm:
 //
 //            - First I build the absolute conversion matrix using
 //              primaries in XYZ. This matrix is next inverted
 //            - Then I eval the source white point across this matrix
-//              obtaining the coeficients of the transformation
-//            - Then, I apply these coeficients to the original matrix
+//              obtaining the coefficients of the transformation
+//            - Then, I apply these coefficients to the original matrix
 //
 cmsBool _cmsBuildRGB2XYZtransferMatrix(cmsMAT3* r, const cmsCIExyY* WhitePt, const cmsCIExyYTRIPLE* Primrs)
 {

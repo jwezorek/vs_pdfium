@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,19 +6,19 @@
 
 #include "core/fxcodec/jpeg/jpeg_progressive_decoder.h"
 
+#include <optional>
 #include <utility>
 
 #include "core/fxcodec/cfx_codec_memory.h"
 #include "core/fxcodec/fx_codec.h"
 #include "core/fxcodec/jpeg/jpeg_common.h"
 #include "core/fxcodec/scanlinedecoder.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/ptr_util.h"
 #include "core/fxge/dib/cfx_dibbase.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/check.h"
-#include "third_party/base/optional.h"
-#include "third_party/base/ptr_util.h"
 
 class CJpegContext final : public ProgressiveDecoderIface::Context {
  public:
@@ -47,7 +47,8 @@ static void src_skip_data(jpeg_decompress_struct* cinfo, long num) {
     pContext->m_SkipSize = (unsigned int)(num - cinfo->src->bytes_in_buffer);
     cinfo->src->bytes_in_buffer = 0;
   } else {
-    cinfo->src->next_input_byte += num;
+    // SAFETY: required from library during callback.
+    UNSAFE_BUFFERS(cinfo->src->next_input_byte += num);
     cinfo->src->bytes_in_buffer -= num;
   }
 }
@@ -58,7 +59,8 @@ static void JpegLoadAttribute(const jpeg_decompress_struct& info,
                               CFX_DIBAttribute* pAttribute) {
   pAttribute->m_nXDPI = info.X_density;
   pAttribute->m_nYDPI = info.Y_density;
-  pAttribute->m_wDPIUnit = info.density_unit;
+  pAttribute->m_wDPIUnit =
+      static_cast<CFX_DIBAttribute::ResUnit>(info.density_unit);
 }
 
 CJpegContext::CJpegContext() {
@@ -84,10 +86,27 @@ CJpegContext::~CJpegContext() {
 
 namespace fxcodec {
 
+namespace {
+
+JpegProgressiveDecoder* g_jpeg_decoder = nullptr;
+
+}  // namespace
+
+// static
+void JpegProgressiveDecoder::InitializeGlobals() {
+  CHECK(!g_jpeg_decoder);
+  g_jpeg_decoder = new JpegProgressiveDecoder();
+}
+
+// static
+void JpegProgressiveDecoder::DestroyGlobals() {
+  delete g_jpeg_decoder;
+  g_jpeg_decoder = nullptr;
+}
+
 // static
 JpegProgressiveDecoder* JpegProgressiveDecoder::GetInstance() {
-  static pdfium::base::NoDestructor<JpegProgressiveDecoder> s;
-  return s.get();
+  return g_jpeg_decoder;
 }
 
 // static
@@ -154,9 +173,8 @@ FX_FILESIZE JpegProgressiveDecoder::GetAvailInput(Context* pContext) const {
 }
 
 bool JpegProgressiveDecoder::Input(Context* pContext,
-                                   RetainPtr<CFX_CodecMemory> codec_memory,
-                                   CFX_DIBAttribute*) {
-  pdfium::span<uint8_t> src_buf = codec_memory->GetSpan();
+                                   RetainPtr<CFX_CodecMemory> codec_memory) {
+  pdfium::span<uint8_t> src_buf = codec_memory->GetUnconsumedSpan();
   auto* ctx = static_cast<CJpegContext*>(pContext);
   if (ctx->m_SkipSize) {
     if (ctx->m_SkipSize > src_buf.size()) {

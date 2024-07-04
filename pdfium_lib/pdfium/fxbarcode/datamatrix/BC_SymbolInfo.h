@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,10 @@
 #ifndef FXBARCODE_DATAMATRIX_BC_SYMBOLINFO_H_
 #define FXBARCODE_DATAMATRIX_BC_SYMBOLINFO_H_
 
-#include "core/fxcrt/fx_system.h"
+#include <stddef.h>
+#include <stdint.h>
+
+#include "core/fxcrt/unowned_ptr.h"
 
 class CBC_SymbolInfo {
  public:
@@ -51,7 +54,7 @@ class CBC_SymbolInfo {
     return data_->matrix_width != data_->matrix_height;
   }
 
-  const Data* const data_;
+  UnownedPtr<const Data> const data_;
 };
 
 #endif  // FXBARCODE_DATAMATRIX_BC_SYMBOLINFO_H_

@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,15 +6,18 @@
 
 #include "core/fpdfapi/font/cpdf_cmapparser.h"
 
+#include <ctype.h>
+
+#include <array>
+#include <iterator>
+
 #include "core/fpdfapi/cmaps/fpdf_cmaps.h"
 #include "core/fpdfapi/parser/cpdf_array.h"
 #include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfapi/parser/cpdf_simple_parser.h"
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_extension.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "core/fxge/fx_freetype.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -96,11 +99,8 @@ void CPDF_CMapParser::HandleCid(ByteStringView word) {
     EndCode = m_CodePoints[1];
     StartCID = static_cast<uint16_t>(m_CodePoints[2]);
   }
-  if (EndCode < 0x10000) {
-    for (uint32_t code = StartCode; code <= EndCode; code++) {
-      m_pCMap->SetDirectCharcodeToCIDTable(
-          code, static_cast<uint16_t>(StartCID + code - StartCode));
-    }
+  if (EndCode < CPDF_CMap::kDirectMapTableSize) {
+    m_pCMap->SetDirectCharcodeToCIDTableRange(StartCode, EndCode, StartCID);
   } else {
     m_AdditionalCharcodeToCIDMappings.push_back({StartCode, EndCode, StartCID});
   }
@@ -113,7 +113,7 @@ void CPDF_CMapParser::HandleCodeSpaceRange(ByteStringView word) {
       return;
 
     if (m_CodeSeq % 2) {
-      Optional<CPDF_CMap::CodeRange> range =
+      std::optional<CPDF_CMap::CodeRange> range =
           GetCodeRange(m_LastWord.AsStringView(), word);
       if (range.has_value())
         m_PendingRanges.push_back(range.value());
@@ -145,7 +145,7 @@ uint32_t CPDF_CMapParser::GetCode(ByteStringView word) {
 
   FX_SAFE_UINT32 num = 0;
   if (word[0] == '<') {
-    for (size_t i = 1; i < word.GetLength() && std::isxdigit(word[i]); ++i) {
+    for (size_t i = 1; i < word.GetLength() && isxdigit(word[i]); ++i) {
       num = num * 16 + FXSYS_HexCharToInt(word[i]);
       if (!num.IsValid())
         return 0;
@@ -153,7 +153,7 @@ uint32_t CPDF_CMapParser::GetCode(ByteStringView word) {
     return num.ValueOrDie();
   }
 
-  for (size_t i = 0; i < word.GetLength() && std::isdigit(word[i]); ++i) {
+  for (size_t i = 0; i < word.GetLength() && isdigit(word[i]); ++i) {
     num = num * 10 + FXSYS_DecimalCharToInt(static_cast<wchar_t>(word[i]));
     if (!num.IsValid())
       return 0;
@@ -162,11 +162,11 @@ uint32_t CPDF_CMapParser::GetCode(ByteStringView word) {
 }
 
 // static
-Optional<CPDF_CMap::CodeRange> CPDF_CMapParser::GetCodeRange(
+std::optional<CPDF_CMap::CodeRange> CPDF_CMapParser::GetCodeRange(
     ByteStringView first,
     ByteStringView second) {
   if (first.IsEmpty() || first[0] != '<')
-    return pdfium::nullopt;
+    return std::nullopt;
 
   size_t i;
   for (i = 1; i < first.GetLength(); ++i) {
@@ -175,7 +175,7 @@ Optional<CPDF_CMap::CodeRange> CPDF_CMapParser::GetCodeRange(
   }
   size_t char_size = (i - 1) / 2;
   if (char_size > 4)
-    return pdfium::nullopt;
+    return std::nullopt;
 
   CPDF_CMap::CodeRange range;
   range.m_CharSize = char_size;
@@ -200,12 +200,10 @@ Optional<CPDF_CMap::CodeRange> CPDF_CMapParser::GetCodeRange(
 
 // static
 CIDSet CPDF_CMapParser::CharsetFromOrdering(ByteStringView ordering) {
-  static const char* const kCharsetNames[CIDSET_NUM_SETS] = {
-      nullptr, "GB1", "CNS1", "Japan1", "Korea1", "UCS"};
-  static_assert(pdfium::size(kCharsetNames) == CIDSET_NUM_SETS,
-                "Too many CID sets");
+  static const std::array<const char*, CIDSET_NUM_SETS> kCharsetNames = {
+      {nullptr, "GB1", "CNS1", "Japan1", "Korea1", "UCS"}};
 
-  for (size_t charset = 1; charset < pdfium::size(kCharsetNames); ++charset) {
+  for (size_t charset = 1; charset < std::size(kCharsetNames); ++charset) {
     if (ordering == kCharsetNames[charset])
       return static_cast<CIDSet>(charset);
   }

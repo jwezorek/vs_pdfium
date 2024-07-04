@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,15 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_COLOR_H_
 #define CORE_FPDFAPI_PAGE_CPDF_COLOR_H_
 
+#include <stdint.h>
+
 #include <memory>
+#include <optional>
 #include <vector>
 
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
+#include "core/fxge/dib/fx_dib.h"
 
 class CPDF_ColorSpace;
 class CPDF_Pattern;
@@ -26,25 +30,31 @@ class CPDF_Color {
 
   CPDF_Color& operator=(const CPDF_Color& that);
 
-  bool IsNull() const { return m_Buffer.empty() && !m_pValue; }
+  bool IsNull() const { return buffer_.empty() && !value_; }
   bool IsPattern() const;
-  void SetColorSpace(const RetainPtr<CPDF_ColorSpace>& pCS);
-  void SetValueForNonPattern(const std::vector<float>& values);
-  void SetValueForPattern(const RetainPtr<CPDF_Pattern>& pPattern,
-                          const std::vector<float>& values);
-  uint32_t CountComponents() const;
+  void SetColorSpace(RetainPtr<CPDF_ColorSpace> colorspace);
+  void SetValueForNonPattern(std::vector<float> values);
+  void SetValueForPattern(RetainPtr<CPDF_Pattern> pattern,
+                          pdfium::span<float> values);
+
+  uint32_t ComponentCount() const;
   bool IsColorSpaceRGB() const;
-  bool GetRGB(int* R, int* G, int* B) const;
+  bool IsColorSpaceGray() const;
+  // Wrapper around GetRGB() that returns the RGB value as FX_COLORREF. The
+  // GetRGB() return value is clamped to fit into FX_COLORREF, where the color
+  // components are 8-bit fields within an unsigned integer.
+  std::optional<FX_COLORREF> GetColorRef() const;
+  std::optional<FX_RGB_STRUCT<float>> GetRGB() const;
 
   // Should only be called if IsPattern() returns true.
-  CPDF_Pattern* GetPattern() const;
+  RetainPtr<CPDF_Pattern> GetPattern() const;
 
  protected:
   bool IsPatternInternal() const;
 
-  std::vector<float> m_Buffer;             // Used for non-pattern colorspaces.
-  std::unique_ptr<PatternValue> m_pValue;  // Used for pattern colorspaces.
-  RetainPtr<CPDF_ColorSpace> m_pCS;
+  std::vector<float> buffer_;            // Used for non-pattern colorspaces.
+  std::unique_ptr<PatternValue> value_;  // Used for pattern colorspaces.
+  RetainPtr<CPDF_ColorSpace> cs_;
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_COLOR_H_

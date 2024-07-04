@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,45 +6,65 @@
 
 #include "core/fxcrt/fx_memory.h"
 
+#include <stdint.h>  // For uintptr_t.
 #include <stdlib.h>  // For abort().
 
+#include <iterator>
 #include <limits>
+#include <type_traits>
 
 #include "build/build_config.h"
-#include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/allocator/partition_allocator/partition_alloc.h"
-#include "third_party/base/debug/alias.h"
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/debug/alias.h"
 
-pdfium::base::PartitionAllocatorGeneric& GetArrayBufferPartitionAllocator() {
-  static pdfium::base::PartitionAllocatorGeneric s_array_buffer_allocator;
-  return s_array_buffer_allocator;
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
+
+#if BUILDFLAG(IS_ANDROID)
+#include <malloc.h>
+#endif
+
+namespace {
+
+#if DCHECK_IS_ON()
+// TODO(thestig): When C++20 is required, replace with std::has_single_bit().
+// Returns true iff |value| is a power of 2.
+template <typename T, typename = std::enable_if<std::is_integral<T>::value>>
+constexpr inline bool IsPowerOfTwo(T value) {
+  // From "Hacker's Delight": Section 2.1 Manipulating Rightmost Bits.
+  //
+  // Only positive integers with a single bit set are powers of two. If only one
+  // bit is set in x (e.g. 0b00000100000000) then |x-1| will have that bit set
+  // to zero and all bits to its right set to 1 (e.g. 0b00000011111111). Hence
+  // |x & (x-1)| is 0 iff x is a power of two.
+  return value > 0 && (value & (value - 1)) == 0;
 }
 
-pdfium::base::PartitionAllocatorGeneric& GetGeneralPartitionAllocator() {
-  static pdfium::base::PartitionAllocatorGeneric s_general_allocator;
-  return s_general_allocator;
+#ifdef __has_builtin
+#define SUPPORTS_BUILTIN_IS_ALIGNED (__has_builtin(__builtin_is_aligned))
+#else
+#define SUPPORTS_BUILTIN_IS_ALIGNED 0
+#endif
+
+inline bool IsAligned(void* val, size_t alignment) {
+  // If the compiler supports builtin alignment checks prefer them.
+#if SUPPORTS_BUILTIN_IS_ALIGNED
+  return __builtin_is_aligned(reinterpret_cast<uintptr_t>(val), alignment);
+#else
+  DCHECK(IsPowerOfTwo(alignment));
+  return (reinterpret_cast<uintptr_t>(val) & (alignment - 1)) == 0;
+#endif
 }
 
-pdfium::base::PartitionAllocatorGeneric& GetStringPartitionAllocator() {
-  static pdfium::base::PartitionAllocatorGeneric s_string_allocator;
-  return s_string_allocator;
-}
+#undef SUPPORTS_BUILTIN_IS_ALIGNED
 
-void FXMEM_InitializePartitionAlloc() {
-  static bool s_partition_allocators_initialized = false;
-  if (!s_partition_allocators_initialized) {
-    pdfium::base::PartitionAllocGlobalInit(FX_OutOfMemoryTerminate);
-    GetArrayBufferPartitionAllocator().init();
-    GetGeneralPartitionAllocator().init();
-    GetStringPartitionAllocator().init();
-    s_partition_allocators_initialized = true;
-  }
-}
+#endif  // DCHECK_IS_ON()
+
+}  // namespace
 
 void* FXMEM_DefaultAlloc(size_t byte_size) {
-  return pdfium::base::PartitionAllocGenericFlags(
-      GetGeneralPartitionAllocator().root(),
-      pdfium::base::PartitionAllocReturnNull, byte_size, "GeneralPartition");
+  return pdfium::internal::Alloc(byte_size, 1);
 }
 
 void* FXMEM_DefaultCalloc(size_t num_elems, size_t byte_size) {
@@ -52,40 +72,64 @@ void* FXMEM_DefaultCalloc(size_t num_elems, size_t byte_size) {
 }
 
 void* FXMEM_DefaultRealloc(void* pointer, size_t new_size) {
-  return pdfium::base::PartitionReallocGenericFlags(
-      GetGeneralPartitionAllocator().root(),
-      pdfium::base::PartitionAllocReturnNull, pointer, new_size,
-      "GeneralPartition");
+  return pdfium::internal::Realloc(pointer, new_size, 1);
 }
 
 void FXMEM_DefaultFree(void* pointer) {
-  pdfium::base::PartitionFree(pointer);
+  FX_Free(pointer);
 }
 
 NOINLINE void FX_OutOfMemoryTerminate(size_t size) {
   // Convince the linker this should not be folded with similar functions using
   // Identical Code Folding.
   static int make_this_function_aliased = 0xbd;
-  pdfium::base::debug::Alias(&make_this_function_aliased);
+  pdfium::Alias(&make_this_function_aliased);
 
-  // Termimate cleanly.
+#if BUILDFLAG(IS_WIN)
+  // The same custom Windows exception code used in Chromium and Breakpad.
+  constexpr DWORD kOomExceptionCode = 0xe0000008;
+  ULONG_PTR exception_args[] = {size};
+  ::RaiseException(kOomExceptionCode, EXCEPTION_NONCONTINUABLE,
+                   std::size(exception_args), exception_args);
+#endif
+
+  // Terminate cleanly.
   abort();
 }
 
-namespace pdfium {
-namespace internal {
+void* FX_AlignedAlloc(size_t size, size_t alignment) {
+  DCHECK_GT(size, 0u);
+  DCHECK(IsPowerOfTwo(alignment));
+  DCHECK_EQ(alignment % sizeof(void*), 0u);
+  void* ptr = nullptr;
+#if defined(COMPILER_MSVC)
+  ptr = _aligned_malloc(size, alignment);
+#elif BUILDFLAG(IS_ANDROID)
+  // Android technically supports posix_memalign(), but does not expose it in
+  // the current version of the library headers used by Chrome.  Luckily,
+  // memalign() on Android returns pointers which can safely be used with
+  // free(), so we can use it instead.  Issue filed to document this:
+  // http://code.google.com/p/android/issues/detail?id=35391
+  ptr = memalign(alignment, size);
+#else
+  int ret = posix_memalign(&ptr, alignment, size);
+  if (ret != 0) {
+    ptr = nullptr;
+  }
+#endif
 
-void* Alloc(size_t num_members, size_t member_size) {
-  FX_SAFE_SIZE_T total = member_size;
-  total *= num_members;
-  if (!total.IsValid())
-    return nullptr;
-
-  constexpr int kFlags = pdfium::base::PartitionAllocReturnNull;
-  return pdfium::base::PartitionAllocGenericFlags(
-      GetGeneralPartitionAllocator().root(), kFlags, total.ValueOrDie(),
-      "GeneralPartition");
+  // Since aligned allocations may fail for non-memory related reasons, force a
+  // crash if we encounter a failed allocation; maintaining consistent behavior
+  // with a normal allocation failure in Chrome.
+  if (!ptr) {
+    CHECK(false);
+  }
+  // Sanity check alignment just to be safe.
+  DCHECK(IsAligned(ptr, alignment));
+  return ptr;
 }
+
+namespace pdfium::internal {
 
 void* AllocOrDie(size_t num_members, size_t member_size) {
   void* result = Alloc(num_members, member_size);
@@ -101,32 +145,6 @@ void* AllocOrDie2D(size_t w, size_t h, size_t member_size) {
 
   return AllocOrDie(w * h, member_size);
 }
-
-void* Calloc(size_t num_members, size_t member_size) {
-  FX_SAFE_SIZE_T total = member_size;
-  total *= num_members;
-  if (!total.IsValid())
-    return nullptr;
-
-  constexpr int kFlags = pdfium::base::PartitionAllocReturnNull |
-                         pdfium::base::PartitionAllocZeroFill;
-  return pdfium::base::PartitionAllocGenericFlags(
-      GetGeneralPartitionAllocator().root(), kFlags, total.ValueOrDie(),
-      "GeneralPartition");
-}
-
-void* Realloc(void* ptr, size_t num_members, size_t member_size) {
-  FX_SAFE_SIZE_T size = num_members;
-  size *= member_size;
-  if (!size.IsValid())
-    return nullptr;
-
-  return pdfium::base::PartitionReallocGenericFlags(
-      GetGeneralPartitionAllocator().root(),
-      pdfium::base::PartitionAllocReturnNull, ptr, size.ValueOrDie(),
-      "GeneralPartition");
-}
-
 void* CallocOrDie(size_t num_members, size_t member_size) {
   void* result = Calloc(num_members, member_size);
   if (!result)
@@ -150,18 +168,12 @@ void* ReallocOrDie(void* ptr, size_t num_members, size_t member_size) {
   return result;
 }
 
-}  // namespace internal
-}  // namespace pdfium
+void* StringAllocOrDie(size_t num_members, size_t member_size) {
+  void* result = StringAlloc(num_members, member_size);
+  if (!result)
+    FX_OutOfMemoryTerminate(0);  // Never returns.
 
-void FX_Free(void* ptr) {
-  // TODO(palmer): Removing this check exposes crashes when PDFium callers
-  // attempt to free |nullptr|. Although libc's |free| allows freeing |NULL|, no
-  // other Partition Alloc callers need this tolerant behavior. Additionally,
-  // checking for |nullptr| adds a branch to |PartitionFree|, and it's nice to
-  // not have to have that.
-  //
-  // So this check is hiding (what I consider to be) bugs, and we should try to
-  // fix them. https://bugs.chromium.org/p/pdfium/issues/detail?id=690
-  if (ptr)
-    pdfium::base::PartitionFree(ptr);
+  return result;
 }
+
+}  // namespace pdfium::internal

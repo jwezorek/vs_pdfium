@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,47 +11,47 @@
 
 struct CFX_Color {
   // Ordered by increasing number of components.
-  enum Type { kTransparent = 0, kGray, kRGB, kCMYK };
+  enum class Type { kTransparent = 0, kGray, kRGB, kCMYK };
 
-  explicit CFX_Color(FX_COLORREF ref)
+  struct TypeAndARGB {
+    TypeAndARGB(CFX_Color::Type type_in, FX_ARGB argb_in)
+        : color_type(type_in), argb(argb_in) {}
+
+    CFX_Color::Type color_type;
+    FX_ARGB argb;
+  };
+
+  explicit constexpr CFX_Color(FX_COLORREF ref)
       : CFX_Color(FXARGB_R(ref), FXARGB_G(ref), FXARGB_B(ref)) {}
 
-  CFX_Color(int32_t type = CFX_Color::kTransparent,
-            float color1 = 0.0f,
-            float color2 = 0.0f,
-            float color3 = 0.0f,
-            float color4 = 0.0f)
+  constexpr CFX_Color(Type type = CFX_Color::Type::kTransparent,
+                      float color1 = 0.0f,
+                      float color2 = 0.0f,
+                      float color3 = 0.0f,
+                      float color4 = 0.0f)
       : nColorType(type),
         fColor1(color1),
         fColor2(color2),
         fColor3(color3),
         fColor4(color4) {}
 
-  CFX_Color(int32_t r, int32_t g, int32_t b)
-      : nColorType(CFX_Color::kRGB),
+  constexpr CFX_Color(int32_t r, int32_t g, int32_t b)
+      : nColorType(CFX_Color::Type::kRGB),
         fColor1(r / 255.0f),
         fColor2(g / 255.0f),
         fColor3(b / 255.0f),
         fColor4(0) {}
 
-  CFX_Color(const CFX_Color&) = default;
+  CFX_Color(const CFX_Color& that) = default;
+  CFX_Color& operator=(const CFX_Color& that) = default;
 
   CFX_Color operator/(float fColorDivide) const;
   CFX_Color operator-(float fColorSub) const;
 
-  CFX_Color ConvertColorType(int32_t nConvertColorType) const;
-
+  CFX_Color ConvertColorType(Type nConvertColorType) const;
   FX_COLORREF ToFXColor(int32_t nTransparency) const;
 
-  void Reset() {
-    nColorType = CFX_Color::kTransparent;
-    fColor1 = 0.0f;
-    fColor2 = 0.0f;
-    fColor3 = 0.0f;
-    fColor4 = 0.0f;
-  }
-
-  int32_t nColorType;
+  Type nColorType;
   float fColor1;
   float fColor2;
   float fColor3;

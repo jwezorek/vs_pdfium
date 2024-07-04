@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,17 @@
 #ifndef CORE_FXCODEC_JPEG_JPEGMODULE_H_
 #define CORE_FXCODEC_JPEG_JPEGMODULE_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <memory>
+#include <optional>
 
 #include "build/build_config.h"
-#include "third_party/base/optional.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/span.h"
 
-#if defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/retain_ptr.h"
 #endif
 
@@ -25,9 +29,9 @@ class ScanlineDecoder;
 
 class JpegModule {
  public:
-  struct JpegImageInfo {
-    int width;
-    int height;
+  struct ImageInfo {
+    uint32_t width;
+    uint32_t height;
     int num_components;
     int bits_per_components;
     bool color_transform;
@@ -35,18 +39,20 @@ class JpegModule {
 
   static std::unique_ptr<ScanlineDecoder> CreateDecoder(
       pdfium::span<const uint8_t> src_span,
-      int width,
-      int height,
+      uint32_t width,
+      uint32_t height,
       int nComps,
       bool ColorTransform);
 
-  static Optional<JpegImageInfo> LoadInfo(pdfium::span<const uint8_t> src_span);
+  static std::optional<ImageInfo> LoadInfo(
+      pdfium::span<const uint8_t> src_span);
 
-#if defined(OS_WIN)
-  static bool JpegEncode(const RetainPtr<CFX_DIBBase>& pSource,
-                         uint8_t** dest_buf,
-                         size_t* dest_size);
-#endif  // defined(OS_WIN)
+#if BUILDFLAG(IS_WIN)
+  UNSAFE_BUFFER_USAGE static bool JpegEncode(
+      const RetainPtr<const CFX_DIBBase>& pSource,
+      uint8_t** dest_buf,
+      size_t* dest_size);
+#endif  // BUILDFLAG(IS_WIN)
 
   JpegModule() = delete;
   JpegModule(const JpegModule&) = delete;

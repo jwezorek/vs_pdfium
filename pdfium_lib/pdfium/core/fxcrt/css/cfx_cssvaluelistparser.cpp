@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,85 +6,97 @@
 
 #include "core/fxcrt/css/cfx_cssvaluelistparser.h"
 
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_extension.h"
-#include "third_party/base/check.h"
+#include "core/fxcrt/fx_system.h"
 
-CFX_CSSValueListParser::CFX_CSSValueListParser(const wchar_t* psz,
-                                               int32_t iLen,
+CFX_CSSValueListParser::CFX_CSSValueListParser(WideStringView list,
                                                wchar_t separator)
-    : m_Separator(separator), m_pCur(psz), m_pEnd(psz + iLen) {
-  DCHECK(psz);
-  DCHECK(iLen > 0);
+    : m_Cur(list), m_Separator(separator) {
+  DCHECK(CharsRemain());
 }
 
-bool CFX_CSSValueListParser::NextValue(CFX_CSSPrimitiveType* eType,
-                                       const wchar_t** pStart,
-                                       int32_t* iLength) {
-  while (m_pCur < m_pEnd && (*m_pCur <= ' ' || *m_pCur == m_Separator))
-    ++m_pCur;
+CFX_CSSValueListParser::~CFX_CSSValueListParser() = default;
 
-  if (m_pCur >= m_pEnd)
-    return false;
-
-  *eType = CFX_CSSPrimitiveType::Unknown;
-  *pStart = m_pCur;
-  *iLength = 0;
-  wchar_t wch = *m_pCur;
+std::optional<CFX_CSSValueListParser::Result>
+CFX_CSSValueListParser::NextValue() {
+  while (CharsRemain() &&
+         (CurrentChar() <= ' ' || CurrentChar() == m_Separator)) {
+    Advance();
+  }
+  if (!CharsRemain()) {
+    return std::nullopt;
+  }
+  auto eType = CFX_CSSValue::PrimitiveType::kUnknown;
+  WideStringView start = m_Cur;
+  size_t nLength = 0;
+  wchar_t wch = CurrentChar();
   if (wch == '#') {
-    *iLength = SkipTo(' ', false, false);
-    if (*iLength == 4 || *iLength == 7)
-      *eType = CFX_CSSPrimitiveType::RGB;
+    nLength = SkipToChar(' ');
+    if (nLength == 4 || nLength == 7) {
+      eType = CFX_CSSValue::PrimitiveType::kRGB;
+    }
   } else if (FXSYS_IsDecimalDigit(wch) || wch == '.' || wch == '-' ||
              wch == '+') {
-    while (m_pCur < m_pEnd && (*m_pCur > ' ' && *m_pCur != m_Separator))
-      ++m_pCur;
-
-    *iLength = m_pCur - *pStart;
-    *eType = CFX_CSSPrimitiveType::Number;
-  } else if (wch == '\"' || wch == '\'') {
-    ++(*pStart);
-    m_pCur++;
-    *iLength = SkipTo(wch, false, false);
-    m_pCur++;
-    *eType = CFX_CSSPrimitiveType::String;
-  } else if (m_pEnd - m_pCur > 5 && m_pCur[3] == '(') {
-    if (FXSYS_wcsnicmp(L"rgb", m_pCur, 3) == 0) {
-      *iLength = SkipTo(')', false, false) + 1;
-      m_pCur++;
-      *eType = CFX_CSSPrimitiveType::RGB;
+    while (CharsRemain() &&
+           (CurrentChar() > ' ' && CurrentChar() != m_Separator)) {
+      ++nLength;
+      Advance();
     }
+    eType = CFX_CSSValue::PrimitiveType::kNumber;
+  } else if (wch == '\"' || wch == '\'') {
+    start = start.Substr(1);
+    Advance();
+    nLength = SkipToChar(wch);
+    Advance();
+    eType = CFX_CSSValue::PrimitiveType::kString;
+  } else if (m_Cur.First(4).EqualsASCIINoCase(
+                 "rgb(")) {  // First() always safe.
+    nLength = SkipToChar(')') + 1;
+    Advance();
+    eType = CFX_CSSValue::PrimitiveType::kRGB;
   } else {
-    *iLength = SkipTo(m_Separator, true, true);
-    *eType = CFX_CSSPrimitiveType::String;
+    nLength = SkipToCharMatchingParens(m_Separator);
+    eType = CFX_CSSValue::PrimitiveType::kString;
   }
-  return m_pCur <= m_pEnd && *iLength > 0;
+  if (nLength == 0) {
+    return std::nullopt;
+  }
+  return Result{eType, start.First(nLength)};
 }
 
-int32_t CFX_CSSValueListParser::SkipTo(wchar_t wch,
-                                       bool breakOnSpace,
-                                       bool matchBrackets) {
-  const wchar_t* pStart = m_pCur;
-  int32_t bracketCount = 0;
-  while (m_pCur < m_pEnd && *m_pCur != wch) {
-    if (breakOnSpace && *m_pCur <= ' ')
+size_t CFX_CSSValueListParser::SkipToChar(wchar_t wch) {
+  size_t count = 0;
+  while (CharsRemain() && CurrentChar() != wch) {
+    Advance();
+    ++count;
+  }
+  return count;
+}
+
+size_t CFX_CSSValueListParser::SkipToCharMatchingParens(wchar_t wch) {
+  size_t nLength = 0;
+  int64_t bracketCount = 0;
+  while (CharsRemain() && CurrentChar() != wch) {
+    if (CurrentChar() <= ' ') {
       break;
-    if (!matchBrackets) {
-      m_pCur++;
-      continue;
     }
-
-    if (*m_pCur == '(')
+    if (CurrentChar() == '(') {
       bracketCount++;
-    else if (*m_pCur == ')')
+    } else if (CurrentChar() == ')') {
       bracketCount--;
-
-    m_pCur++;
+    }
+    ++nLength;
+    Advance();
   }
-
-  while (bracketCount > 0 && m_pCur < m_pEnd) {
-    if (*m_pCur == ')')
+  while (bracketCount > 0 && CharsRemain()) {
+    if (CurrentChar() == ')') {
       bracketCount--;
-    m_pCur++;
+    }
+    ++nLength;
+    Advance();
   }
-  return m_pCur - pStart;
+  return nLength;
 }

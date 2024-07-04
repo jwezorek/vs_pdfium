@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sah{
-    Version{"2.1.43.94"}
     zoneStrings{
         "Asia:Almaty"{
             ec{"Алматы"}
@@ -142,6 +142,9 @@ sah{
             ld{"Чойбалсан сайыҥҥы кэмэ"}
             lg{"Чойбалсан кэмэ"}
             ls{"Чойбалсан сүрүн кэмэ"}
+        }
+        "meta:GMT"{
+            ls{"GMT"}
         }
         "meta:Georgia"{
             ld{"Курусуун сайыҥҥы кэмэ"}

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,9 +8,11 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/cfx_v8.h"
 #include "fxjs/js_resources.h"
 #include "fxjs/xfa/cfxjse_value.h"
+#include "v8/include/v8-primitive.h"
 #include "xfa/fxfa/parser/cxfa_document.h"
 #include "xfa/fxfa/parser/cxfa_template.h"
 
@@ -32,28 +34,26 @@ bool CJX_Template::DynamicTypeIs(TypeTag eType) const {
   return eType == static_type__ || ParentType__::DynamicTypeIs(eType);
 }
 
-CJS_Result CJX_Template::formNodes(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Template::formNodes(CFXJSE_Engine* runtime,
+                                   pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
   return CJS_Result::Success(runtime->NewBoolean(true));
 }
 
-CJS_Result CJX_Template::remerge(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Template::remerge(CFXJSE_Engine* runtime,
+                                 pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
-  GetDocument()->DoDataRemerge(true);
+  GetDocument()->DoDataRemerge();
   return CJS_Result::Success();
 }
 
 CJS_Result CJX_Template::execInitialize(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -62,8 +62,8 @@ CJS_Result CJX_Template::execInitialize(
 }
 
 CJS_Result CJX_Template::recalculate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -71,8 +71,8 @@ CJS_Result CJX_Template::recalculate(
 }
 
 CJS_Result CJX_Template::execCalculate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -81,8 +81,8 @@ CJS_Result CJX_Template::execCalculate(
 }
 
 CJS_Result CJX_Template::execValidate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 

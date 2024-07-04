@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 ur_IN{
     Languages{
         ar_001{"جدید معیاری عربی"}
@@ -16,6 +17,9 @@ ur_IN{
         zgh{"معیاری مراقشی تمازیقی"}
         zh_Hans{"آسان چینی"}
     }
+    Languages%variant{
+        ckb{"سورانی کردی"}
+    }
     Types{
         numbers{
             armnlow{"آرمینیائی لوئر کیس اعداد"}
@@ -23,5 +27,4 @@ ur_IN{
             tibt{"تبتی ہندسے"}
         }
     }
-    Version{"2.1.43.65"}
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,27 +7,27 @@
 #ifndef FPDFSDK_CPDFSDK_WIDGET_H_
 #define FPDFSDK_CPDFSDK_WIDGET_H_
 
+#include <optional>
+
 #include "core/fpdfdoc/cpdf_aaction.h"
 #include "core/fpdfdoc/cpdf_action.h"
 #include "core/fpdfdoc/cpdf_annot.h"
 #include "core/fpdfdoc/cpdf_formfield.h"
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/widestring.h"
 #include "core/fxge/cfx_color.h"
 #include "fpdfsdk/cpdfsdk_baannot.h"
-#include "third_party/base/optional.h"
 
+class CFFL_InteractiveFormFiller;
 class CFX_RenderDevice;
 class CPDF_Annot;
-class CPDF_Dictionary;
 class CPDF_FormControl;
 class CPDF_FormField;
-class CPDF_RenderOptions;
-class CPDF_Stream;
+class CPDFSDK_FormFillEnvironment;
 class CPDFSDK_InteractiveForm;
 class CPDFSDK_PageView;
-struct CPDFSDK_FieldAction;
+struct CFFL_FieldAction;
 
 #ifdef PDF_ENABLE_XFA
 class CXFA_FFWidget;
@@ -43,33 +43,55 @@ enum PDFSDK_XFAAActionType {
 
 class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
  public:
+  enum ValueChanged : bool { kValueUnchanged = false, kValueChanged = true };
+
   CPDFSDK_Widget(CPDF_Annot* pAnnot,
                  CPDFSDK_PageView* pPageView,
                  CPDFSDK_InteractiveForm* pInteractiveForm);
   ~CPDFSDK_Widget() override;
 
   // CPDFSDK_BAAnnot:
-  bool IsSignatureWidget() const override;
+  void OnLoad() override;
   CPDF_Action GetAAction(CPDF_AAction::AActionType eAAT) override;
   bool IsAppearanceValid() override;
-
-  // CPDFSDK_Annot:
   int GetLayoutOrder() const override;
+  void OnDraw(CFX_RenderDevice* pDevice,
+              const CFX_Matrix& mtUser2Device,
+              bool bDrawAnnots) override;
+  bool DoHitTest(const CFX_PointF& point) override;
+  CFX_FloatRect GetViewBBox() override;
+  bool CanUndo() override;
+  bool CanRedo() override;
+  bool Undo() override;
+  bool Redo() override;
+  WideString GetText() override;
+  WideString GetSelectedText() override;
+  void ReplaceAndKeepSelection(const WideString& text) override;
+  void ReplaceSelection(const WideString& text) override;
+  bool SelectAllText() override;
+  bool SetIndexSelected(int index, bool selected) override;
+  bool IsIndexSelected(int index) override;
+  void DrawAppearance(CFX_RenderDevice* pDevice,
+                      const CFX_Matrix& mtUser2Device,
+                      CPDF_Annot::AppearanceMode mode) override;
 
+  bool IsSignatureWidget() const;
+  void SetRect(const CFX_FloatRect& rect);
   FormFieldType GetFieldType() const;
   int GetFieldFlags() const;
   int GetRotate() const;
 
-  Optional<FX_COLORREF> GetFillColor() const;
-  Optional<FX_COLORREF> GetBorderColor() const;
-  Optional<FX_COLORREF> GetTextColor() const;
+  std::optional<FX_COLORREF> GetFillColor() const;
+  std::optional<FX_COLORREF> GetBorderColor() const;
+  std::optional<FX_COLORREF> GetTextColor() const;
   float GetFontSize() const;
 
   int GetSelectedIndex(int nIndex) const;
   WideString GetValue() const;
-  WideString GetDefaultValue() const;
   WideString GetExportValue() const;
   WideString GetOptionLabel(int nIndex) const;
+  WideString GetSelectExportText(int nIndex) const;
+
   int CountOptions() const;
   bool IsOptionSelected(int nIndex) const;
   int GetTopVisibleIndex() const;
@@ -77,35 +99,33 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   int GetAlignment() const;
   int GetMaxLen() const;
 
-  void SetCheck(bool bChecked, NotificationOption notify);
-  void SetValue(const WideString& sValue, NotificationOption notify);
-  void SetOptionSelection(int index, bool bSelected, NotificationOption notify);
-  void ClearSelection(NotificationOption notify);
+  void SetCheck(bool bChecked);
+  void SetValue(const WideString& sValue);
+  void SetOptionSelection(int index);
+  void ClearSelection();
   void SetTopVisibleIndex(int index);
 
 #ifdef PDF_ENABLE_XFA
   CXFA_FFWidget* GetMixXFAWidget() const;
   bool HasXFAAAction(PDFSDK_XFAAActionType eXFAAAT) const;
   bool OnXFAAAction(PDFSDK_XFAAActionType eXFAAAT,
-                    CPDFSDK_FieldAction* data,
-                    CPDFSDK_PageView* pPageView);
+                    CFFL_FieldAction* data,
+                    const CPDFSDK_PageView* pPageView);
   void Synchronize(bool bSynchronizeElse);
   // TODO(thestig): Figure out if the parameter should be used or removed.
-  void ResetXFAAppearance(bool bValueChanged);
+  void ResetXFAAppearance(ValueChanged bValueChanged);
 #endif  // PDF_ENABLE_XFA
 
-  void ResetAppearance(Optional<WideString> sValue, bool bValueChanged);
+  void ResetAppearance(std::optional<WideString> sValue,
+                       ValueChanged bValueChanged);
   void ResetFieldAppearance();
   void UpdateField();
-  Optional<WideString> OnFormat();
+  std::optional<WideString> OnFormat();
 
   bool OnAAction(CPDF_AAction::AActionType type,
-                 CPDFSDK_FieldAction* data,
-                 CPDFSDK_PageView* pPageView);
+                 CFFL_FieldAction* data,
+                 const CPDFSDK_PageView* pPageView);
 
-  CPDFSDK_InteractiveForm* GetInteractiveForm() const {
-    return m_pInteractiveForm.Get();
-  }
   CPDF_FormField* GetFormField() const;
   CPDF_FormControl* GetFormControl() const;
 
@@ -118,12 +138,8 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   uint32_t GetAppearanceAge() const { return m_nAppearanceAge; }
   uint32_t GetValueAge() const { return m_nValueAge; }
 
-  bool IsWidgetAppearanceValid(CPDF_Annot::AppearanceMode mode);
-  void DrawAppearance(CFX_RenderDevice* pDevice,
-                      const CFX_Matrix& mtUser2Device,
-                      CPDF_Annot::AppearanceMode mode,
-                      const CPDF_RenderOptions* pOptions) override;
-
+  bool IsWidgetAppearanceValid(CPDF_Annot::AppearanceMode mode) const;
+  bool IsPushHighlighted() const;
   CFX_Matrix GetMatrix() const;
   CFX_FloatRect GetClientRect() const;
   CFX_FloatRect GetRotatedRect() const;
@@ -132,10 +148,38 @@ class CPDFSDK_Widget final : public CPDFSDK_BAAnnot {
   CFX_Color GetFillPWLColor() const;
 
  private:
+  // CPDFSDK_Annot::UnsafeInputHandlers:
+  void OnMouseEnter(Mask<FWL_EVENTFLAG> nFlags) override;
+  void OnMouseExit(Mask<FWL_EVENTFLAG> nFlags) override;
+  bool OnLButtonDown(Mask<FWL_EVENTFLAG> nFlags,
+                     const CFX_PointF& point) override;
+  bool OnLButtonUp(Mask<FWL_EVENTFLAG> nFlags,
+                   const CFX_PointF& point) override;
+  bool OnLButtonDblClk(Mask<FWL_EVENTFLAG> nFlags,
+                       const CFX_PointF& point) override;
+  bool OnMouseMove(Mask<FWL_EVENTFLAG> nFlags,
+                   const CFX_PointF& point) override;
+  bool OnMouseWheel(Mask<FWL_EVENTFLAG> nFlags,
+                    const CFX_PointF& point,
+                    const CFX_Vector& delta) override;
+  bool OnRButtonDown(Mask<FWL_EVENTFLAG> nFlags,
+                     const CFX_PointF& point) override;
+  bool OnRButtonUp(Mask<FWL_EVENTFLAG> nFlags,
+                   const CFX_PointF& point) override;
+  bool OnChar(uint32_t nChar, Mask<FWL_EVENTFLAG> nFlags) override;
+  bool OnKeyDown(FWL_VKEYCODE nKeyCode, Mask<FWL_EVENTFLAG> nFlags) override;
+  bool OnSetFocus(Mask<FWL_EVENTFLAG> nFlags) override;
+  bool OnKillFocus(Mask<FWL_EVENTFLAG> nFlags) override;
+
+  CFFL_InteractiveFormFiller* GetInteractiveFormFiller();
+
 #ifdef PDF_ENABLE_XFA
   CXFA_FFWidgetHandler* GetXFAWidgetHandler() const;
   CXFA_FFWidget* GetGroupMixXFAWidget() const;
   WideString GetName() const;
+  bool HandleXFAAAction(CPDF_AAction::AActionType type,
+                        CFFL_FieldAction* data,
+                        CPDFSDK_FormFillEnvironment* pFormFillEnv);
 #endif  // PDF_ENABLE_XFA
 
   UnownedPtr<CPDFSDK_InteractiveForm> const m_pInteractiveForm;

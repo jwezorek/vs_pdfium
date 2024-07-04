@@ -1,4 +1,4 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,8 +9,8 @@
 
 #include <memory>
 
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/widestring.h"
 #include "fxjs/ijs_runtime.h"
 
 class CPDFSDK_FormFillEnvironment;
@@ -27,7 +27,7 @@ class CJS_RuntimeStub final : public IJS_Runtime {
   void ReleaseEventContext(IJS_EventContext* pContext) override;
   CPDFSDK_FormFillEnvironment* GetFormFillEnv() const override;
 
-  Optional<IJS_Runtime::JS_Error> ExecuteScript(
+  std::optional<IJS_Runtime::JS_Error> ExecuteScript(
       const WideString& script) override;
 
  private:

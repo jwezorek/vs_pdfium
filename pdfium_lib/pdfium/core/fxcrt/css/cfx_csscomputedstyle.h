@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,15 @@
 #ifndef CORE_FXCRT_CSS_CFX_CSSCOMPUTEDSTYLE_H_
 #define CORE_FXCRT_CSS_CFX_CSSCOMPUTEDSTYLE_H_
 
+#include <optional>
 #include <vector>
 
 #include "core/fxcrt/css/cfx_css.h"
 #include "core/fxcrt/css/cfx_csscustomproperty.h"
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/mask.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/widestring.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/optional.h"
 
 class CFX_CSSValueList;
 
@@ -51,7 +53,7 @@ class CFX_CSSComputedStyle final : public Retainable {
     float m_fVerticalAlign = 0.0f;
     CFX_CSSDisplay m_eDisplay = CFX_CSSDisplay::Inline;
     CFX_CSSVerticalAlign m_eVerticalAlignType = CFX_CSSVerticalAlign::Baseline;
-    uint8_t m_dwTextDecoration = 0;
+    Mask<CFX_CSSTEXTDECORATION> m_dwTextDecoration;
     bool m_bHasMargin = false;
     bool m_bHasBorder = false;
     bool m_bHasPadding = false;
@@ -59,7 +61,7 @@ class CFX_CSSComputedStyle final : public Retainable {
 
   CONSTRUCT_VIA_MAKE_RETAIN;
 
-  Optional<WideString> GetLastFontFamily() const;
+  std::optional<WideString> GetLastFontFamily() const;
   uint16_t GetFontWeight() const;
   CFX_CSSFontVariant GetFontVariant() const;
   CFX_CSSFontStyle GetFontStyle() const;
@@ -84,13 +86,13 @@ class CFX_CSSComputedStyle final : public Retainable {
   CFX_CSSTextAlign GetTextAlign() const;
   CFX_CSSVerticalAlign GetVerticalAlign() const;
   float GetNumberVerticalAlign() const;
-  uint32_t GetTextDecoration() const;
+  Mask<CFX_CSSTEXTDECORATION> GetTextDecoration() const;
   const CFX_CSSLength& GetLetterSpacing() const;
   void SetLineHeight(float fLineHeight);
   void SetTextIndent(const CFX_CSSLength& textIndent);
   void SetTextAlign(CFX_CSSTextAlign eTextAlign);
   void SetNumberVerticalAlign(float fAlign);
-  void SetTextDecoration(uint32_t dwTextDecoration);
+  void SetTextDecoration(Mask<CFX_CSSTEXTDECORATION> dwTextDecoration);
   void SetLetterSpacing(const CFX_CSSLength& letterSpacing);
   void AddCustomStyle(const CFX_CSSCustomProperty& prop);
 

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,11 +18,11 @@ RetainPtr<CPDF_Object> CPDF_Null::Clone() const {
   return pdfium::MakeRetain<CPDF_Null>();
 }
 
+CPDF_Null* CPDF_Null::AsMutableNull() {
+  return this;
+}
+
 bool CPDF_Null::WriteTo(IFX_ArchiveStream* archive,
                         const CPDF_Encryptor* encryptor) const {
   return archive->WriteString(" null");
-}
-
-bool CPDF_Null::IsNull() const {
-  return true;
 }

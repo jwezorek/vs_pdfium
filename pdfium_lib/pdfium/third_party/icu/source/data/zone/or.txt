@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 or{
-    Version{"2.1.43.65"}
     zoneStrings{
         "Africa:Abidjan"{
             ec{"ଆବିଦଜାନ"}
@@ -258,6 +258,9 @@ or{
         "America:Chihuahua"{
             ec{"ଚିହୁଆହୁଆ"}
         }
+        "America:Ciudad_Juarez"{
+            ec{"ସିଉଡାଡ୍ ଜୁଆରେଜ୍"}
+        }
         "America:Coral_Harbour"{
             ec{"ଆଟିକୋକାନ୍"}
         }
@@ -462,9 +465,6 @@ or{
         "America:New_York"{
             ec{"ନ୍ୟୁ ୟୋର୍କ୍"}
         }
-        "America:Nipigon"{
-            ec{"ନିପିଗୋନ୍"}
-        }
         "America:Nome"{
             ec{"ନୋମେ"}
         }
@@ -486,9 +486,6 @@ or{
         "America:Panama"{
             ec{"ପାନାମା"}
         }
-        "America:Pangnirtung"{
-            ec{"ପାଙ୍ଗନିର୍ଟୁଙ୍ଗ"}
-        }
         "America:Paramaribo"{
             ec{"ପାରାମାରିବୋ"}
         }
@@ -509,9 +506,6 @@ or{
         }
         "America:Punta_Arenas"{
             ec{"ପୁଣ୍ଟା ଏରିନାସ୍‌"}
-        }
-        "America:Rainy_River"{
-            ec{"ରେଇନି ରିଭର୍"}
         }
         "America:Rankin_Inlet"{
             ec{"ରାନକିନ୍ ଇନଲେଟ୍"}
@@ -573,9 +567,6 @@ or{
         "America:Thule"{
             ec{"ଥୁଲେ"}
         }
-        "America:Thunder_Bay"{
-            ec{"ଥଣ୍ଡର୍ ବେ"}
-        }
         "America:Tijuana"{
             ec{"ତିଜୁଆନା"}
         }
@@ -596,9 +587,6 @@ or{
         }
         "America:Yakutat"{
             ec{"ୟାକୁଟାଟ୍"}
-        }
-        "America:Yellowknife"{
-            ec{"ୟେଲ୍ଲୋନାଇଫ୍"}
         }
         "Antarctica:Casey"{
             ec{"କାସେ"}
@@ -807,6 +795,9 @@ or{
         "Asia:Qatar"{
             ec{"କତାର୍"}
         }
+        "Asia:Qostanay"{
+            ec{"କୋଷ୍ଟନେ"}
+        }
         "Asia:Qyzylorda"{
             ec{"କୀଜିଲୋର୍ଡା"}
         }
@@ -920,9 +911,6 @@ or{
         }
         "Australia:Broken_Hill"{
             ec{"ବ୍ରୋକେନ୍‌ ହିଲ୍‌"}
-        }
-        "Australia:Currie"{
-            ec{"କ୍ୟୁରୀ"}
         }
         "Australia:Darwin"{
             ec{"ଡାରୱିନ୍‌"}
@@ -1106,9 +1094,6 @@ or{
         "Europe:Ulyanovsk"{
             ec{"ୟୁଲୟାନୋଭସ୍କ"}
         }
-        "Europe:Uzhgorod"{
-            ec{"ଉଜହୋରୋଦ୍"}
-        }
         "Europe:Vaduz"{
             ec{"ଭାଡୁଜ"}
         }
@@ -1129,9 +1114,6 @@ or{
         }
         "Europe:Zagreb"{
             ec{"ଜାଗ୍ରେବ୍"}
-        }
-        "Europe:Zaporozhye"{
-            ec{"ଜାପୋରୋଜହୟେ"}
         }
         "Europe:Zurich"{
             ec{"ଜୁରିକ୍"}
@@ -1214,8 +1196,8 @@ or{
         "Pacific:Honolulu"{
             ec{"ହୋନୋଲୁଲୁ"}
         }
-        "Pacific:Johnston"{
-            ec{"ଜନଷ୍ଟନ୍"}
+        "Pacific:Kanton"{
+            ec{"କ୍ୟାଣ୍ଟନ"}
         }
         "Pacific:Kiritimati"{
             ec{"କିରିତିମାଟି"}
@@ -1286,6 +1268,11 @@ or{
         "Pacific:Wallis"{
             ec{"ୱାଲିସ୍‌"}
         }
+        "meta:Acre"{
+            ld{"ଆକା ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ଆକା ସମୟ"}
+            ls{"ଆକା ମାନକ ସମୟ"}
+        }
         "meta:Afghanistan"{
             ls{"ଆଫଗାନିସ୍ତାନ ସମୟ"}
         }
@@ -1307,6 +1294,11 @@ or{
             ld{"ଆଲାସ୍କା ଦିବାଲୋକ ସମୟ"}
             lg{"ଆଲାସ୍କା ସମୟ"}
             ls{"ଆଲାସ୍କା ମାନାଙ୍କ ସମୟ"}
+        }
+        "meta:Almaty"{
+            ld{"ଅଲମାଟୀ ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ଅଲମାଟୀ ସମୟ"}
+            ls{"ଅଲମାଟୀ ମାନକ ସମୟ"}
         }
         "meta:Amazon"{
             ld{"ଆମାଜନ୍ ଗ୍ରୀଷ୍ମକାଳୀନ ସମୟ"}
@@ -1333,10 +1325,25 @@ or{
             lg{"ପାସିଫିକ୍ ସମୟ"}
             ls{"ପାସିଫିକ୍ ମାନାଙ୍କ ସମୟ"}
         }
+        "meta:Anadyr"{
+            ld{"ଅନାଡିର୍ ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ଅନାଡିର୍ ସମୟ"}
+            ls{"ଅନାଡିର୍ ମାନକ ସମୟ"}
+        }
         "meta:Apia"{
             ld{"ଆପିଆ ଦିବାଲୋକ ସମୟ"}
             lg{"ଆପିଆ ସମୟ"}
             ls{"ଆପିଆ ମାନାଙ୍କ ସମୟ"}
+        }
+        "meta:Aqtau"{
+            ld{"ଅକତୌ ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ଅକତୌ ସମୟ"}
+            ls{"ଅକତୌ ମାନକ ସମୟ"}
+        }
+        "meta:Aqtobe"{
+            ld{"ଅକ୍ତୋବ ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ଅକ୍ତୋବ ସମୟ"}
+            ls{"ଅକ୍ତୋବ ମାନକ ସମୟ"}
         }
         "meta:Arabian"{
             ld{"ଆରବୀୟ ଦିବାଲୋକ ସମୟ"}
@@ -1514,6 +1521,7 @@ or{
         }
         "meta:GMT"{
             ls{"ଗ୍ରୀନୱିଚ୍ ମିନ୍ ସମୟ"}
+            ss{"GMT"}
         }
         "meta:Galapagos"{
             ls{"ଗାଲାପାଗୋସ୍ ସମୟ"}
@@ -1599,6 +1607,11 @@ or{
             lg{"ଜାପାନ ସମୟ"}
             ls{"ଜାପାନ ମାନାଙ୍କ ସମୟ"}
         }
+        "meta:Kamchatka"{
+            ld{"ପେଟ୍ରୋପାଭଲୋଭ୍ସକ-କମଚଟସ୍କି ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ପେଟ୍ରୋପାଭଲୋଭ୍ସକ-କମଚଟସ୍କି ସମୟ"}
+            ls{"ପେଟ୍ରୋପାଭଲୋଭ୍ସକ-କମଚଟସ୍କି ମାନକ ସମୟ"}
+        }
         "meta:Kazakhstan_Eastern"{
             ls{"ପୂର୍ବ କାଜାକସ୍ତାନ୍ ସମୟ"}
         }
@@ -1621,6 +1634,9 @@ or{
         "meta:Kyrgystan"{
             ls{"କିର୍ଗିସ୍ତାନ ସମୟ"}
         }
+        "meta:Lanka"{
+            ls{"ଲଙ୍କା ସମୟ"}
+        }
         "meta:Line_Islands"{
             ls{"ଲାଇନ୍‌ ଦ୍ୱୀପପୁଞ୍ଜ ସମୟ"}
         }
@@ -1629,8 +1645,10 @@ or{
             lg{"ଲର୍ଡ ହୋୱେ ସମୟ"}
             ls{"ଲର୍ଡ ହୋୱେ ମାନାଙ୍କ ସମୟ"}
         }
-        "meta:Macquarie"{
-            ls{"ମାକ୍ୱେରୀ ଦ୍ୱୀପ ସମୟ"}
+        "meta:Macau"{
+            ld{"ମକାଓ ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ମାକାଓ ସମୟ"}
+            ls{"ମକାଓ ମାନକ ସମୟ"}
         }
         "meta:Magadan"{
             ld{"ମାଗାଡାନ୍ ଗ୍ରୀଷ୍ମକାଳ ସମୟ"}
@@ -1656,11 +1674,6 @@ or{
         }
         "meta:Mawson"{
             ls{"ମାୱସନ୍‌ ସମୟ"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"ଉତ୍ତରପଶ୍ଚିମ ମେକ୍ସିକୋ ଦିବାଲୋକ ସମୟ"}
-            lg{"ଉତ୍ତରପଶ୍ଚିମ ମେକ୍ସିକୋ ସମୟ"}
-            ls{"ଉତ୍ତରପଶ୍ଚିମ ମେକ୍ସିକୋ ମାନାଙ୍କ ସମୟ"}
         }
         "meta:Mexico_Pacific"{
             ld{"ମେକ୍ସିକାନ୍ ପାସିଫିକ୍ ଦିବାଲୋକ ସମୟ"}
@@ -1705,12 +1718,17 @@ or{
             ls{"ନିୟୁ ସମୟ"}
         }
         "meta:Norfolk"{
-            ls{"ନରଫୋକ୍‌ ଦ୍ୱୀପ ସମୟ"}
+            ld{"ନରଫୋକ୍‌ ଦ୍ୱୀପ ଗ୍ରୀଷ୍ମକାଳ ସମୟ"}
+            lg{"ନରଫୋକ୍‌ ଦ୍ୱୀପ ସମୟ"}
+            ls{"ନରଫୋକ୍‌ ଦ୍ୱୀପ ମାନାଙ୍କ ସମୟ"}
         }
         "meta:Noronha"{
             ld{"ଫର୍ଣ୍ଣାଣ୍ଡୋ ଡି ନୋରୋନ୍ନା ଗ୍ରୀଷ୍ମକାଳ ସମୟ"}
             lg{"ଫର୍ଣ୍ଣାଣ୍ଡୋ ଡି ନୋରୋନ୍ନା ସମୟ"}
             ls{"ଫର୍ଣ୍ଣାଣ୍ଡୋ ଡି ନୋରୋନ୍ନା ମାନାଙ୍କ ସମୟ"}
+        }
+        "meta:North_Mariana"{
+            ls{"ଉତ୍ତର ମେରିଆନା ଆଇଲ୍ୟାଣ୍ଡ ସମୟ"}
         }
         "meta:Novosibirsk"{
             ld{"ନୋଭୋସିବିରସ୍କ ଗ୍ରୀଷ୍ମକାଳ ସମୟ"}
@@ -1765,6 +1783,11 @@ or{
         "meta:Pyongyang"{
             ls{"ପୋୟଙ୍ଗୟାଙ୍ଗ ସମୟ"}
         }
+        "meta:Qyzylorda"{
+            ld{"କାଜିଲୋର୍ଡା ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"କାଜିଲୋର୍ଡା ସମୟ"}
+            ls{"କାଜିଲୋର୍ଡା ମାନକ ସମୟ"}
+        }
         "meta:Reunion"{
             ls{"ରିୟୁନିଅନ୍‌ ସମୟ"}
         }
@@ -1775,6 +1798,11 @@ or{
             ld{"ସଖାଲିନ୍ ଗ୍ରୀଷ୍ମକାଳ ସମୟ"}
             lg{"ସଖାଲିନ୍ ସମୟ"}
             ls{"ସଖାଲିନ୍ ମାନାଙ୍କ ସମୟ"}
+        }
+        "meta:Samara"{
+            ld{"ସମାରା ଗ୍ରୀଷ୍ମ ସମୟ"}
+            lg{"ସମାରା ସମୟ"}
+            ls{"ସମାରା ମାନକ ସମୟ"}
         }
         "meta:Samoa"{
             ld{"ସାମୋଆ ଦିବାଲୋକ ସମୟ"}
@@ -1876,10 +1904,9 @@ or{
             lg{"ୟେକାଟେରିନବର୍ଗ୍ ସମୟ"}
             ls{"ୟେକାଟେରିନବର୍ଗ୍ ମାନାଙ୍କ ସମୟ"}
         }
-        fallbackFormat{"{1} ({0})"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
+        "meta:Yukon"{
+            ls{"ୟୁକୋନ୍ ସମୟ"}
+        }
         regionFormat{"{0} ସମୟ"}
         regionFormatDaylight{"{0} ଦିବାଲୋକ ସମୟ"}
         regionFormatStandard{"{0} ମାନାଙ୍କ ସମୟ"}

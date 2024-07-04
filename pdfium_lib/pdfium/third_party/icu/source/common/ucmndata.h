@@ -18,10 +18,10 @@
  *                 contents for locating the individual items by name.
  *
  *                 Two formats for the table of contents are supported, which is
- *                 why there is an abstract inteface involved.
+ *                 why there is an abstract interface involved.
  *
  *                 These functions are part of the ICU internal implementation, and
- *                 are not inteded to be used directly by applications.
+ *                 are not intended to be used directly by applications.
  */
 
 #ifndef __UCMNDATA_H__
@@ -44,20 +44,6 @@ typedef struct  {
     MappedData  dataHeader;
     UDataInfo   info;
 } DataHeader;
-
-typedef struct {
-    DataHeader hdr;
-    char padding[8];
-    uint32_t count, reserved;
-    /*
-    const struct {
-    const char *const name;
-    const void *const data;
-    } toc[1];
-    */
-   int   fakeNameAndData[4];       /* TODO:  Change this header type from */
-                                   /*        pointerTOC to OffsetTOC.     */
-} ICU_Data_Header;
 
 typedef struct {
     uint32_t nameOffset;

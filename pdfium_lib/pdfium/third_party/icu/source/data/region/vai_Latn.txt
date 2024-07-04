@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 vai_Latn{
     %%Parent{"root"}
     Countries{
@@ -93,7 +94,6 @@ vai_Latn{
         IE{"Áre Lumaã"}
         IL{"Bhanísiláila"}
         IN{"Índiya"}
-        IO{"Jengéesi Gbawoe Índiya Kɔiyɛ Lɔ"}
         IQ{"Iraki"}
         IR{"Iraŋ"}
         IS{"Áisi Lumaã"}
@@ -127,7 +127,6 @@ vai_Latn{
         MD{"Mɔlidova"}
         MG{"Madagasita"}
         MH{"Masha Tiŋŋɛ"}
-        MK{"Masedoninya"}
         ML{"Mali"}
         MM{"Miyamaha"}
         MN{"Mɔngoliya"}
@@ -227,5 +226,4 @@ vai_Latn{
         ZM{"Zambiya"}
         ZW{"Zimbabhuwe"}
     }
-    Version{"2.1.39.11"}
 }

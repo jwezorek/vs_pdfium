@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -30,11 +30,7 @@ CBC_EAN8::CBC_EAN8() : CBC_EANCode(std::make_unique<CBC_OnedEAN8Writer>()) {}
 CBC_EAN8::~CBC_EAN8() = default;
 
 BC_TYPE CBC_EAN8::GetType() {
-  return BC_EAN8;
-}
-
-BCFORMAT CBC_EAN8::GetFormat() const {
-  return BCFORMAT_EAN_8;
+  return BC_TYPE::kEAN8;
 }
 
 size_t CBC_EAN8::GetMaxLength() const {

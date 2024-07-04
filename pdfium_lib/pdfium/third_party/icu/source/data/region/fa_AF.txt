@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 fa_AF{
     Countries{
         AD{"اندورا"}
@@ -23,7 +24,6 @@ fa_AF{
         CO{"کولمبیا"}
         CR{"کاستریکا"}
         CU{"کیوبا"}
-        CZ{"چک"}
         DK{"دنمارک"}
         EA{"سئوتا و ملیلا"}
         EE{"استونیا"}
@@ -39,7 +39,7 @@ fa_AF{
         GT{"گواتیمالا"}
         GW{"گینیا بیسائو"}
         GY{"گیانا"}
-        HK{"هانگ کانگ"}
+        HK{"هانگ کانگ، ناحیهٔ ویژهٔ حکومتی چین"}
         HN{"هاندوراس"}
         HR{"کروشیا"}
         HT{"هایتی"}
@@ -93,8 +93,7 @@ fa_AF{
         XK{"کوسوا"}
         ZW{"زیمبابوی"}
     }
-    Countries%variant{
-        CZ{"جمهوری چک"}
+    Countries%short{
+        HK{"هانگ کانگ"}
     }
-    Version{"2.1.43.65"}
 }

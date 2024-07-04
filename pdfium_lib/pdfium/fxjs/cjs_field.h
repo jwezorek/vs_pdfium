@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,12 +9,13 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/cjs_document.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/js_define.h"
 
+class CFX_FloatRect;
 class CPDF_FormControl;
-class CPDFSDK_Widget;
 struct CJS_DelayData;
 
 enum FIELD_PROP {
@@ -292,68 +293,65 @@ class CJS_Field final : public CJS_Object {
   CJS_Result get_source(CJS_Runtime* pRuntime);
   CJS_Result set_source(CJS_Runtime* pRuntime, v8::Local<v8::Value> vp);
 
-  CJS_Result browseForFileToSubmit(
-      CJS_Runtime* pRuntime,
-      const std::vector<v8::Local<v8::Value>>& params);
+  CJS_Result browseForFileToSubmit(CJS_Runtime* pRuntime,
+                                   pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result buttonGetCaption(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result buttonGetIcon(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result buttonImportIcon(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result buttonSetCaption(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result buttonSetIcon(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result checkThisBox(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result clearItems(CJS_Runtime* pRuntime,
-                        const std::vector<v8::Local<v8::Value>>& params);
+                        pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result defaultIsChecked(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result deleteItemAt(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getArray(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getItemAt(CJS_Runtime* pRuntime,
-                       const std::vector<v8::Local<v8::Value>>& params);
+                       pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getLock(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result insertItemAt(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result isBoxChecked(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result isDefaultChecked(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result setAction(CJS_Runtime* pRuntime,
-                       const std::vector<v8::Local<v8::Value>>& params);
+                       pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result setFocus(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result setItems(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result setLock(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result signatureGetModifications(
       CJS_Runtime* pRuntime,
-      const std::vector<v8::Local<v8::Value>>& params);
-  CJS_Result signatureGetSeedValue(
-      CJS_Runtime* pRuntime,
-      const std::vector<v8::Local<v8::Value>>& params);
+      pdfium::span<v8::Local<v8::Value>> params);
+  CJS_Result signatureGetSeedValue(CJS_Runtime* pRuntime,
+                                   pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result signatureInfo(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
-  CJS_Result signatureSetSeedValue(
-      CJS_Runtime* pRuntime,
-      const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
+  CJS_Result signatureSetSeedValue(CJS_Runtime* pRuntime,
+                                   pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result signatureSign(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result signatureValidate(CJS_Runtime* pRuntime,
-                               const std::vector<v8::Local<v8::Value>>& params);
+                               pdfium::span<v8::Local<v8::Value>> params);
 
-  void SetDelay(bool bDelay);
   std::vector<CPDF_FormField*> GetFormFields() const;
   CPDF_FormField* GetFirstFormField() const;
   CPDF_FormControl* GetSmartFieldControl(CPDF_FormField* pFormField);
 
+  void SetDelay(bool bDelay);
   void AddDelay_Int(FIELD_PROP prop, int32_t n);
   void AddDelay_Bool(FIELD_PROP prop, bool b);
   void AddDelay_String(FIELD_PROP prop, const ByteString& str);
@@ -361,7 +359,6 @@ class CJS_Field final : public CJS_Object {
   void AddDelay_WordArray(FIELD_PROP prop, const std::vector<uint32_t>& array);
   void AddDelay_WideStringArray(FIELD_PROP prop,
                                 const std::vector<WideString>& array);
-
   void DoDelay();
 
   ObservedPtr<CJS_Document> m_pJSDoc;

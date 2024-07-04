@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -20,9 +20,9 @@ struct CJS_DelayData {
 
   FIELD_PROP eProp;
   int nControlIndex;
+  int32_t num = 0;
+  bool b = false;
   WideString sFieldName;
-  int32_t num;
-  bool b;
   ByteString bytestring;
   WideString widestring;
   CFX_FloatRect rect;

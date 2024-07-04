@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,30 +6,45 @@
 
 #include "core/fxge/win32/cwin32_platform.h"
 
+#include <array>
+#include <iterator>
 #include <memory>
+#include <type_traits>
+#include <utility>
 
+#include "core/fxcrt/byteorder.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_codepage.h"
+#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
+#include "core/fxcrt/raw_span.h"
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/stl_util.h"
+#include "core/fxcrt/win/scoped_select_object.h"
+#include "core/fxcrt/win/win_util.h"
 #include "core/fxge/cfx_folderfontinfo.h"
 #include "core/fxge/cfx_gemodule.h"
-#include "third_party/base/ptr_util.h"
-#include "third_party/base/stl_util.h"
-#include "third_party/base/win/win_util.h"
 
 namespace {
 
-const struct {
+struct Variant {
   const char* m_pFaceName;
-  const char* m_pVariantName;  // Note: UTF-16LE terminator required.
-} g_VariantNames[] = {
-    {"DFKai-SB", "\x19\x6A\x77\x69\xD4\x9A\x00\x00"},
+  const wchar_t* m_pVariantName;
 };
 
-const struct {
+constexpr Variant kVariantNames[] = {
+    {"DFKai-SB", L"\x6A19\x6977\x9AD4"},
+};
+
+struct Substs {
   const char* m_pName;
   const char* m_pWinName;
   bool m_bBold;
   bool m_bItalic;
-} g_Base14Substs[] = {
+};
+
+constexpr auto kBase14Substs = fxcrt::ToArray<const Substs>({
     {"Courier", "Courier New", false, false},
     {"Courier-Bold", "Courier New", true, false},
     {"Courier-BoldOblique", "Courier New", true, true},
@@ -42,25 +57,39 @@ const struct {
     {"Times-Bold", "Times New Roman", true, false},
     {"Times-BoldItalic", "Times New Roman", true, true},
     {"Times-Italic", "Times New Roman", false, true},
-};
+});
 
 struct FontNameMap {
   const char* m_pSubFontName;
   const char* m_pSrcFontName;
 };
-const FontNameMap g_JpFontNameMap[] = {
+
+constexpr FontNameMap kJpFontNameMap[] = {
     {"MS Mincho", "Heiseimin-W3"},
     {"MS Gothic", "Jun101-Light"},
 };
 
 bool GetSubFontName(ByteString* name) {
-  for (size_t i = 0; i < pdfium::size(g_JpFontNameMap); ++i) {
-    if (!FXSYS_stricmp(name->c_str(), g_JpFontNameMap[i].m_pSrcFontName)) {
-      *name = g_JpFontNameMap[i].m_pSubFontName;
-      return true;
+  UNSAFE_TODO({
+    for (size_t i = 0; i < std::size(kJpFontNameMap); ++i) {
+      if (!FXSYS_stricmp(name->c_str(), kJpFontNameMap[i].m_pSrcFontName)) {
+        *name = kJpFontNameMap[i].m_pSubFontName;
+        return true;
+      }
     }
-  }
+  });
   return false;
+}
+
+// Wraps CreateFontA() so callers don't have to specify all the arguments.
+HFONT Win32CreateFont(int weight,
+                      bool italic,
+                      FX_Charset charset,
+                      int pitch_family,
+                      const char* face) {
+  return ::CreateFontA(-10, 0, 0, 0, weight, italic, 0, 0,
+                       static_cast<int>(charset), OUT_TT_ONLY_PRECIS, 0, 0,
+                       pitch_family, face);
 }
 
 class CFX_Win32FallbackFontInfo final : public CFX_FolderFontInfo {
@@ -71,9 +100,9 @@ class CFX_Win32FallbackFontInfo final : public CFX_FolderFontInfo {
   // CFX_FolderFontInfo:
   void* MapFont(int weight,
                 bool bItalic,
-                int charset,
+                FX_Charset charset,
                 int pitch_family,
-                const char* family) override;
+                const ByteString& face) override;
 };
 
 class CFX_Win32FontInfo final : public SystemFontInfoIface {
@@ -81,27 +110,33 @@ class CFX_Win32FontInfo final : public SystemFontInfoIface {
   CFX_Win32FontInfo();
   ~CFX_Win32FontInfo() override;
 
-  // SystemFontInfoIface
+  // SystemFontInfoIface:
   bool EnumFontList(CFX_FontMapper* pMapper) override;
   void* MapFont(int weight,
                 bool bItalic,
-                int charset,
+                FX_Charset charset,
                 int pitch_family,
-                const char* face) override;
-  void* GetFont(const char* face) override { return nullptr; }
-  uint32_t GetFontData(void* hFont,
-                       uint32_t table,
-                       pdfium::span<uint8_t> buffer) override;
+                const ByteString& face) override;
+  void* GetFont(const ByteString& face) override { return nullptr; }
+  size_t GetFontData(void* hFont,
+                     uint32_t table,
+                     pdfium::span<uint8_t> buffer) override;
   bool GetFaceName(void* hFont, ByteString* name) override;
-  bool GetFontCharset(void* hFont, int* charset) override;
+  bool GetFontCharset(void* hFont, FX_Charset* charset) override;
   void DeleteFont(void* hFont) override;
 
-  bool IsOpenTypeFromDiv(const LOGFONTA* plf);
-  bool IsSupportFontFormDiv(const LOGFONTA* plf);
-  void AddInstalledFont(const LOGFONTA* plf, uint32_t FontType);
-  void GetGBPreference(ByteString& face, int weight, int picth_family);
-  void GetJapanesePreference(ByteString& face, int weight, int picth_family);
+  void AddInstalledFont(const LOGFONTA* plf, uint32_t font_type);
+
+ private:
+  bool IsSupportedFont(const LOGFONTA* plf);
+  void GetGBPreference(ByteString& face, int weight, int pitch_family);
+  void GetJapanesePreference(ByteString& face, int weight, int pitch_family);
   ByteString FindFont(const ByteString& name);
+  void* GetFontFromList(int weight,
+                        bool italic,
+                        FX_Charset charset,
+                        int pitch_family,
+                        pdfium::span<const char* const> font_faces);
 
   const HDC m_hDC;
   UnownedPtr<CFX_FontMapper> m_pMapper;
@@ -112,10 +147,10 @@ class CFX_Win32FontInfo final : public SystemFontInfoIface {
 
 int CALLBACK FontEnumProc(const LOGFONTA* plf,
                           const TEXTMETRICA* lpntme,
-                          uint32_t FontType,
+                          uint32_t font_type,
                           LPARAM lParam) {
   CFX_Win32FontInfo* pFontInfo = reinterpret_cast<CFX_Win32FontInfo*>(lParam);
-  pFontInfo->AddInstalledFont(plf, FontType);
+  pFontInfo->AddInstalledFont(plf, font_type);
   return 1;
 }
 
@@ -125,78 +160,54 @@ CFX_Win32FontInfo::~CFX_Win32FontInfo() {
   DeleteDC(m_hDC);
 }
 
-bool CFX_Win32FontInfo::IsOpenTypeFromDiv(const LOGFONTA* plf) {
+bool CFX_Win32FontInfo::IsSupportedFont(const LOGFONTA* plf) {
   HFONT hFont = CreateFontIndirectA(plf);
   bool ret = false;
-  uint32_t font_size = GetFontData(hFont, 0, {});
+  size_t font_size = GetFontData(hFont, 0, {});
   if (font_size != GDI_ERROR && font_size >= sizeof(uint32_t)) {
-    uint32_t lVersion = 0;
-    GetFontData(hFont, 0, {(uint8_t*)(&lVersion), sizeof(uint32_t)});
-    lVersion = (((uint32_t)(uint8_t)(lVersion)) << 24) |
-               ((uint32_t)((uint8_t)(lVersion >> 8))) << 16 |
-               ((uint32_t)((uint8_t)(lVersion >> 16))) << 8 |
-               ((uint8_t)(lVersion >> 24));
-    if (lVersion == FXBSTR_ID('O', 'T', 'T', 'O') || lVersion == 0x00010000 ||
-        lVersion == FXBSTR_ID('t', 't', 'c', 'f') ||
-        lVersion == FXBSTR_ID('t', 'r', 'u', 'e') || lVersion == 0x00020000) {
-      ret = true;
-    }
-  }
-  DeleteFont(hFont);
-  return ret;
-}
-
-bool CFX_Win32FontInfo::IsSupportFontFormDiv(const LOGFONTA* plf) {
-  HFONT hFont = CreateFontIndirectA(plf);
-  bool ret = false;
-  uint32_t font_size = GetFontData(hFont, 0, {});
-  if (font_size != GDI_ERROR && font_size >= sizeof(uint32_t)) {
-    uint32_t lVersion = 0;
-    GetFontData(hFont, 0, {(uint8_t*)(&lVersion), sizeof(lVersion)});
-    lVersion = (((uint32_t)(uint8_t)(lVersion)) << 24) |
-               ((uint32_t)((uint8_t)(lVersion >> 8))) << 16 |
-               ((uint32_t)((uint8_t)(lVersion >> 16))) << 8 |
-               ((uint8_t)(lVersion >> 24));
-    if (lVersion == FXBSTR_ID('O', 'T', 'T', 'O') || lVersion == 0x00010000 ||
-        lVersion == FXBSTR_ID('t', 't', 'c', 'f') ||
-        lVersion == FXBSTR_ID('t', 'r', 'u', 'e') || lVersion == 0x00020000 ||
-        (lVersion & 0xFFFF0000) == FXBSTR_ID(0x80, 0x01, 0x00, 0x00) ||
-        (lVersion & 0xFFFF0000) == FXBSTR_ID('%', '!', 0, 0)) {
-      ret = true;
-    }
+    uint32_t header;
+    auto span = pdfium::as_writable_bytes(pdfium::span_from_ref(header));
+    GetFontData(hFont, 0, span);
+    header = fxcrt::GetUInt32MSBFirst(span);
+    ret = header == FXBSTR_ID('O', 'T', 'T', 'O') ||
+          header == FXBSTR_ID('t', 't', 'c', 'f') ||
+          header == FXBSTR_ID('t', 'r', 'u', 'e') || header == 0x00010000 ||
+          header == 0x00020000 ||
+          (header & 0xFFFF0000) == FXBSTR_ID(0x80, 0x01, 0x00, 0x00) ||
+          (header & 0xFFFF0000) == FXBSTR_ID('%', '!', 0, 0);
   }
   DeleteFont(hFont);
   return ret;
 }
 
 void CFX_Win32FontInfo::AddInstalledFont(const LOGFONTA* plf,
-                                         uint32_t FontType) {
+                                         uint32_t font_type) {
   ByteString name(plf->lfFaceName);
   if (name.GetLength() > 0 && name[0] == '@')
     return;
 
   if (name == m_LastFamily) {
-    m_pMapper->AddInstalledFont(name, plf->lfCharSet);
+    m_pMapper->AddInstalledFont(name, FX_GetCharsetFromInt(plf->lfCharSet));
     return;
   }
-  if (!(FontType & TRUETYPE_FONTTYPE)) {
-    if (!(FontType & DEVICE_FONTTYPE) || !IsSupportFontFormDiv(plf))
+  if (!(font_type & TRUETYPE_FONTTYPE)) {
+    if (!(font_type & DEVICE_FONTTYPE) || !IsSupportedFont(plf))
       return;
   }
 
-  m_pMapper->AddInstalledFont(name, plf->lfCharSet);
+  m_pMapper->AddInstalledFont(name, FX_GetCharsetFromInt(plf->lfCharSet));
   m_LastFamily = name;
 }
 
 bool CFX_Win32FontInfo::EnumFontList(CFX_FontMapper* pMapper) {
   m_pMapper = pMapper;
-  LOGFONTA lf;
-  memset(&lf, 0, sizeof(LOGFONTA));
-  lf.lfCharSet = FX_CHARSET_Default;
+  LOGFONTA lf = {};  // Aggregate initialization.
+  static_assert(std::is_aggregate_v<decltype(lf)>);
+  lf.lfCharSet = static_cast<int>(FX_Charset::kDefault);
   lf.lfFaceName[0] = 0;
   lf.lfPitchAndFamily = 0;
-  EnumFontFamiliesExA(m_hDC, &lf, (FONTENUMPROCA)FontEnumProc, (uintptr_t)this,
-                      0);
+  EnumFontFamiliesExA(m_hDC, &lf, reinterpret_cast<FONTENUMPROCA>(FontEnumProc),
+                      reinterpret_cast<uintptr_t>(this), 0);
   return true;
 }
 
@@ -204,45 +215,65 @@ ByteString CFX_Win32FontInfo::FindFont(const ByteString& name) {
   if (!m_pMapper)
     return name;
 
-  for (size_t i = 0; i < m_pMapper->m_InstalledTTFonts.size(); ++i) {
-    ByteString thisname = m_pMapper->m_InstalledTTFonts[i];
-    if (thisname.First(name.GetLength()) == name)
-      return m_pMapper->m_InstalledTTFonts[i];
-  }
-  for (size_t i = 0; i < m_pMapper->m_LocalizedTTFonts.size(); ++i) {
-    ByteString thisname = m_pMapper->m_LocalizedTTFonts[i].first;
-    if (thisname.First(name.GetLength()) == name)
-      return m_pMapper->m_LocalizedTTFonts[i].second;
-  }
+  std::optional<ByteString> maybe_installed =
+      m_pMapper->InstalledFontNameStartingWith(name);
+  if (maybe_installed.has_value())
+    return maybe_installed.value();
+
+  std::optional<ByteString> maybe_localized =
+      m_pMapper->LocalizedFontNameStartingWith(name);
+  if (maybe_localized.has_value())
+    return maybe_localized.value();
+
   return ByteString();
+}
+
+void* CFX_Win32FontInfo::GetFontFromList(
+    int weight,
+    bool italic,
+    FX_Charset charset,
+    int pitch_family,
+    pdfium::span<const char* const> font_faces) {
+  DCHECK(!font_faces.empty());
+
+  // Initialization not needed because of DCHECK() above and the assignment in
+  // the for-loop below.
+  HFONT font;
+  for (const char* face : font_faces) {
+    font = Win32CreateFont(weight, italic, charset, pitch_family, face);
+    ByteString actual_face;
+    if (GetFaceName(font, &actual_face) && actual_face.EqualNoCase(face))
+      break;
+  }
+  return font;
 }
 
 void* CFX_Win32FallbackFontInfo::MapFont(int weight,
                                          bool bItalic,
-                                         int charset,
+                                         FX_Charset charset,
                                          int pitch_family,
-                                         const char* cstr_face) {
-  void* font = GetSubstFont(cstr_face);
+                                         const ByteString& face) {
+  void* font = GetSubstFont(face);
   if (font)
     return font;
 
   bool bCJK = true;
   switch (charset) {
-    case FX_CHARSET_ShiftJIS:
-    case FX_CHARSET_ChineseSimplified:
-    case FX_CHARSET_ChineseTraditional:
-    case FX_CHARSET_Hangul:
+    case FX_Charset::kShiftJIS:
+    case FX_Charset::kChineseSimplified:
+    case FX_Charset::kChineseTraditional:
+    case FX_Charset::kHangul:
       break;
     default:
       bCJK = false;
       break;
   }
-  return FindFont(weight, bItalic, charset, pitch_family, cstr_face, !bCJK);
+  return FindFont(weight, bItalic, charset, pitch_family, face, !bCJK);
 }
 
 void CFX_Win32FontInfo::GetGBPreference(ByteString& face,
                                         int weight,
-                                        int picth_family) {
+                                        int pitch_family) {
   if (face.Contains("KaiTi") || face.Contains("\xbf\xac")) {
     if (m_KaiTi.IsEmpty()) {
       m_KaiTi = FindFont("KaiTi");
@@ -263,7 +294,7 @@ void CFX_Win32FontInfo::GetGBPreference(ByteString& face,
     face = "SimSun";
   } else if (face.Contains("SimHei") || face.Contains("\xba\xda")) {
     face = "SimHei";
-  } else if (!(picth_family & FF_ROMAN) && weight > 550) {
+  } else if (!(pitch_family & FF_ROMAN) && weight > 550) {
     face = "SimHei";
   } else {
     face = "SimSun";
@@ -272,7 +303,7 @@ void CFX_Win32FontInfo::GetGBPreference(ByteString& face,
 
 void CFX_Win32FontInfo::GetJapanesePreference(ByteString& face,
                                               int weight,
-                                              int picth_family) {
+                                              int pitch_family) {
   if (face.Contains("Gothic") ||
       face.Contains("\x83\x53\x83\x56\x83\x62\x83\x4e")) {
     if (face.Contains("PGothic") ||
@@ -300,7 +331,7 @@ void CFX_Win32FontInfo::GetJapanesePreference(ByteString& face,
   if (GetSubFontName(&face))
     return;
 
-  if (!(picth_family & FF_ROMAN) && weight > 400) {
+  if (!(pitch_family & FF_ROMAN) && weight > 400) {
     face = "MS PGothic";
   } else {
     face = "MS PMincho";
@@ -309,118 +340,112 @@ void CFX_Win32FontInfo::GetJapanesePreference(ByteString& face,
 
 void* CFX_Win32FontInfo::MapFont(int weight,
                                  bool bItalic,
-                                 int charset,
+                                 FX_Charset charset,
                                  int pitch_family,
-                                 const char* cstr_face) {
-  ByteString face = cstr_face;
-  int iBaseFont;
-  for (iBaseFont = 0; iBaseFont < 12; iBaseFont++) {
-    if (face == ByteStringView(g_Base14Substs[iBaseFont].m_pName)) {
-      face = g_Base14Substs[iBaseFont].m_pWinName;
-      weight = g_Base14Substs[iBaseFont].m_bBold ? FW_BOLD : FW_NORMAL;
-      bItalic = g_Base14Substs[iBaseFont].m_bItalic;
+                                 const ByteString& face) {
+  ByteString new_face = face;
+  for (int iBaseFont = 0; iBaseFont < 12; iBaseFont++) {
+    if (new_face == ByteStringView(kBase14Substs[iBaseFont].m_pName)) {
+      new_face = kBase14Substs[iBaseFont].m_pWinName;
+      weight = kBase14Substs[iBaseFont].m_bBold ? FW_BOLD : FW_NORMAL;
+      bItalic = kBase14Substs[iBaseFont].m_bItalic;
       break;
     }
   }
-  if (charset == FX_CHARSET_ANSI || charset == FX_CHARSET_Symbol)
-    charset = FX_CHARSET_Default;
+  if (charset == FX_Charset::kANSI || charset == FX_Charset::kSymbol)
+    charset = FX_Charset::kDefault;
 
-  int subst_pitch_family = pitch_family;
+  int subst_pitch_family;
   switch (charset) {
-    case FX_CHARSET_ShiftJIS:
+    case FX_Charset::kShiftJIS:
       subst_pitch_family = FF_ROMAN;
       break;
-    case FX_CHARSET_ChineseTraditional:
-    case FX_CHARSET_Hangul:
-    case FX_CHARSET_ChineseSimplified:
+    case FX_Charset::kChineseTraditional:
+    case FX_Charset::kHangul:
+    case FX_Charset::kChineseSimplified:
       subst_pitch_family = 0;
       break;
+    default:
+      subst_pitch_family = pitch_family;
+      break;
   }
-  HFONT hFont =
-      ::CreateFontA(-10, 0, 0, 0, weight, bItalic, 0, 0, charset,
-                    OUT_TT_ONLY_PRECIS, 0, 0, subst_pitch_family, face.c_str());
-  char facebuf[100];
-  HFONT hOldFont = (HFONT)::SelectObject(m_hDC, hFont);
-  ::GetTextFaceA(m_hDC, 100, facebuf);
-  ::SelectObject(m_hDC, hOldFont);
-  if (face.EqualNoCase(facebuf))
+  HFONT hFont = Win32CreateFont(weight, bItalic, charset, subst_pitch_family,
+                                new_face.c_str());
+  ByteString actual_new_face;
+  if (GetFaceName(hFont, &actual_new_face) &&
+      new_face.EqualNoCase(actual_new_face.AsStringView())) {
     return hFont;
+  }
 
-  WideString wsFace = WideString::FromDefANSI(facebuf);
-  for (size_t i = 0; i < pdfium::size(g_VariantNames); ++i) {
-    if (face != g_VariantNames[i].m_pFaceName)
+  WideString wsFace = WideString::FromDefANSI(actual_new_face.AsStringView());
+  for (const Variant& variant : kVariantNames) {
+    if (new_face != variant.m_pFaceName)
       continue;
 
-    const unsigned short* pName = reinterpret_cast<const unsigned short*>(
-        g_VariantNames[i].m_pVariantName);
-    size_t len = WideString::WStringLength(pName);
-    WideString wsName = WideString::FromUTF16LE(pName, len);
+    WideString wsName(variant.m_pVariantName);
     if (wsFace == wsName)
       return hFont;
   }
   ::DeleteObject(hFont);
-  if (charset == FX_CHARSET_Default)
+  if (charset == FX_Charset::kDefault)
     return nullptr;
 
   switch (charset) {
-    case FX_CHARSET_ShiftJIS:
-      GetJapanesePreference(face, weight, pitch_family);
+    case FX_Charset::kShiftJIS:
+      GetJapanesePreference(new_face, weight, pitch_family);
       break;
-    case FX_CHARSET_ChineseSimplified:
-      GetGBPreference(face, weight, pitch_family);
+    case FX_Charset::kChineseSimplified:
+      GetGBPreference(new_face, weight, pitch_family);
       break;
-    case FX_CHARSET_Hangul:
-      face = "Gulim";
+    case FX_Charset::kHangul:
+      new_face = "Gulim";
       break;
-    case FX_CHARSET_ChineseTraditional:
-      if (face.Contains("MSung")) {
-        face = "MingLiU";
-      } else {
-        face = "PMingLiU";
-      }
+    case FX_Charset::kChineseTraditional: {
+      static const char* const kMonospaceFonts[] = {"Microsoft YaHei",
+                                                    "MingLiU"};
+      static const char* const kProportionalFonts[] = {"Microsoft JHengHei",
+                                                       "PMingLiU"};
+      pdfium::span<const char* const> candidate_fonts =
+          new_face.Contains("MSung") ? kMonospaceFonts : kProportionalFonts;
+      return GetFontFromList(weight, bItalic, charset, subst_pitch_family,
+                             candidate_fonts);
+    }
+    default:
       break;
   }
-  hFont =
-      ::CreateFontA(-10, 0, 0, 0, weight, bItalic, 0, 0, charset,
-                    OUT_TT_ONLY_PRECIS, 0, 0, subst_pitch_family, face.c_str());
-  return hFont;
+  return Win32CreateFont(weight, bItalic, charset, subst_pitch_family,
+                         new_face.c_str());
 }
 
 void CFX_Win32FontInfo::DeleteFont(void* hFont) {
   ::DeleteObject(hFont);
 }
 
-uint32_t CFX_Win32FontInfo::GetFontData(void* hFont,
-                                        uint32_t table,
-                                        pdfium::span<uint8_t> buffer) {
-  HFONT hOldFont = (HFONT)::SelectObject(m_hDC, (HFONT)hFont);
-  table = FXDWORD_GET_MSBFIRST(reinterpret_cast<uint8_t*>(&table));
-  uint32_t size = ::GetFontData(m_hDC, table, 0, buffer.data(), buffer.size());
-  ::SelectObject(m_hDC, hOldFont);
-  if (size == GDI_ERROR) {
-    return 0;
-  }
-  return size;
+size_t CFX_Win32FontInfo::GetFontData(void* hFont,
+                                      uint32_t table,
+                                      pdfium::span<uint8_t> buffer) {
+  pdfium::ScopedSelectObject select_object(m_hDC, static_cast<HFONT>(hFont));
+  table = fxcrt::FromBE32(table);
+  size_t size = ::GetFontData(m_hDC, table, 0, buffer.data(),
+                              pdfium::checked_cast<DWORD>(buffer.size()));
+  return size != GDI_ERROR ? size : 0;
 }
 
 bool CFX_Win32FontInfo::GetFaceName(void* hFont, ByteString* name) {
+  pdfium::ScopedSelectObject select_object(m_hDC, static_cast<HFONT>(hFont));
   char facebuf[100];
-  HFONT hOldFont = (HFONT)::SelectObject(m_hDC, (HFONT)hFont);
-  int ret = ::GetTextFaceA(m_hDC, 100, facebuf);
-  ::SelectObject(m_hDC, hOldFont);
-  if (ret == 0) {
+  if (::GetTextFaceA(m_hDC, std::size(facebuf), facebuf) == 0)
     return false;
-  }
+
   *name = facebuf;
   return true;
 }
 
-bool CFX_Win32FontInfo::GetFontCharset(void* hFont, int* charset) {
+bool CFX_Win32FontInfo::GetFontCharset(void* hFont, FX_Charset* charset) {
+  pdfium::ScopedSelectObject select_object(m_hDC, static_cast<HFONT>(hFont));
   TEXTMETRIC tm;
-  HFONT hOldFont = (HFONT)::SelectObject(m_hDC, (HFONT)hFont);
   ::GetTextMetrics(m_hDC, &tm);
-  ::SelectObject(m_hDC, hOldFont);
-  *charset = tm.tmCharSet;
+  *charset = FX_GetCharsetFromInt(tm.tmCharSet);
   return true;
 }
 
@@ -431,18 +456,27 @@ CWin32Platform::CWin32Platform() = default;
 CWin32Platform::~CWin32Platform() = default;
 
 void CWin32Platform::Init() {
-  OSVERSIONINFO ver;
-  ver.dwOSVersionInfoSize = sizeof(ver);
-  GetVersionEx(&ver);
-  m_bHalfTone = ver.dwMajorVersion >= 5;
-  if (pdfium::base::win::IsUser32AndGdi32Available())
+  if (pdfium::IsUser32AndGdi32Available()) {
     m_GdiplusExt.Load();
+  }
 }
 
 std::unique_ptr<SystemFontInfoIface>
 CWin32Platform::CreateDefaultSystemFontInfo() {
-  if (pdfium::base::win::IsUser32AndGdi32Available())
+  auto** user_paths = CFX_GEModule::Get()->GetUserFontPaths();
+  if (user_paths) {
+    auto font_info = std::make_unique<CFX_Win32FallbackFontInfo>();
+    UNSAFE_TODO({
+      for (; *user_paths; user_paths++) {
+        font_info->AddPath(*user_paths);
+      }
+    });
+    return font_info;
+  }
+
+  if (pdfium::IsUser32AndGdi32Available()) {
     return std::make_unique<CFX_Win32FontInfo>();
+  }
 
   // Select the fallback font information class if GDI is disabled.
   auto fallback_info = std::make_unique<CFX_Win32FallbackFontInfo>();

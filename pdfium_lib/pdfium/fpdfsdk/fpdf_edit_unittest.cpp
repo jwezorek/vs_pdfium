@@ -1,16 +1,13 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "public/fpdf_edit.h"
 
-#include "core/fpdfapi/page/cpdf_pagemodule.h"
+#include "core/fpdfapi/page/test_with_page_module.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-class PDFEditTest : public testing::Test {
-  void SetUp() override { CPDF_PageModule::Create(); }
-  void TearDown() override { CPDF_PageModule::Destroy(); }
-};
+using PDFEditTest = TestWithPageModule;
 
 TEST_F(PDFEditTest, LineJoin) {
   EXPECT_FALSE(FPDFPageObj_SetLineJoin(nullptr, -1));

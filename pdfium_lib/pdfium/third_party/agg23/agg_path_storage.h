@@ -50,6 +50,10 @@ public:
     };
     ~path_storage();
     path_storage();
+    path_storage(path_storage&& other);
+    path_storage& operator=(path_storage&&) = delete;
+    path_storage(const path_storage&) = delete;
+    path_storage& operator=(const path_storage&) = delete;
     unsigned last_vertex(float* x, float* y) const;
     unsigned prev_vertex(float* x, float* y) const;
     void move_to(float x, float y);
@@ -70,22 +74,6 @@ public:
                 cmd = path_cmd_line_to;
             }
             add_vertex(x, y, cmd);
-        }
-    }
-    template<class VertexSource>
-    void add_path_curve(VertexSource& vs,
-                        unsigned path_id = 0,
-                        bool solid_path = true)
-    {
-        float x, y;
-        unsigned cmd;
-        int flag;
-        vs.rewind(path_id);
-        while(!is_stop(cmd = vs.vertex_curve_flag(&x, &y, flag))) {
-            if(is_move_to(cmd) && solid_path && m_total_vertices) {
-                cmd = path_cmd_line_to | flag;
-            }
-            add_vertex(x, y, cmd | flag);
         }
     }
     unsigned total_vertices() const
@@ -116,12 +104,12 @@ private:
     void allocate_block(unsigned nb);
     unsigned char* storage_ptrs(float** xy_ptr);
 private:
-    unsigned        m_total_vertices;
-    unsigned        m_total_blocks;
-    unsigned        m_max_blocks;
-    float**   m_coord_blocks;
-    unsigned char** m_cmd_blocks;
-    unsigned        m_iterator;
+    unsigned        m_total_vertices = 0;
+    unsigned        m_total_blocks = 0;
+    unsigned        m_max_blocks = 0;
+    float**         m_coord_blocks = nullptr;
+    unsigned char** m_cmd_blocks = nullptr;
+    unsigned        m_iterator = 0;
 };
 inline unsigned path_storage::vertex(float* x, float* y)
 {

@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,14 +6,17 @@
 
 #include "core/fxge/dib/cfx_imagestretcher.h"
 
-#include <climits>
+#include <utility>
+
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/check_op.h"
+#include "core/fxcrt/data_vector.h"
 #include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/span.h"
 #include "core/fxge/dib/cfx_dibbase.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
 #include "core/fxge/dib/cstretchengine.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
 
 namespace {
 
@@ -34,21 +37,45 @@ FXDIB_Format GetStretchedFormat(const CFX_DIBBase& src) {
   return format;
 }
 
+// Builds a new palette with a size of `CFX_DIBBase::kPaletteSize` from the
+// existing palette in `source`.
+DataVector<uint32_t> BuildPaletteFrom1BppSource(
+    const RetainPtr<const CFX_DIBBase>& source) {
+  DCHECK_EQ(FXDIB_Format::k1bppRgb, source->GetFormat());
+  DCHECK(source->HasPalette());
+
+  const FX_BGRA_STRUCT<uint8_t> bgra0 =
+      ArgbToBGRAStruct(source->GetPaletteArgb(0));
+  const FX_BGRA_STRUCT<uint8_t> bgra1 =
+      ArgbToBGRAStruct(source->GetPaletteArgb(1));
+  CHECK_EQ(255, bgra0.alpha);
+  CHECK_EQ(255, bgra1.alpha);
+
+  DataVector<uint32_t> palette(CFX_DIBBase::kPaletteSize);
+  for (int i = 0; i < static_cast<int>(CFX_DIBBase::kPaletteSize); ++i) {
+    int r = bgra0.red + (bgra1.red - bgra0.red) * i / 255;
+    int g = bgra0.green + (bgra1.green - bgra0.green) * i / 255;
+    int b = bgra0.blue + (bgra1.blue - bgra0.blue) * i / 255;
+    palette[i] = ArgbEncode(255, r, g, b);
+  }
+  return palette;
+}
+
 }  // namespace
 
 CFX_ImageStretcher::CFX_ImageStretcher(ScanlineComposerIface* pDest,
-                                       const RetainPtr<CFX_DIBBase>& pSource,
+                                       RetainPtr<const CFX_DIBBase> source,
                                        int dest_width,
                                        int dest_height,
                                        const FX_RECT& bitmap_rect,
                                        const FXDIB_ResampleOptions& options)
     : m_pDest(pDest),
-      m_pSource(pSource),
+      m_pSource(std::move(source)),
       m_ResampleOptions(options),
       m_DestWidth(dest_width),
       m_DestHeight(dest_height),
       m_ClipRect(bitmap_rect),
-      m_DestFormat(GetStretchedFormat(*pSource)) {
+      m_DestFormat(GetStretchedFormat(*m_pSource)) {
   DCHECK(m_ClipRect.Valid());
 }
 
@@ -60,26 +87,8 @@ bool CFX_ImageStretcher::Start() {
 
   if (m_pSource->GetFormat() == FXDIB_Format::k1bppRgb &&
       m_pSource->HasPalette()) {
-    FX_ARGB pal[256];
-    int a0;
-    int r0;
-    int g0;
-    int b0;
-    std::tie(a0, r0, g0, b0) = ArgbDecode(m_pSource->GetPaletteArgb(0));
-    int a1;
-    int r1;
-    int g1;
-    int b1;
-    std::tie(a1, r1, g1, b1) = ArgbDecode(m_pSource->GetPaletteArgb(1));
-    for (int i = 0; i < 256; ++i) {
-      int a = a0 + (a1 - a0) * i / 255;
-      int r = r0 + (r1 - r0) * i / 255;
-      int g = g0 + (g1 - g0) * i / 255;
-      int b = b0 + (b1 - b0) * i / 255;
-      pal[i] = ArgbEncode(a, r, g, b);
-    }
     if (!m_pDest->SetInfo(m_ClipRect.Width(), m_ClipRect.Height(), m_DestFormat,
-                          pal)) {
+                          BuildPaletteFrom1BppSource(m_pSource))) {
       return false;
     }
   } else if (!m_pDest->SetInfo(m_ClipRect.Width(), m_ClipRect.Height(),
@@ -93,14 +102,14 @@ bool CFX_ImageStretcher::Continue(PauseIndicatorIface* pPause) {
   return ContinueStretch(pPause);
 }
 
-RetainPtr<CFX_DIBBase> CFX_ImageStretcher::source() {
+RetainPtr<const CFX_DIBBase> CFX_ImageStretcher::source() {
   return m_pSource;
 }
 
 bool CFX_ImageStretcher::StartStretch() {
   m_pStretchEngine = std::make_unique<CStretchEngine>(
-      m_pDest.Get(), m_DestFormat, m_DestWidth, m_DestHeight, m_ClipRect,
-      m_pSource, m_ResampleOptions);
+      m_pDest, m_DestFormat, m_DestWidth, m_DestHeight, m_ClipRect, m_pSource,
+      m_ResampleOptions);
   m_pStretchEngine->StartStretchHorz();
   if (SourceSizeWithinLimit(m_pSource->GetWidth(), m_pSource->GetHeight())) {
     m_pStretchEngine->Continue(nullptr);

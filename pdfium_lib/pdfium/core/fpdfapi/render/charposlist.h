@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,11 @@
 #ifndef CORE_FPDFAPI_RENDER_CHARPOSLIST_H_
 #define CORE_FPDFAPI_RENDER_CHARPOSLIST_H_
 
+#include <stdint.h>
+
 #include <vector>
 
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/span.h"
 
 class CPDF_Font;
 class TextCharPos;

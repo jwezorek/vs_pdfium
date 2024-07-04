@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,10 +10,11 @@
 #include <memory>
 #include <vector>
 
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/bytestring.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "v8/include/cppgc/persistent.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
+#include "v8/include/v8-persistent-handle.h"
 
 class CFXJSE_Class;
 class CFXJSE_HostObject;
@@ -23,6 +24,17 @@ struct FXJSE_CLASS_DESCRIPTOR;
 
 class CFXJSE_Context {
  public:
+  struct ExecutionResult {
+    ExecutionResult();
+    ExecutionResult(bool sts, std::unique_ptr<CFXJSE_Value> val);
+    ExecutionResult(ExecutionResult&& that) noexcept;
+    ExecutionResult& operator=(ExecutionResult&& that) noexcept;
+    ~ExecutionResult();
+
+    bool status = false;
+    std::unique_ptr<CFXJSE_Value> value;
+  };
+
   static std::unique_ptr<CFXJSE_Context> Create(
       v8::Isolate* pIsolate,
       const FXJSE_CLASS_DESCRIPTOR* pGlobalClass,
@@ -31,7 +43,7 @@ class CFXJSE_Context {
 
   ~CFXJSE_Context();
 
-  v8::Isolate* GetIsolate() const { return m_pIsolate.Get(); }
+  v8::Isolate* GetIsolate() const { return m_pIsolate; }
   v8::Local<v8::Context> GetContext();
   v8::Local<v8::Object> GetGlobalObject();
 
@@ -39,10 +51,9 @@ class CFXJSE_Context {
   CFXJSE_Class* GetClassByName(ByteStringView szName) const;
   void EnableCompatibleMode();
 
-  // Note: `lpNewThisObject` may be empty.
-  bool ExecuteScript(const char* szScript,
-                     CFXJSE_Value* lpRetValue,
-                     v8::Local<v8::Object> lpNewThisObject);
+  // Note: `pNewThisObject` may be empty.
+  ExecutionResult ExecuteScript(ByteStringView bsScript,
+                                v8::Local<v8::Object> pNewThisObject);
 
  private:
   CFXJSE_Context(v8::Isolate* pIsolate, CXFA_ThisProxy* pProxy);
@@ -56,7 +67,7 @@ class CFXJSE_Context {
 };
 
 void FXJSE_UpdateObjectBinding(v8::Local<v8::Object> hObject,
-                               CFXJSE_HostObject* lpNewBinding);
+                               CFXJSE_HostObject* pNewBinding);
 
 void FXJSE_ClearObjectBinding(v8::Local<v8::Object> hJSObject);
 CFXJSE_HostObject* FXJSE_RetrieveObjectBinding(v8::Local<v8::Value> hValue);

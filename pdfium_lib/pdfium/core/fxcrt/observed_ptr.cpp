@@ -1,11 +1,11 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fxcrt/observed_ptr.h"
 
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/containers/contains.h"
 
 namespace fxcrt {
 

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -70,10 +70,10 @@ class CPDF_HintTables {
 
   static std::unique_ptr<CPDF_HintTables> Parse(
       CPDF_SyntaxParser* parser,
-      CPDF_LinearizedHeader* pLinearized);
+      const CPDF_LinearizedHeader* pLinearized);
 
   CPDF_HintTables(CPDF_ReadValidator* pValidator,
-                  CPDF_LinearizedHeader* pLinearized);
+                  const CPDF_LinearizedHeader* pLinearized);
   virtual ~CPDF_HintTables();
 
   bool GetPagePos(uint32_t index,
@@ -99,17 +99,12 @@ class CPDF_HintTables {
  private:
   FX_FILESIZE HintsOffsetToFileOffset(uint32_t hints_offset) const;
 
-  // Owned by |m_pDataAvail|.
-  UnownedPtr<CPDF_ReadValidator> m_pValidator;
-
-  // Owned by |m_pDataAvail|.
-  UnownedPtr<CPDF_LinearizedHeader> const m_pLinearized;
-
-  uint32_t m_nFirstPageSharedObjs;
-  FX_FILESIZE m_szFirstPageObjOffset;
-
+  uint32_t m_nFirstPageSharedObjs = 0;
+  FX_FILESIZE m_szFirstPageObjOffset = 0;
   std::vector<PageInfo> m_PageInfos;
   std::vector<SharedObjGroupInfo> m_SharedObjGroupInfos;
+  UnownedPtr<CPDF_ReadValidator> m_pValidator;
+  UnownedPtr<const CPDF_LinearizedHeader> const m_pLinearized;
 };
 
 #endif  // CORE_FPDFAPI_PARSER_CPDF_HINT_TABLES_H_

@@ -1,7 +1,7 @@
 /*************************************************************************
  *
  *   © 2016 and later: Unicode, Inc. and others.
- *   License & terms of use: http://www.unicode.org/copyright.html#License
+ *   License & terms of use: http://www.unicode.org/copyright.html
  *
  *************************************************************************
  *************************************************************************
@@ -45,19 +45,19 @@ const char gHelpString[] =
  *    These global variables are set according to the options specified
  *    on the command line by the user.
  */
-char * opt_locale     = "en_US";
-char * opt_rules      = 0;
-UBool  opt_help       = FALSE;
-UBool  opt_norm       = FALSE;
-UBool  opt_french     = FALSE;
-UBool  opt_shifted    = FALSE;
-UBool  opt_lower      = FALSE;
-UBool  opt_upper      = FALSE;
-UBool  opt_case       = FALSE;
+char const *opt_locale     = "en_US";
+char *opt_rules       = nullptr;
+UBool  opt_help       = false;
+UBool  opt_norm       = false;
+UBool  opt_french     = false;
+UBool  opt_shifted    = false;
+UBool  opt_lower      = false;
+UBool  opt_upper      = false;
+UBool  opt_case       = false;
 int    opt_level      = 0;
-char * opt_source     = "abc";
-char * opt_target     = "abd";
-UCollator * collator  = 0;
+char const *opt_source     = "abc";
+char const *opt_target     = "abd";
+UCollator *collator   = nullptr;
 
 /** 
  * Definitions for the command line options
@@ -82,7 +82,7 @@ OptSpec opts[] = {
     {"-level",       OptSpec::NUM,    &opt_level},
     {"-help",        OptSpec::FLAG,   &opt_help},
     {"-?",           OptSpec::FLAG,   &opt_help},
-    {0, OptSpec::FLAG, 0}
+    {nullptr,        OptSpec::FLAG,   nullptr}
 };
 
 /**  
@@ -93,18 +93,18 @@ UBool processOptions(int argc, const char **argv, OptSpec opts[])
     for (int argNum = 1; argNum < argc; argNum ++) {
         const char *pArgName = argv[argNum];
         OptSpec *pOpt;
-        for (pOpt = opts;  pOpt->name != 0; pOpt ++) {
+        for (pOpt = opts; pOpt->name != nullptr; pOpt++) {
             if (strcmp(pOpt->name, pArgName) == 0) {
                 switch (pOpt->type) {
                 case OptSpec::FLAG:
-                    *(UBool *)(pOpt->pVar) = TRUE;
+                    *(UBool *)(pOpt->pVar) = true;
                     break;
                 case OptSpec::STRING:
                     argNum ++;
                     if (argNum >= argc) {
                         fprintf(stderr, "value expected for \"%s\" option.\n", 
 							    pOpt->name);
-                        return FALSE;
+                        return false;
                     }
                     *(const char **)(pOpt->pVar) = argv[argNum];
                     break;
@@ -113,7 +113,7 @@ UBool processOptions(int argc, const char **argv, OptSpec opts[])
                     if (argNum >= argc) {
                         fprintf(stderr, "value expected for \"%s\" option.\n", 
 							    pOpt->name);
-                        return FALSE;
+                        return false;
                     }
                     char *endp;
                     int i = strtol(argv[argNum], &endp, 0);
@@ -121,20 +121,20 @@ UBool processOptions(int argc, const char **argv, OptSpec opts[])
                         fprintf(stderr, 
 							    "integer value expected for \"%s\" option.\n", 
 								pOpt->name);
-                        return FALSE;
+                        return false;
                     }
                     *(int *)(pOpt->pVar) = i;
                 }
                 break;
             }
         }
-        if (pOpt->name == 0)
+        if (pOpt->name == nullptr)
         {
             fprintf(stderr, "Unrecognized option \"%s\"\n", pArgName);
-            return FALSE;
+            return false;
         }
     }
-	return TRUE;
+	return true;
 }
 
 /**
@@ -142,8 +142,8 @@ UBool processOptions(int argc, const char **argv, OptSpec opts[])
  */
 int strcmp() 
 {
-	UChar source[100];
-	UChar target[100];
+	char16_t source[100];
+	char16_t target[100];
 	u_unescape(opt_source, source, 100);
 	u_unescape(opt_target, target, 100);
     UCollationResult result = ucol_strcoll(collator, source, -1, target, -1);
@@ -163,19 +163,19 @@ UBool processCollator()
 {
 	// Set up an ICU collator
     UErrorCode status = U_ZERO_ERROR;
-	UChar rules[100];
+	char16_t rules[100];
 
-    if (opt_rules != 0) {
+    if (opt_rules != nullptr) {
 		u_unescape(opt_rules, rules, 100);
         collator = ucol_openRules(rules, -1, UCOL_OFF, UCOL_TERTIARY, 
-			                  NULL, &status);
+			                  nullptr, &status);
     }
     else {
         collator = ucol_open(opt_locale, &status);
     }
 	if (U_FAILURE(status)) {
         fprintf(stderr, "Collator creation failed.: %d\n", status);
-        return FALSE;
+        return false;
     }
     if (status == U_USING_DEFAULT_WARNING) {
         fprintf(stderr, "Warning, U_USING_DEFAULT_WARNING for %s\n", 
@@ -228,14 +228,14 @@ UBool processCollator()
             break;
         default:
             fprintf(stderr, "-level param must be between 1 and 5\n");
-            return FALSE;
+            return false;
         }
     }
     if (U_FAILURE(status)) {
         fprintf(stderr, "Collator attribute setting failed.: %d\n", status);
-        return FALSE;
+        return false;
     }
-	return TRUE;
+	return true;
 }
 
 /** 
@@ -244,12 +244,12 @@ UBool processCollator()
  */
 int main(int argc, const char** argv) 
 {
-    if (processOptions(argc, argv, opts) != TRUE || opt_help) {
+    if (!static_cast<bool>(processOptions(argc, argv, opts)) || static_cast<bool>(opt_help)) {
         printf(gHelpString);
         return -1;
     }
 
-    if (processCollator() != TRUE) {
+    if (!static_cast<bool>(processCollator())) {
 		fprintf(stderr, "Error creating collator for comparison\n");
 		return -1;
 	}

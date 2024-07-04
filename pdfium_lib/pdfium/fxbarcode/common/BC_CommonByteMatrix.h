@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,30 +9,27 @@
 
 #include <stdint.h>
 
-#include <vector>
-
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_system.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/span.h"
 
 class CBC_CommonByteMatrix final {
  public:
-  CBC_CommonByteMatrix(int32_t width, int32_t height);
+  CBC_CommonByteMatrix(size_t width, size_t height);
   ~CBC_CommonByteMatrix();
 
-  int32_t GetWidth() const { return m_width; }
-  int32_t GetHeight() const { return m_height; }
+  size_t GetWidth() const { return m_width; }
+  size_t GetHeight() const { return m_height; }
   pdfium::span<const uint8_t> GetArray() const { return m_bytes; }
-  uint8_t Get(int32_t x, int32_t y) const;
+  DataVector<uint8_t> TakeArray();
 
-  void Set(int32_t x, int32_t y, int32_t value);
-  void Set(int32_t x, int32_t y, uint8_t value);
-  void clear(uint8_t value);
+  uint8_t Get(size_t x, size_t y) const;
+  void Set(size_t x, size_t y, uint8_t value);
+  void Fill(uint8_t value);
 
  private:
-  int32_t m_width;
-  int32_t m_height;
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> m_bytes;
+  const size_t m_width;
+  const size_t m_height;
+  DataVector<uint8_t> m_bytes;
 };
 
 #endif  // FXBARCODE_COMMON_BC_COMMONBYTEMATRIX_H_

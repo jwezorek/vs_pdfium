@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,18 +15,19 @@ TextGlyphPos::TextGlyphPos(const TextGlyphPos&) = default;
 
 TextGlyphPos::~TextGlyphPos() = default;
 
-Optional<CFX_Point> TextGlyphPos::GetOrigin(const CFX_Point& offset) const {
+std::optional<CFX_Point> TextGlyphPos::GetOrigin(
+    const CFX_Point& offset) const {
   FX_SAFE_INT32 left = m_Origin.x;
   left += m_pGlyph->left();
   left -= offset.x;
   if (!left.IsValid())
-    return {};
+    return std::nullopt;
 
   FX_SAFE_INT32 top = m_Origin.y;
   top -= m_pGlyph->top();
   top -= offset.y;
   if (!top.IsValid())
-    return {};
+    return std::nullopt;
 
   return CFX_Point(left.ValueOrDie(), top.ValueOrDie());
 }

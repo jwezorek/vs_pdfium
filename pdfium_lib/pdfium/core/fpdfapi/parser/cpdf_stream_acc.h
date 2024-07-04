@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,14 +7,16 @@
 #ifndef CORE_FPDFAPI_PARSER_CPDF_STREAM_ACC_H_
 #define CORE_FPDFAPI_PARSER_CPDF_STREAM_ACC_H_
 
+#include <stdint.h>
+
 #include <memory>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
-#include "core/fxcrt/maybe_owned.h"
+#include "core/fxcrt/bytestring.h"
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/raw_span.h"
 #include "core/fxcrt/retain_ptr.h"
-#include "third_party/base/span.h"
+#include "core/fxcrt/span.h"
+#include "third_party/abseil-cpp/absl/types/variant.h"
 
 class CPDF_Dictionary;
 class CPDF_Stream;
@@ -31,34 +33,38 @@ class CPDF_StreamAcc final : public Retainable {
   void LoadAllDataImageAcc(uint32_t estimated_size);
   void LoadAllDataRaw();
 
-  const CPDF_Stream* GetStream() const { return m_pStream.Get(); }
-  const CPDF_Dictionary* GetDict() const;
+  RetainPtr<const CPDF_Stream> GetStream() const;
+  RetainPtr<const CPDF_Dictionary> GetImageParam() const;
 
-  uint8_t* GetData() const;
   uint32_t GetSize() const;
-  pdfium::span<uint8_t> GetSpan();
   pdfium::span<const uint8_t> GetSpan() const;
-  ByteString ComputeDigest() const;
+  uint64_t KeyForCache() const;
+  DataVector<uint8_t> ComputeDigest() const;
   ByteString GetImageDecoder() const { return m_ImageDecoder; }
-  const CPDF_Dictionary* GetImageParam() const { return m_pImageParam.Get(); }
-  std::unique_ptr<uint8_t, FxFreeDeleter> DetachData();
+  DataVector<uint8_t> DetachData();
+
+  int GetLength1ForTest() const;
 
  private:
-  explicit CPDF_StreamAcc(const CPDF_Stream* pStream);
+  explicit CPDF_StreamAcc(RetainPtr<const CPDF_Stream> pStream);
   ~CPDF_StreamAcc() override;
 
   void LoadAllData(bool bRawAccess, uint32_t estimated_size, bool bImageAcc);
   void ProcessRawData();
   void ProcessFilteredData(uint32_t estimated_size, bool bImageAcc);
 
-  // Reads the raw data from |m_pStream|, or return nullptr on failure.
-  std::unique_ptr<uint8_t, FxFreeDeleter> ReadRawStream() const;
+  // Returns the raw data from `m_pStream`, or no data on failure.
+  DataVector<uint8_t> ReadRawStream() const;
 
-  MaybeOwned<uint8_t, FxFreeDeleter> m_pData;
-  uint32_t m_dwSize = 0;
+  bool is_owned() const {
+    return absl::holds_alternative<DataVector<uint8_t>>(m_Data);
+  }
+
   ByteString m_ImageDecoder;
   RetainPtr<const CPDF_Dictionary> m_pImageParam;
+  // Needs to outlive `m_Data` when the data is not owned.
   RetainPtr<const CPDF_Stream> const m_pStream;
+  absl::variant<pdfium::raw_span<const uint8_t>, DataVector<uint8_t>> m_Data;
 };
 
 #endif  // CORE_FPDFAPI_PARSER_CPDF_STREAM_ACC_H_

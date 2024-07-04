@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -13,14 +13,8 @@ source_set("render") {
     "cpdf_devicebuffer.h",
     "cpdf_docrenderdata.cpp",
     "cpdf_docrenderdata.h",
-    "cpdf_imagecacheentry.cpp",
-    "cpdf_imagecacheentry.h",
-    "cpdf_imageloader.cpp",
-    "cpdf_imageloader.h",
     "cpdf_imagerenderer.cpp",
     "cpdf_imagerenderer.h",
-    "cpdf_pagerendercache.cpp",
-    "cpdf_pagerendercache.h",
     "cpdf_pagerendercontext.cpp",
     "cpdf_pagerendercontext.h",
     "cpdf_progressiverenderer.cpp",
@@ -44,7 +38,10 @@ source_set("render") {
     "cpdf_type3glyphmap.cpp",
     "cpdf_type3glyphmap.h",
   ]
-  configs += [ "../../../:pdfium_core_config" ]
+  configs += [
+    "../../../:pdfium_strict_config",
+    "../../../:pdfium_noshorten_config",
+  ]
   deps = [
     "../../../constants",
     "../../fxcodec",
@@ -54,13 +51,13 @@ source_set("render") {
     "../page",
     "../parser",
   ]
+  visibility = [ "../../../*" ]
   if (is_win) {
     sources += [
       "cpdf_windowsrenderdevice.cpp",
       "cpdf_windowsrenderdevice.h",
     ]
   }
-  visibility = [ "../../../*" ]
 }
 
 pdfium_unittest_source_set("unittests") {

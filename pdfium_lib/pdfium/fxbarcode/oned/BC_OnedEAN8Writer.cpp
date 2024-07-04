@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -22,13 +22,14 @@
 
 #include "fxbarcode/oned/BC_OnedEAN8Writer.h"
 
+#include <math.h>
+
 #include <algorithm>
-#include <cwctype>
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "core/fxcrt/fx_extension.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
 #include "core/fxge/cfx_defaultrenderdevice.h"
 #include "core/fxge/text_char_pos.h"
 #include "fxbarcode/BC_Writer.h"
@@ -38,11 +39,21 @@
 
 namespace {
 
-const int8_t kOnedEAN8StartPattern[3] = {1, 1, 1};
-const int8_t kOnedEAN8MiddlePattern[5] = {1, 1, 1, 1, 1};
-const int8_t kOnedEAN8LPattern[10][4] = {
-    {3, 2, 1, 1}, {2, 2, 2, 1}, {2, 1, 2, 2}, {1, 4, 1, 1}, {1, 1, 3, 2},
-    {1, 2, 3, 1}, {1, 1, 1, 4}, {1, 3, 1, 2}, {1, 2, 1, 3}, {3, 1, 1, 2}};
+const uint8_t kOnedEAN8StartPattern[3] = {1, 1, 1};
+const uint8_t kOnedEAN8MiddlePattern[5] = {1, 1, 1, 1, 1};
+
+using LPatternRow = std::array<uint8_t, 4>;
+constexpr std::array<const LPatternRow, 10> kOnedEAN8LPatternTable = {
+    {{3, 2, 1, 1},
+     {2, 2, 2, 1},
+     {2, 1, 2, 2},
+     {1, 4, 1, 1},
+     {1, 1, 3, 2},
+     {1, 2, 3, 1},
+     {1, 1, 1, 4},
+     {1, 3, 1, 2},
+     {1, 2, 1, 3},
+     {3, 1, 1, 2}}};
 
 }  // namespace
 
@@ -56,12 +67,9 @@ void CBC_OnedEAN8Writer::SetDataLength(int32_t length) {
   m_iDataLenth = 8;
 }
 
-bool CBC_OnedEAN8Writer::SetTextLocation(BC_TEXT_LOC location) {
-  if (location == BC_TEXT_LOC_BELOWEMBED) {
+void CBC_OnedEAN8Writer::SetTextLocation(BC_TEXT_LOC location) {
+  if (location == BC_TEXT_LOC::kBelowEmbed)
     m_locTextLoc = location;
-    return true;
-  }
-  return false;
 }
 
 bool CBC_OnedEAN8Writer::CheckContentValidity(WideStringView contents) {
@@ -90,101 +98,84 @@ int32_t CBC_OnedEAN8Writer::CalcChecksum(const ByteString& contents) {
   return EANCalcChecksum(contents);
 }
 
-uint8_t* CBC_OnedEAN8Writer::EncodeWithHint(const ByteString& contents,
-                                            BCFORMAT format,
-                                            int32_t& outWidth,
-                                            int32_t& outHeight,
-                                            int32_t hints) {
-  if (format != BCFORMAT_EAN_8)
-    return nullptr;
-  return CBC_OneDimWriter::EncodeWithHint(contents, format, outWidth, outHeight,
-                                          hints);
-}
-
-uint8_t* CBC_OnedEAN8Writer::EncodeImpl(const ByteString& contents,
-                                        int32_t& outLength) {
+DataVector<uint8_t> CBC_OnedEAN8Writer::Encode(const ByteString& contents) {
   if (contents.GetLength() != 8)
-    return nullptr;
+    return {};
 
-  outLength = m_codeWidth;
-  std::unique_ptr<uint8_t, FxFreeDeleter> result(
-      FX_Alloc(uint8_t, m_codeWidth));
-  int32_t pos = 0;
-  pos += AppendPattern(result.get(), pos, kOnedEAN8StartPattern, 3, true);
+  DataVector<uint8_t> result(m_codeWidth);
+  auto result_span = pdfium::make_span(result);
+  result_span = AppendPattern(result_span, kOnedEAN8StartPattern, true);
 
-  int32_t i = 0;
-  for (i = 0; i <= 3; i++) {
+  for (int i = 0; i <= 3; i++) {
     int32_t digit = FXSYS_DecimalCharToInt(contents[i]);
-    pos += AppendPattern(result.get(), pos, kOnedEAN8LPattern[digit], 4, false);
+    result_span =
+        AppendPattern(result_span, kOnedEAN8LPatternTable[digit], false);
   }
-  pos += AppendPattern(result.get(), pos, kOnedEAN8MiddlePattern, 5, false);
+  result_span = AppendPattern(result_span, kOnedEAN8MiddlePattern, false);
 
-  for (i = 4; i <= 7; i++) {
+  for (int i = 4; i <= 7; i++) {
     int32_t digit = FXSYS_DecimalCharToInt(contents[i]);
-    pos += AppendPattern(result.get(), pos, kOnedEAN8LPattern[digit], 4, true);
+    result_span =
+        AppendPattern(result_span, kOnedEAN8LPatternTable[digit], true);
   }
-  pos += AppendPattern(result.get(), pos, kOnedEAN8StartPattern, 3, true);
-  return result.release();
+  AppendPattern(result_span, kOnedEAN8StartPattern, true);
+  return result;
 }
 
 bool CBC_OnedEAN8Writer::ShowChars(WideStringView contents,
                                    CFX_RenderDevice* device,
-                                   const CFX_Matrix* matrix,
-                                   int32_t barWidth,
-                                   int32_t multiple) {
+                                   const CFX_Matrix& matrix,
+                                   int32_t barWidth) {
   if (!device)
     return false;
 
-  int32_t leftPosition = 3 * multiple;
+  constexpr float kLeftPosition = 3.0f;
   ByteString str = FX_UTF8Encode(contents);
   size_t iLength = str.GetLength();
   std::vector<TextCharPos> charpos(iLength);
   ByteString tempStr = str.First(4);
   size_t iLen = tempStr.GetLength();
-  int32_t strWidth = 7 * multiple * 4;
-  float blank = 0.0;
+  constexpr int32_t kWidth = 28;
+  float blank = 0.0f;
 
   int32_t iFontSize = static_cast<int32_t>(fabs(m_fFontSize));
   int32_t iTextHeight = iFontSize + 1;
 
   CFX_Matrix matr(m_outputHScale, 0.0, 0.0, 1.0, 0.0, 0.0);
-  CFX_FloatRect rect((float)leftPosition, (float)(m_Height - iTextHeight),
-                     (float)(leftPosition + strWidth - 0.5), (float)m_Height);
-  matr.Concat(*matrix);
+  CFX_FloatRect rect(kLeftPosition, (float)(m_Height - iTextHeight),
+                     kLeftPosition + kWidth - 0.5, (float)m_Height);
+  matr.Concat(matrix);
   FX_RECT re = matr.TransformRect(rect).GetOuterRect();
   device->FillRect(re, kBackgroundColor);
   CFX_Matrix matr1(m_outputHScale, 0.0, 0.0, 1.0, 0.0, 0.0);
-  CFX_FloatRect rect1(
-      (float)(leftPosition + 33 * multiple), (float)(m_Height - iTextHeight),
-      (float)(leftPosition + 33 * multiple + strWidth - 0.5), (float)m_Height);
-  matr1.Concat(*matrix);
+  CFX_FloatRect rect1(kLeftPosition + 33, (float)(m_Height - iTextHeight),
+                      kLeftPosition + 33 + kWidth - 0.5, (float)m_Height);
+  matr1.Concat(matrix);
   re = matr1.TransformRect(rect1).GetOuterRect();
   device->FillRect(re, kBackgroundColor);
-  strWidth = static_cast<int32_t>(strWidth * m_outputHScale);
+  int32_t strWidth = static_cast<int32_t>(kWidth * m_outputHScale);
 
-  CalcTextInfo(tempStr, charpos.data(), m_pFont.Get(), (float)strWidth,
-               iFontSize, blank);
+  pdfium::span<TextCharPos> charpos_span = pdfium::make_span(charpos);
+  CalcTextInfo(tempStr, charpos, m_pFont, (float)strWidth, iFontSize, blank);
   {
     CFX_Matrix affine_matrix1(1.0, 0.0, 0.0, -1.0,
-                              (float)leftPosition * m_outputHScale,
+                              kLeftPosition * m_outputHScale,
                               (float)(m_Height - iTextHeight + iFontSize));
-    affine_matrix1.Concat(*matrix);
-    device->DrawNormalText(iLen, charpos.data(), m_pFont.Get(),
+    affine_matrix1.Concat(matrix);
+    device->DrawNormalText(charpos_span.first(iLen), m_pFont,
                            static_cast<float>(iFontSize), affine_matrix1,
                            m_fontColor, GetTextRenderOptions());
   }
   tempStr = str.Substr(4, 4);
   iLen = tempStr.GetLength();
-  CalcTextInfo(tempStr, &charpos[4], m_pFont.Get(), (float)strWidth, iFontSize,
-               blank);
+  CalcTextInfo(tempStr, charpos_span.subspan(4), m_pFont, (float)strWidth,
+               iFontSize, blank);
   {
-    CFX_Matrix affine_matrix1(
-        1.0, 0.0, 0.0, -1.0,
-        (float)(leftPosition + 33 * multiple) * m_outputHScale,
-        (float)(m_Height - iTextHeight + iFontSize));
-    if (matrix)
-      affine_matrix1.Concat(*matrix);
-    device->DrawNormalText(iLen, &charpos[4], m_pFont.Get(),
+    CFX_Matrix affine_matrix1(1.0, 0.0, 0.0, -1.0,
+                              (kLeftPosition + 33) * m_outputHScale,
+                              (float)(m_Height - iTextHeight + iFontSize));
+    affine_matrix1.Concat(matrix);
+    device->DrawNormalText(charpos_span.subspan(4, iLen), m_pFont,
                            static_cast<float>(iFontSize), affine_matrix1,
                            m_fontColor, GetTextRenderOptions());
   }

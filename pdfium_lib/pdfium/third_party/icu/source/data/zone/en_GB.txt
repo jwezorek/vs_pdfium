@@ -1,29 +1,17 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 en_GB{
     %%Parent{"en_001"}
-    Version{"2.1.44.18"}
     zoneStrings{
-        "America:St_Barthelemy"{
-            ec{"St Barthélemy"}
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
         }
-        "America:St_Johns"{
-            ec{"St John’s"}
+        "America:Cancun"{
+            ec{"Cancun"}
         }
-        "America:St_Kitts"{
-            ec{"St Kitts"}
-        }
-        "America:St_Lucia"{
-            ec{"St Lucia"}
-        }
-        "America:St_Thomas"{
-            ec{"St Thomas"}
-        }
-        "America:St_Vincent"{
-            ec{"St Vincent"}
-        }
-        "Atlantic:St_Helena"{
-            ec{"St Helena"}
+        "America:Merida"{
+            ec{"Merida"}
         }
         "Europe:London"{
             sd{"BST"}
@@ -42,11 +30,6 @@ en_GB{
             sd{"WEST"}
             sg{"WET"}
             ss{"WET"}
-        }
-        "meta:Pierre_Miquelon"{
-            ld{"St Pierre & Miquelon Daylight Time"}
-            lg{"St Pierre & Miquelon Time"}
-            ls{"St Pierre & Miquelon Standard Time"}
         }
     }
 }

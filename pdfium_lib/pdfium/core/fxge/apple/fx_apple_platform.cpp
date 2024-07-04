@@ -1,193 +1,169 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
+#include "core/fxge/apple/fx_apple_platform.h"
+
 #include <memory>
-#include <vector>
+#include <utility>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_system.h"
-#include "core/fxge/apple/fx_mac_impl.h"
-#include "core/fxge/cfx_cliprgn.h"
-#include "core/fxge/cfx_font.h"
-#include "core/fxge/cfx_gemodule.h"
-#include "core/fxge/cfx_glyphbitmap.h"
-#include "core/fxge/cfx_glyphcache.h"
-#include "core/fxge/cfx_renderdevice.h"
-#include "core/fxge/cfx_substfont.h"
-#include "core/fxge/dib/cfx_dibitmap.h"
-#include "core/fxge/fx_freetype.h"
-#include "core/fxge/text_char_pos.h"
-#include "third_party/base/span.h"
-
-#if !defined(_SKIA_SUPPORT_)
-#include "core/fxge/agg/fx_agg_driver.h"
-#endif
-
-#if !defined(_SKIA_SUPPORT_)
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/fx_codepage.h"
+#include "core/fxge/cfx_folderfontinfo.h"
+#include "core/fxge/cfx_fontmgr.h"
+#include "core/fxge/fx_font.h"
+#include "core/fxge/systemfontinfo_iface.h"
 
 namespace {
 
-void DoNothing(void* info, const void* data, size_t size) {}
+struct Substs {
+  const char* m_pName;
+  const char* m_pSubstName;
+};
 
-bool CGDrawGlyphRun(CGContextRef pContext,
-                    int nChars,
-                    const TextCharPos* pCharPos,
-                    CFX_Font* pFont,
-                    const CFX_Matrix& mtObject2Device,
-                    float font_size,
-                    uint32_t argb) {
-  if (nChars == 0)
-    return true;
+constexpr Substs kBase14Substs[] = {
+    {"Courier", "Courier New"},
+    {"Courier-Bold", "Courier New Bold"},
+    {"Courier-BoldOblique", "Courier New Bold Italic"},
+    {"Courier-Oblique", "Courier New Italic"},
+    {"Helvetica", "Arial"},
+    {"Helvetica-Bold", "Arial Bold"},
+    {"Helvetica-BoldOblique", "Arial Bold Italic"},
+    {"Helvetica-Oblique", "Arial Italic"},
+    {"Times-Roman", "Times New Roman"},
+    {"Times-Bold", "Times New Roman Bold"},
+    {"Times-BoldItalic", "Times New Roman Bold Italic"},
+    {"Times-Italic", "Times New Roman Italic"},
+};
 
-  bool bNegSize = font_size < 0;
-  if (bNegSize)
-    font_size = -font_size;
+class CFX_MacFontInfo final : public CFX_FolderFontInfo {
+ public:
+  CFX_MacFontInfo() = default;
+  ~CFX_MacFontInfo() override = default;
 
-  CFX_Matrix new_matrix = mtObject2Device;
-  CQuartz2D& quartz2d =
-      static_cast<CApplePlatform*>(CFX_GEModule::Get()->GetPlatform())
-          ->m_quartz2d;
-  if (!pFont->GetPlatformFont()) {
-    if (pFont->GetPsName() == "DFHeiStd-W5")
-      return false;
+  // CFX_FolderFontInfo
+  void* MapFont(int weight,
+                bool bItalic,
+                FX_Charset charset,
+                int pitch_family,
+                const ByteString& face) override;
 
-    pdfium::span<const uint8_t> span = pFont->GetFontSpan();
-    pFont->SetPlatformFont(quartz2d.CreateFont(span.data(), span.size()));
-    if (!pFont->GetPlatformFont())
-      return false;
+  bool ParseFontCfg(const char** pUserPaths);
+};
+
+constexpr char kJapanGothic[] = "Hiragino Kaku Gothic Pro W6";
+constexpr char kJapanMincho[] = "Hiragino Mincho Pro W6";
+
+ByteString GetJapanesePreference(const ByteString& face,
+                                 int weight,
+                                 int pitch_family) {
+  if (face.Contains("Gothic"))
+    return kJapanGothic;
+  if (FontFamilyIsRoman(pitch_family) || weight <= 400)
+    return kJapanMincho;
+  return kJapanGothic;
+}
+
+void* CFX_MacFontInfo::MapFont(int weight,
+                               bool bItalic,
+                               FX_Charset charset,
+                               int pitch_family,
+                               const ByteString& face) {
+  for (const auto& sub : kBase14Substs) {
+    if (face == ByteStringView(sub.m_pName))
+      return GetFont(sub.m_pSubstName);
   }
-  std::vector<uint16_t, FxAllocAllocator<uint16_t>> glyph_indices(nChars);
-  std::vector<CGPoint> glyph_positions(nChars);
-  for (int i = 0; i < nChars; i++) {
-    glyph_indices[i] =
-        pCharPos[i].m_ExtGID ? pCharPos[i].m_ExtGID : pCharPos[i].m_GlyphIndex;
-    if (bNegSize)
-      glyph_positions[i].x = -pCharPos[i].m_Origin.x;
-    else
-      glyph_positions[i].x = pCharPos[i].m_Origin.x;
-    glyph_positions[i].y = pCharPos[i].m_Origin.y;
+
+  // The request may not ask for the bold and/or italic version of a font by
+  // name. So try to construct the appropriate name. This is not 100% foolproof
+  // as there are fonts that have "Oblique" or "BoldOblique" or "Heavy" in their
+  // names instead. But this at least works for common fonts like Arial and
+  // Times New Roman. A more sophisticated approach would be to find all the
+  // fonts in |m_FontList| with |face| in the name, and examine the fonts to
+  // see which best matches the requested characteristics.
+  if (!face.Contains("Bold") && !face.Contains("Italic")) {
+    ByteString new_face = face;
+    if (weight > 400)
+      new_face += " Bold";
+    if (bItalic)
+      new_face += " Italic";
+    auto it = m_FontList.find(new_face);
+    if (it != m_FontList.end())
+      return it->second.get();
   }
-  if (bNegSize) {
-    new_matrix.a = -new_matrix.a;
-    new_matrix.c = -new_matrix.c;
-  } else {
-    new_matrix.b = -new_matrix.b;
-    new_matrix.d = -new_matrix.d;
+
+  auto it = m_FontList.find(face);
+  if (it != m_FontList.end())
+    return it->second.get();
+
+  if (charset == FX_Charset::kANSI && FontFamilyIsFixedPitch(pitch_family))
+    return GetFont("Courier New");
+
+  if (charset == FX_Charset::kANSI || charset == FX_Charset::kSymbol)
+    return nullptr;
+
+  ByteString other_face;
+  switch (charset) {
+    case FX_Charset::kShiftJIS:
+      other_face = GetJapanesePreference(face, weight, pitch_family);
+      break;
+    case FX_Charset::kChineseSimplified:
+      other_face = "STSong";
+      break;
+    case FX_Charset::kHangul:
+      other_face = "AppleMyungjo";
+      break;
+    case FX_Charset::kChineseTraditional:
+      other_face = "LiSong Pro Light";
+      break;
+    default:
+      other_face = face;
+      break;
   }
-  quartz2d.SetGraphicsTextMatrix(pContext, new_matrix);
-  return quartz2d.DrawGraphicsString(pContext, pFont->GetPlatformFont(),
-                                     font_size, glyph_indices.data(),
-                                     glyph_positions.data(), nChars, argb);
+  it = m_FontList.find(other_face);
+  return it != m_FontList.end() ? it->second.get() : nullptr;
+}
+
+bool CFX_MacFontInfo::ParseFontCfg(const char** pUserPaths) {
+  if (!pUserPaths) {
+    return false;
+  }
+  UNSAFE_TODO({
+    for (const char** pPath = pUserPaths; *pPath; ++pPath) {
+      AddPath(*pPath);
+    }
+  });
+  return true;
 }
 
 }  // namespace
 
-namespace pdfium {
+CApplePlatform::CApplePlatform() = default;
 
-void CFX_AggDeviceDriver::InitPlatform() {
-  CQuartz2D& quartz2d =
-      static_cast<CApplePlatform*>(CFX_GEModule::Get()->GetPlatform())
-          ->m_quartz2d;
-  m_pPlatformGraphics = quartz2d.CreateGraphics(m_pBitmap);
+CApplePlatform::~CApplePlatform() = default;
+
+void CApplePlatform::Init() {}
+
+std::unique_ptr<SystemFontInfoIface>
+CApplePlatform::CreateDefaultSystemFontInfo() {
+  auto pInfo = std::make_unique<CFX_MacFontInfo>();
+  if (!pInfo->ParseFontCfg(CFX_GEModule::Get()->GetUserFontPaths())) {
+    pInfo->AddPath("~/Library/Fonts");
+    pInfo->AddPath("/Library/Fonts");
+    pInfo->AddPath("/System/Library/Fonts");
+  }
+  return pInfo;
 }
 
-void CFX_AggDeviceDriver::DestroyPlatform() {
-  CQuartz2D& quartz2d =
-      static_cast<CApplePlatform*>(CFX_GEModule::Get()->GetPlatform())
-          ->m_quartz2d;
-  if (m_pPlatformGraphics) {
-    quartz2d.DestroyGraphics(m_pPlatformGraphics);
-    m_pPlatformGraphics = nullptr;
-  }
+void* CApplePlatform::CreatePlatformFont(
+    pdfium::span<const uint8_t> font_span) {
+  return m_quartz2d.CreateFont(font_span);
 }
 
-bool CFX_AggDeviceDriver::DrawDeviceText(
-    int nChars,
-    const TextCharPos* pCharPos,
-    CFX_Font* pFont,
-    const CFX_Matrix& mtObject2Device,
-    float font_size,
-    uint32_t argb,
-    const CFX_TextRenderOptions& /*options*/) {
-  if (!pFont)
-    return false;
-
-  bool bBold = pFont->IsBold();
-  if (!bBold && pFont->GetSubstFont() &&
-      pFont->GetSubstFont()->m_Weight >= 500 &&
-      pFont->GetSubstFont()->m_Weight <= 600) {
-    return false;
-  }
-  for (int i = 0; i < nChars; i++) {
-    if (pCharPos[i].m_bGlyphAdjust)
-      return false;
-  }
-  CGContextRef ctx = CGContextRef(m_pPlatformGraphics);
-  if (!ctx)
-    return false;
-
-  CGContextSaveGState(ctx);
-  CGContextSetTextDrawingMode(ctx, kCGTextFillClip);
-  CGRect rect_cg;
-  CGImageRef pImageCG = nullptr;
-  if (m_pClipRgn) {
-    rect_cg =
-        CGRectMake(m_pClipRgn->GetBox().left, m_pClipRgn->GetBox().top,
-                   m_pClipRgn->GetBox().Width(), m_pClipRgn->GetBox().Height());
-    RetainPtr<CFX_DIBitmap> pClipMask = m_pClipRgn->GetMask();
-    if (pClipMask) {
-      CGDataProviderRef pClipMaskDataProvider = CGDataProviderCreateWithData(
-          nullptr, pClipMask->GetBuffer(),
-          pClipMask->GetPitch() * pClipMask->GetHeight(), DoNothing);
-      CGFloat decode_f[2] = {255.f, 0.f};
-      pImageCG = CGImageMaskCreate(
-          pClipMask->GetWidth(), pClipMask->GetHeight(), 8, 8,
-          pClipMask->GetPitch(), pClipMaskDataProvider, decode_f, false);
-      CGDataProviderRelease(pClipMaskDataProvider);
-    }
-  } else {
-    rect_cg = CGRectMake(0, 0, m_pBitmap->GetWidth(), m_pBitmap->GetHeight());
-  }
-  rect_cg = CGContextConvertRectToDeviceSpace(ctx, rect_cg);
-  if (pImageCG)
-    CGContextClipToMask(ctx, rect_cg, pImageCG);
-  else
-    CGContextClipToRect(ctx, rect_cg);
-
-  bool ret = CGDrawGlyphRun(ctx, nChars, pCharPos, pFont, mtObject2Device,
-                            font_size, argb);
-  if (pImageCG)
-    CGImageRelease(pImageCG);
-  CGContextRestoreGState(ctx);
-  return ret;
-}
-
-}  // namespace pdfium
-
-#endif  // !defined(_SKIA_SUPPORT_)
-
-void CFX_GlyphCache::InitPlatform() {}
-
-void CFX_GlyphCache::DestroyPlatform() {}
-
-std::unique_ptr<CFX_GlyphBitmap> CFX_GlyphCache::RenderGlyph_Nativetext(
-    const CFX_Font* pFont,
-    uint32_t glyph_index,
-    const CFX_Matrix& matrix,
-    int dest_width,
-    int anti_alias) {
-  return nullptr;
-}
-
-void CFX_Font::ReleasePlatformResource() {
-  if (m_pPlatformFont) {
-    CQuartz2D& quartz2d =
-        static_cast<CApplePlatform*>(CFX_GEModule::Get()->GetPlatform())
-            ->m_quartz2d;
-    quartz2d.DestroyFont(m_pPlatformFont);
-    m_pPlatformFont = nullptr;
-  }
+// static
+std::unique_ptr<CFX_GEModule::PlatformIface>
+CFX_GEModule::PlatformIface::Create() {
+  return std::make_unique<CApplePlatform>();
 }

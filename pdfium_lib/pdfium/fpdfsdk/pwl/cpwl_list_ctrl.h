@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,12 +12,10 @@
 #include <vector>
 
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/widestring.h"
+#include "fpdfsdk/pwl/cpwl_edit_impl.h"
 
-class CPWL_EditImpl;
-class CPWL_EditImpl_Iterator;
-class CPWL_List_Notify;
 class IPVT_FontMap;
 
 class CPWL_ListCtrl {
@@ -33,7 +31,9 @@ class CPWL_ListCtrl {
                                   float fSmallStep,
                                   float fBigStep) = 0;
     virtual void OnSetScrollPosY(float fy) = 0;
-    virtual void OnInvalidateRect(const CFX_FloatRect& rect) = 0;
+
+    // Returns true if `this` is still allocated.
+    [[nodiscard]] virtual bool OnInvalidateRect(const CFX_FloatRect& rect) = 0;
   };
 
   CPWL_ListCtrl();
@@ -56,7 +56,6 @@ class CPWL_ListCtrl {
   int32_t GetCaret() const { return m_nCaretIndex; }
   int32_t GetSelect() const { return m_nSelItem; }
   int32_t GetTopItem() const;
-  void SetContentRect(const CFX_FloatRect& rect) { m_rcContent = rect; }
   CFX_FloatRect GetContentRect() const;
 
   int32_t GetItemIndex(const CFX_PointF& point) const;
@@ -65,8 +64,6 @@ class CPWL_ListCtrl {
   void Select(int32_t nItemIndex);
   void Deselect(int32_t nItemIndex);
   void SetCaret(int32_t nItemIndex);
-  void Clear();
-  void Cancel();
   WideString GetText() const;
 
   void SetFontMap(IPVT_FontMap* pFontMap) { m_pFontMap = pFontMap; }
@@ -105,7 +102,7 @@ class CPWL_ListCtrl {
     uint16_t GetFirstChar() const;
 
    private:
-    CPWL_EditImpl_Iterator* GetIterator() const;
+    CPWL_EditImpl::Iterator* GetIterator() const;
 
     bool m_bSelected = false;
     CFX_FloatRect m_rcListItem;

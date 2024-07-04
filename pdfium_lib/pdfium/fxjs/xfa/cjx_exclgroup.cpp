@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,9 +8,12 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/js_resources.h"
 #include "fxjs/xfa/cfxjse_engine.h"
+#include "v8/include/v8-object.h"
+#include "v8/include/v8-primitive.h"
 #include "xfa/fxfa/cxfa_eventparam.h"
 #include "xfa/fxfa/cxfa_ffnotify.h"
 #include "xfa/fxfa/fxfa.h"
@@ -34,9 +37,8 @@ bool CJX_ExclGroup::DynamicTypeIs(TypeTag eType) const {
   return eType == static_type__ || ParentType__::DynamicTypeIs(eType);
 }
 
-CJS_Result CJX_ExclGroup::execEvent(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_ExclGroup::execEvent(CFXJSE_Engine* runtime,
+                                    pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -46,8 +48,8 @@ CJS_Result CJX_ExclGroup::execEvent(
 }
 
 CJS_Result CJX_ExclGroup::execInitialize(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -59,8 +61,8 @@ CJS_Result CJX_ExclGroup::execInitialize(
 }
 
 CJS_Result CJX_ExclGroup::execCalculate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -72,8 +74,8 @@ CJS_Result CJX_ExclGroup::execCalculate(
 }
 
 CJS_Result CJX_ExclGroup::execValidate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -88,8 +90,8 @@ CJS_Result CJX_ExclGroup::execValidate(
 }
 
 CJS_Result CJX_ExclGroup::selectedMember(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+    CFXJSE_Engine* runtime,
+    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -102,14 +104,12 @@ CJS_Result CJX_ExclGroup::selectedMember(
     pReturnNode = node->GetSelectedMember();
   } else {
     pReturnNode = node->SetSelectedMember(
-        runtime->ToWideString(params[0]).AsStringView(), true);
+        runtime->ToWideString(params[0]).AsStringView());
   }
   if (!pReturnNode)
     return CJS_Result::Success(runtime->NewNull());
 
-  return CJS_Result::Success(
-      GetDocument()->GetScriptContext()->GetOrCreateJSBindingFromMap(
-          pReturnNode));
+  return CJS_Result::Success(runtime->GetOrCreateJSBindingFromMap(pReturnNode));
 }
 
 void CJX_ExclGroup::defaultValue(v8::Isolate* pIsolate,
@@ -153,5 +153,5 @@ void CJX_ExclGroup::errorText(v8::Isolate* pIsolate,
                               bool bSetting,
                               XFA_Attribute eAttribute) {
   if (bSetting)
-    ThrowInvalidPropertyException();
+    ThrowInvalidPropertyException(pIsolate);
 }

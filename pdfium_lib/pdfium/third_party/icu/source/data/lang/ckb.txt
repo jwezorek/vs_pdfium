@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 ckb{
     Languages{
         aa{"ئەفار"}
@@ -124,7 +125,7 @@ ckb{
         hr{"كرواتی"}
         hsb{"سربیی سەروو"}
         ht{"کریولی هائیتی"}
-        hu{"هەنگاری (مەجاری)"}
+        hu{"هەنگاری"}
         hup{"هووپا"}
         hy{"ئەرمەنی"}
         hz{"هێرێرۆ"}
@@ -281,7 +282,6 @@ ckb{
         ro{"ڕۆمانی"}
         ro_MD{"مۆڵداڤی"}
         rof{"ڕۆمبۆ"}
-        root{"ڕووت"}
         ru{"ڕووسی"}
         rup{"ئارمۆمانی"}
         rw{"کینیارواندا"}
@@ -387,9 +387,7 @@ ckb{
         zza{"زازا"}
     }
     Languages%short{
-        az{"ئازەربایجانی"}
         en_GB{"ئینگلیزی (GB)"}
-        en_US{"ئینگلیزیی ئەمەریکایی"}
     }
     Scripts{
         Arab{"عەرەبی"}
@@ -441,5 +439,7 @@ ckb{
         Hans{"هانی ئاسانکراو"}
         Hant{"هانی دێرین"}
     }
-    Version{"2.1.44.88"}
+    localeDisplayPattern{
+        separator{"{0}، {1}"}
+    }
 }

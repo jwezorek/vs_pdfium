@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,7 @@
 #ifndef FXJS_XFA_CFXJSE_NODEHELPER_H_
 #define FXJS_XFA_CFXJSE_NODEHELPER_H_
 
-#include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/widestring.h"
 #include "fxjs/xfa/cfxjse_engine.h"
 #include "v8/include/cppgc/persistent.h"
 #include "xfa/fxfa/fxfa_basic.h"

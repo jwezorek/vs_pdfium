@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,13 +10,9 @@
 #include <utility>
 
 #include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/stl_util.h"
 
-CFX_MemoryStream::CFX_MemoryStream() : m_nTotalSize(0), m_nCurSize(0) {}
-
-CFX_MemoryStream::CFX_MemoryStream(
-    std::unique_ptr<uint8_t, FxFreeDeleter> pBuffer,
-    size_t nSize)
-    : m_data(std::move(pBuffer)), m_nTotalSize(nSize), m_nCurSize(nSize) {}
+CFX_MemoryStream::CFX_MemoryStream() = default;
 
 CFX_MemoryStream::~CFX_MemoryStream() = default;
 
@@ -36,48 +32,56 @@ bool CFX_MemoryStream::Flush() {
   return true;
 }
 
-bool CFX_MemoryStream::ReadBlockAtOffset(void* buffer,
-                                         FX_FILESIZE offset,
-                                         size_t size) {
-  if (!buffer || offset < 0 || !size)
+pdfium::span<const uint8_t> CFX_MemoryStream::GetSpan() const {
+  return pdfium::make_span(m_data).first(m_nCurSize);
+}
+
+bool CFX_MemoryStream::ReadBlockAtOffset(pdfium::span<uint8_t> buffer,
+                                         FX_FILESIZE offset) {
+  if (buffer.empty() || offset < 0)
     return false;
 
-  FX_SAFE_SIZE_T newPos = size;
-  newPos += offset;
-  if (!newPos.IsValid() || newPos.ValueOrDefault(0) == 0 ||
-      newPos.ValueOrDie() > m_nCurSize) {
+  FX_SAFE_SIZE_T new_pos = buffer.size();
+  new_pos += offset;
+  if (!new_pos.IsValid() || new_pos.ValueOrDefault(0) == 0 ||
+      new_pos.ValueOrDie() > m_nCurSize) {
     return false;
   }
 
-  m_nCurPos = newPos.ValueOrDie();
-  memcpy(buffer, &GetBuffer()[offset], size);
+  m_nCurPos = new_pos.ValueOrDie();
+  // Safe to cast `offset` because it was used to calculate `new_pos` above, and
+  // `new_pos` is valid.
+  fxcrt::Copy(GetSpan().subspan(static_cast<size_t>(offset), buffer.size()),
+              buffer);
   return true;
 }
 
-size_t CFX_MemoryStream::ReadBlock(void* buffer, size_t size) {
+size_t CFX_MemoryStream::ReadBlock(pdfium::span<uint8_t> buffer) {
   if (m_nCurPos >= m_nCurSize)
     return 0;
 
-  size_t nRead = std::min(size, m_nCurSize - m_nCurPos);
-  if (!ReadBlockAtOffset(buffer, static_cast<int32_t>(m_nCurPos), nRead))
+  size_t nRead = std::min(buffer.size(), m_nCurSize - m_nCurPos);
+  if (!ReadBlockAtOffset(buffer.first(nRead), static_cast<int32_t>(m_nCurPos)))
     return 0;
 
   return nRead;
 }
 
-bool CFX_MemoryStream::WriteBlockAtOffset(const void* buffer,
-                                          FX_FILESIZE offset,
-                                          size_t size) {
-  if (!buffer || offset < 0 || !size)
+bool CFX_MemoryStream::WriteBlockAtOffset(pdfium::span<const uint8_t> buffer,
+                                          FX_FILESIZE offset) {
+  if (offset < 0)
     return false;
 
-  FX_SAFE_SIZE_T safe_new_pos = size;
+  if (buffer.empty())
+    return true;
+
+  FX_SAFE_SIZE_T safe_new_pos = buffer.size();
   safe_new_pos += offset;
   if (!safe_new_pos.IsValid())
     return false;
 
   size_t new_pos = safe_new_pos.ValueOrDie();
-  if (new_pos > m_nTotalSize) {
+  if (new_pos > m_data.size()) {
     static constexpr size_t kBlockSize = 64 * 1024;
     FX_SAFE_SIZE_T new_size = new_pos;
     new_size *= 2;
@@ -87,15 +91,14 @@ bool CFX_MemoryStream::WriteBlockAtOffset(const void* buffer,
     if (!new_size.IsValid())
       return false;
 
-    m_nTotalSize = new_size.ValueOrDie();
-    if (m_data)
-      m_data.reset(FX_Realloc(uint8_t, m_data.release(), m_nTotalSize));
-    else
-      m_data.reset(FX_Alloc(uint8_t, m_nTotalSize));
+    m_data.resize(new_size.ValueOrDie());
   }
   m_nCurPos = new_pos;
 
-  memcpy(&m_data.get()[offset], buffer, size);
+  // Safe to cast `offset` because it was used to calculate `safe_new_pos`
+  // above, and `safe_new_pos` is valid.
+  fxcrt::Copy(buffer,
+              pdfium::make_span(m_data).subspan(static_cast<size_t>(offset)));
   m_nCurSize = std::max(m_nCurSize, m_nCurPos);
 
   return true;

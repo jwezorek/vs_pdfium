@@ -1,14 +1,19 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "fxjs/cfx_v8.h"
 
-#include <cmath>
+#include <math.h>
+
 #include <memory>
 
 #include "testing/fxv8_unittest.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "v8/include/v8-container.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-date.h"
+#include "v8/include/v8-isolate.h"
 
 namespace {
 bool getter_sentinel = false;
@@ -83,7 +88,7 @@ TEST_F(CFXV8UnitTest, NewUndefined) {
   auto undef = cfx_v8()->NewUndefined();
   EXPECT_FALSE(cfx_v8()->ToBoolean(undef));
   EXPECT_EQ(0, cfx_v8()->ToInt32(undef));
-  EXPECT_TRUE(std::isnan(cfx_v8()->ToDouble(undef)));
+  EXPECT_TRUE(isnan(cfx_v8()->ToDouble(undef)));
   EXPECT_EQ("undefined", cfx_v8()->ToByteString(undef));
   EXPECT_EQ(L"undefined", cfx_v8()->ToWideString(undef));
   EXPECT_TRUE(cfx_v8()->ToObject(undef).IsEmpty());
@@ -230,15 +235,15 @@ TEST_F(CFXV8UnitTest, ThrowFromGetter) {
 
   v8::Local<v8::Object> object = cfx_v8()->NewObject();
   v8::Local<v8::String> name = cfx_v8()->NewString("clams");
-  EXPECT_TRUE(
-      object
-          ->SetAccessor(context, name,
-                        [](v8::Local<v8::Name> property,
-                           const v8::PropertyCallbackInfo<v8::Value>& info) {
-                          getter_sentinel = true;
-                          info.GetIsolate()->ThrowException(property);
-                        })
-          .FromJust());
+  EXPECT_TRUE(object
+                  ->SetNativeDataProperty(
+                      context, name,
+                      [](v8::Local<v8::Name> property,
+                         const v8::PropertyCallbackInfo<v8::Value>& info) {
+                        getter_sentinel = true;
+                        info.GetIsolate()->ThrowException(property);
+                      })
+                  .FromJust());
   getter_sentinel = false;
   EXPECT_TRUE(cfx_v8()->GetObjectProperty(object, "clams").IsEmpty());
   EXPECT_TRUE(getter_sentinel);
@@ -252,15 +257,16 @@ TEST_F(CFXV8UnitTest, ThrowFromSetter) {
 
   v8::Local<v8::Object> object = cfx_v8()->NewObject();
   v8::Local<v8::String> name = cfx_v8()->NewString("clams");
-  EXPECT_TRUE(object
-                  ->SetAccessor(context, name, nullptr,
-                                [](v8::Local<v8::Name> property,
-                                   v8::Local<v8::Value> value,
-                                   const v8::PropertyCallbackInfo<void>& info) {
-                                  setter_sentinel = true;
-                                  info.GetIsolate()->ThrowException(property);
-                                })
-                  .FromJust());
+  EXPECT_TRUE(
+      object
+          ->SetNativeDataProperty(
+              context, name, nullptr,
+              [](v8::Local<v8::Name> property, v8::Local<v8::Value> value,
+                 const v8::PropertyCallbackInfo<void>& info) {
+                setter_sentinel = true;
+                info.GetIsolate()->ThrowException(property);
+              })
+          .FromJust());
   setter_sentinel = false;
   cfx_v8()->PutObjectProperty(object, "clams", name);
   EXPECT_TRUE(setter_sentinel);

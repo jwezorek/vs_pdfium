@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,22 +8,25 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include "core/fpdfapi/page/cpdf_form.h"
+#include "core/fpdfapi/page/cpdf_pageimagecache.h"
 #include "core/fpdfapi/page/cpdf_tilingpattern.h"
 #include "core/fpdfapi/parser/cpdf_document.h"
-#include "core/fpdfapi/render/cpdf_pagerendercache.h"
 #include "core/fpdfapi/render/cpdf_rendercontext.h"
 #include "core/fpdfapi/render/cpdf_renderoptions.h"
 #include "core/fpdfapi/render/cpdf_renderstatus.h"
 #include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/span_util.h"
 #include "core/fxge/cfx_defaultrenderdevice.h"
+#include "core/fxge/dib/cfx_dibitmap.h"
 
 namespace {
 
 RetainPtr<CFX_DIBitmap> DrawPatternBitmap(
     CPDF_Document* pDoc,
-    CPDF_PageRenderCache* pCache,
+    CPDF_PageImageCache* pCache,
     CPDF_TilingPattern* pPattern,
     CPDF_Form* pPatternForm,
     const CFX_Matrix& mtObject2Device,
@@ -37,8 +40,8 @@ RetainPtr<CFX_DIBitmap> DrawPatternBitmap(
     return nullptr;
   }
   CFX_DefaultRenderDevice bitmap_device;
-  bitmap_device.Attach(pBitmap, false, nullptr, false);
-  pBitmap->Clear(0);
+  bitmap_device.AttachWithBackdropAndGroupKnockout(
+      pBitmap, /*pBackdropBitmap=*/nullptr, /*bGroupKnockout=*/true);
   CFX_FloatRect cell_bbox =
       pPattern->pattern_to_form().TransformRect(pPattern->bbox());
   cell_bbox = mtObject2Device.TransformRect(cell_bbox);
@@ -55,12 +58,14 @@ RetainPtr<CFX_DIBitmap> DrawPatternBitmap(
   options.GetOptions().bForceHalftone = true;
 
   CPDF_RenderContext context(pDoc, nullptr, pCache);
-  context.AppendLayer(pPatternForm, &mtPattern2Bitmap);
-  context.Render(&bitmap_device, &options, nullptr);
-#if defined(_SKIA_SUPPORT_PATHS_)
-  bitmap_device.Flush(true);
-  pBitmap->UnPreMultiply();
-#endif
+  context.AppendLayer(pPatternForm, mtPattern2Bitmap);
+  context.Render(&bitmap_device, nullptr, &options, nullptr);
+
+#if defined(PDF_USE_SKIA)
+  if (CFX_DefaultRenderDevice::UseSkiaRenderer()) {
+    pBitmap->UnPreMultiply();
+  }
+#endif  // defined(PDF_USE_SKIA)
   return pBitmap;
 }
 
@@ -84,8 +89,8 @@ RetainPtr<CFX_DIBitmap> CPDF_RenderTiling::Draw(
   float ceil_width = std::ceil(cell_bbox.Width());
 
   // Validate the float will fit into the int when the conversion is done.
-  if (!pdfium::base::IsValueInRangeForNumericType<int>(ceil_height) ||
-      !pdfium::base::IsValueInRangeForNumericType<int>(ceil_width)) {
+  if (!pdfium::IsValueInRangeForNumericType<int>(ceil_height) ||
+      !pdfium::IsValueInRangeForNumericType<int>(ceil_width)) {
     return nullptr;
   }
 
@@ -117,11 +122,13 @@ RetainPtr<CFX_DIBitmap> CPDF_RenderTiling::Draw(
   if (width > clip_box.Width() || height > clip_box.Height() ||
       width * height > clip_box.Width() * clip_box.Height()) {
     std::unique_ptr<CPDF_GraphicStates> pStates;
-    if (!pPattern->colored())
-      pStates = CPDF_RenderStatus::CloneObjStates(pPageObj, bStroke);
+    if (!pPattern->colored()) {
+      pStates = CPDF_RenderStatus::CloneObjStates(&pPageObj->graphic_states(),
+                                                  bStroke);
+    }
 
-    const CPDF_Dictionary* pFormDict = pPatternForm->GetDict();
-    const CPDF_Dictionary* pFormResource = pFormDict->GetDictFor("Resources");
+    RetainPtr<const CPDF_Dictionary> pFormResource =
+        pPatternForm->GetDict()->GetDictFor("Resources");
     for (int col = min_col; col <= max_col; col++) {
       for (int row = min_row; row <= max_row; row++) {
         CFX_PointF original = mtPattern2Device.Transform(
@@ -193,8 +200,7 @@ RetainPtr<CFX_DIBitmap> CPDF_RenderTiling::Draw(
   if (!pScreen->Create(clip_width, clip_height, FXDIB_Format::kArgb))
     return nullptr;
 
-  pScreen->Clear(0);
-  const uint8_t* const src_buf = pPatternBitmap->GetBuffer();
+  pdfium::span<const uint8_t> src_buf = pPatternBitmap->GetBuffer();
   for (int col = min_col; col <= max_col; col++) {
     for (int row = min_row; row <= max_row; row++) {
       int start_x;
@@ -225,12 +231,13 @@ RetainPtr<CFX_DIBitmap> CPDF_RenderTiling::Draw(
           continue;
         }
         uint32_t* dest_buf = reinterpret_cast<uint32_t*>(
-            pScreen->GetBuffer() + pScreen->GetPitch() * start_y + start_x * 4);
+            pScreen->GetWritableScanline(start_y).subspan(start_x * 4).data());
         if (pPattern->colored()) {
-          const auto* src_buf32 = reinterpret_cast<const uint32_t*>(src_buf);
+          const uint32_t* src_buf32 =
+              fxcrt::reinterpret_span<const uint32_t>(src_buf).data();
           *dest_buf = *src_buf32;
         } else {
-          *dest_buf = (*src_buf << 24) | (fill_argb & 0xffffff);
+          *dest_buf = (*(src_buf.data()) << 24) | (fill_argb & 0xffffff);
         }
       } else {
         if (pPattern->colored()) {

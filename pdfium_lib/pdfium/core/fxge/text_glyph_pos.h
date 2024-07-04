@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,10 @@
 #ifndef CORE_FXGE_TEXT_GLYPH_POS_H_
 #define CORE_FXGE_TEXT_GLYPH_POS_H_
 
-#include "core/fxcrt/fx_coordinates.h"
+#include <optional>
 
+#include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/unowned_ptr.h"
-#include "third_party/base/optional.h"
 
 class CFX_GlyphBitmap;
 
@@ -20,7 +20,7 @@ class TextGlyphPos {
   TextGlyphPos(const TextGlyphPos&);
   ~TextGlyphPos();
 
-  Optional<CFX_Point> GetOrigin(const CFX_Point& offset) const;
+  std::optional<CFX_Point> GetOrigin(const CFX_Point& offset) const;
 
   UnownedPtr<const CFX_GlyphBitmap> m_pGlyph;
   CFX_Point m_Origin;

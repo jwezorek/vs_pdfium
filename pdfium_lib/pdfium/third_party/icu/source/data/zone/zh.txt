@@ -1,7 +1,7 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 zh{
-    Version{"2.1.44.76"}
     zoneStrings{
         "Africa:Abidjan"{
             ec{"阿比让"}
@@ -258,6 +258,9 @@ zh{
         "America:Chihuahua"{
             ec{"奇瓦瓦"}
         }
+        "America:Ciudad_Juarez"{
+            ec{"华雷斯城"}
+        }
         "America:Coral_Harbour"{
             ec{"阿蒂科肯"}
         }
@@ -462,9 +465,6 @@ zh{
         "America:New_York"{
             ec{"纽约"}
         }
-        "America:Nipigon"{
-            ec{"尼皮贡"}
-        }
         "America:Nome"{
             ec{"诺姆"}
         }
@@ -485,9 +485,6 @@ zh{
         }
         "America:Panama"{
             ec{"巴拿马"}
-        }
-        "America:Pangnirtung"{
-            ec{"旁涅唐"}
         }
         "America:Paramaribo"{
             ec{"帕拉马里博"}
@@ -510,9 +507,6 @@ zh{
         "America:Punta_Arenas"{
             ec{"蓬塔阿雷纳斯"}
         }
-        "America:Rainy_River"{
-            ec{"雷尼河"}
-        }
         "America:Rankin_Inlet"{
             ec{"兰今湾"}
         }
@@ -527,9 +521,6 @@ zh{
         }
         "America:Rio_Branco"{
             ec{"里奥布郎库"}
-        }
-        "America:Santa_Isabel"{
-            ec{"圣伊萨贝尔"}
         }
         "America:Santarem"{
             ec{"圣塔伦"}
@@ -576,9 +567,6 @@ zh{
         "America:Thule"{
             ec{"图勒"}
         }
-        "America:Thunder_Bay"{
-            ec{"桑德贝"}
-        }
         "America:Tijuana"{
             ec{"蒂华纳"}
         }
@@ -600,9 +588,6 @@ zh{
         "America:Yakutat"{
             ec{"亚库塔特"}
         }
-        "America:Yellowknife"{
-            ec{"耶洛奈夫"}
-        }
         "Antarctica:Casey"{
             ec{"卡塞"}
         }
@@ -610,7 +595,7 @@ zh{
             ec{"戴维斯"}
         }
         "Antarctica:DumontDUrville"{
-            ec{"迪蒙迪尔维尔"}
+            ec{"迪蒙·迪维尔"}
         }
         "Antarctica:Macquarie"{
             ec{"麦格理"}
@@ -622,7 +607,7 @@ zh{
             ec{"麦克默多"}
         }
         "Antarctica:Palmer"{
-            ec{"帕默尔"}
+            ec{"帕尔默"}
         }
         "Antarctica:Rothera"{
             ec{"罗瑟拉"}
@@ -790,7 +775,7 @@ zh{
             ec{"新库兹涅茨克"}
         }
         "Asia:Novosibirsk"{
-            ec{"诺沃西比尔斯克"}
+            ec{"新西伯利亚"}
         }
         "Asia:Omsk"{
             ec{"鄂木斯克"}
@@ -809,6 +794,9 @@ zh{
         }
         "Asia:Qatar"{
             ec{"卡塔尔"}
+        }
+        "Asia:Qostanay"{
+            ec{"库斯塔奈"}
         }
         "Asia:Qyzylorda"{
             ec{"克孜洛尔达"}
@@ -924,9 +912,6 @@ zh{
         "Australia:Broken_Hill"{
             ec{"布罗肯希尔"}
         }
-        "Australia:Currie"{
-            ec{"库利"}
-        }
         "Australia:Darwin"{
             ec{"达尔文"}
         }
@@ -940,7 +925,7 @@ zh{
             ec{"林德曼"}
         }
         "Australia:Lord_Howe"{
-            ec{"豪勋爵"}
+            ec{"豪勋爵岛"}
         }
         "Australia:Melbourne"{
             ec{"墨尔本"}
@@ -1010,7 +995,7 @@ zh{
             ec{"赫尔辛基"}
         }
         "Europe:Isle_of_Man"{
-            ec{"曼岛"}
+            ec{"马恩岛"}
         }
         "Europe:Istanbul"{
             ec{"伊斯坦布尔"}
@@ -1109,9 +1094,6 @@ zh{
         "Europe:Ulyanovsk"{
             ec{"乌里扬诺夫斯克"}
         }
-        "Europe:Uzhgorod"{
-            ec{"乌日哥罗德"}
-        }
         "Europe:Vaduz"{
             ec{"瓦杜兹"}
         }
@@ -1132,9 +1114,6 @@ zh{
         }
         "Europe:Zagreb"{
             ec{"萨格勒布"}
-        }
-        "Europe:Zaporozhye"{
-            ec{"扎波罗热"}
         }
         "Europe:Zurich"{
             ec{"苏黎世"}
@@ -1217,8 +1196,8 @@ zh{
         "Pacific:Honolulu"{
             ec{"檀香山"}
         }
-        "Pacific:Johnston"{
-            ec{"约翰斯顿"}
+        "Pacific:Kanton"{
+            ec{"坎顿岛"}
         }
         "Pacific:Kiritimati"{
             ec{"基里地马地岛"}
@@ -1452,9 +1431,9 @@ zh{
             ls{"查莫罗时间"}
         }
         "meta:Chatham"{
-            ld{"查坦夏令时间"}
-            lg{"查坦时间"}
-            ls{"查坦标准时间"}
+            ld{"查塔姆夏令时间"}
+            lg{"查塔姆时间"}
+            ls{"查塔姆标准时间"}
         }
         "meta:Chile"{
             ld{"智利夏令时间"}
@@ -1496,7 +1475,7 @@ zh{
             ls{"戴维斯时间"}
         }
         "meta:DumontDUrville"{
-            ls{"迪蒙迪尔维尔时间"}
+            ls{"迪蒙·迪维尔时间"}
         }
         "meta:East_Timor"{
             ls{"东帝汶时间"}
@@ -1520,7 +1499,7 @@ zh{
             ls{"东欧标准时间"}
         }
         "meta:Europe_Further_Eastern"{
-            ls{"远东标准时间"}
+            ls{"欧洲极东时间"}
         }
         "meta:Europe_Western"{
             ld{"西欧夏令时间"}
@@ -1601,7 +1580,7 @@ zh{
             ls{"印度洋时间"}
         }
         "meta:Indochina"{
-            ls{"印度支那时间"}
+            ls{"中南半岛时间"}
         }
         "meta:Indonesia_Central"{
             ls{"印度尼西亚中部时间"}
@@ -1675,9 +1654,6 @@ zh{
             lg{"澳门时间"}
             ls{"澳门标准时间"}
         }
-        "meta:Macquarie"{
-            ls{"麦夸里岛时间"}
-        }
         "meta:Magadan"{
             ld{"马加丹夏令时间"}
             lg{"马加丹时间"}
@@ -1702,11 +1678,6 @@ zh{
         }
         "meta:Mawson"{
             ls{"莫森时间"}
-        }
-        "meta:Mexico_Northwest"{
-            ld{"墨西哥西北部夏令时间"}
-            lg{"墨西哥西北部时间"}
-            ls{"墨西哥西北部标准时间"}
         }
         "meta:Mexico_Pacific"{
             ld{"墨西哥太平洋夏令时间"}
@@ -1751,7 +1722,9 @@ zh{
             ls{"纽埃时间"}
         }
         "meta:Norfolk"{
-            ls{"诺福克岛时间"}
+            ld{"诺福克岛夏令时间"}
+            lg{"诺福克岛时间"}
+            ls{"诺福克岛标准时间"}
         }
         "meta:Noronha"{
             ld{"费尔南多-迪诺罗尼亚岛夏令时间"}
@@ -1935,10 +1908,10 @@ zh{
             lg{"叶卡捷琳堡时间"}
             ls{"叶卡捷琳堡标准时间"}
         }
+        "meta:Yukon"{
+            ls{"育空时间"}
+        }
         fallbackFormat{"{1}（{0}）"}
-        gmtFormat{"GMT{0}"}
-        gmtZeroFormat{"GMT"}
-        hourFormat{"+HH:mm;-HH:mm"}
         regionFormat{"{0}时间"}
         regionFormatDaylight{"{0}夏令时间"}
         regionFormatStandard{"{0}标准时间"}

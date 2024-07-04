@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,9 @@
 #include "core/fxcodec/jbig2/JBig2_BitStream.h"
 
 #include <algorithm>
+
+#include "core/fxcrt/fx_safe_types.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
 
 namespace {
 
@@ -19,8 +22,8 @@ pdfium::span<const uint8_t> ValidatedSpan(pdfium::span<const uint8_t> sp) {
 }  // namespace
 
 CJBig2_BitStream::CJBig2_BitStream(pdfium::span<const uint8_t> pSrcStream,
-                                   uint32_t dwObjNum)
-    : m_Span(ValidatedSpan(pSrcStream)), m_dwObjNum(dwObjNum) {}
+                                   uint64_t key)
+    : m_Span(ValidatedSpan(pSrcStream)), m_Key(key) {}
 
 CJBig2_BitStream::~CJBig2_BitStream() = default;
 
@@ -116,7 +119,7 @@ int32_t CJBig2_BitStream::readShortInteger(uint16_t* dwResult) {
 
 void CJBig2_BitStream::alignByte() {
   if (m_dwBitIdx != 0) {
-    ++m_dwByteIdx;
+    addOffset(1);
     m_dwBitIdx = 0;
   }
 }
@@ -126,8 +129,7 @@ uint8_t CJBig2_BitStream::getCurByte() const {
 }
 
 void CJBig2_BitStream::incByteIdx() {
-  if (IsInBounds())
-    ++m_dwByteIdx;
+  addOffset(1);
 }
 
 uint8_t CJBig2_BitStream::getCurByte_arith() const {
@@ -143,7 +145,16 @@ uint32_t CJBig2_BitStream::getOffset() const {
 }
 
 void CJBig2_BitStream::setOffset(uint32_t dwOffset) {
-  m_dwByteIdx = std::min<size_t>(dwOffset, m_Span.size());
+  m_dwByteIdx =
+      std::min(dwOffset, pdfium::checked_cast<uint32_t>(getBufSpan().size()));
+}
+
+void CJBig2_BitStream::addOffset(uint32_t dwDelta) {
+  FX_SAFE_UINT32 new_offset = m_dwByteIdx;
+  new_offset += dwDelta;
+  if (new_offset.IsValid()) {
+    setOffset(new_offset.ValueOrDie());
+  }
 }
 
 uint32_t CJBig2_BitStream::getBitPos() const {
@@ -155,20 +166,14 @@ void CJBig2_BitStream::setBitPos(uint32_t dwBitPos) {
   m_dwBitIdx = dwBitPos & 7;
 }
 
-const uint8_t* CJBig2_BitStream::getBuf() const {
-  return m_Span.data();
-}
-
 const uint8_t* CJBig2_BitStream::getPointer() const {
-  return getBuf() + m_dwByteIdx;
-}
-
-void CJBig2_BitStream::offset(uint32_t dwOffset) {
-  m_dwByteIdx += dwOffset;
+  return m_Span.subspan(m_dwByteIdx).data();
 }
 
 uint32_t CJBig2_BitStream::getByteLeft() const {
-  return m_Span.size() - m_dwByteIdx;
+  FX_SAFE_UINT32 result = getBufSpan().size();
+  result -= m_dwByteIdx;
+  return result.ValueOrDie();
 }
 
 void CJBig2_BitStream::AdvanceBit() {
@@ -181,13 +186,11 @@ void CJBig2_BitStream::AdvanceBit() {
 }
 
 bool CJBig2_BitStream::IsInBounds() const {
-  return m_dwByteIdx < m_Span.size();
+  return m_dwByteIdx < getBufSpan().size();
 }
 
 uint32_t CJBig2_BitStream::LengthInBits() const {
-  return m_Span.size() << 3;
-}
-
-uint32_t CJBig2_BitStream::getObjNum() const {
-  return m_dwObjNum;
+  FX_SAFE_UINT32 result = getBufSpan().size();
+  result *= 8;
+  return result.ValueOrDie();
 }

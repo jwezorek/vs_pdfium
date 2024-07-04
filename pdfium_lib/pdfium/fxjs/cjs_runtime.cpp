@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,8 +6,11 @@
 
 #include "fxjs/cjs_runtime.h"
 
+#include <math.h>
+
 #include <algorithm>
 
+#include "core/fxcrt/check_op.h"
 #include "fpdfsdk/cpdfsdk_formfillenvironment.h"
 #include "fxjs/cfx_globaldata.h"
 #include "fxjs/cjs_annot.h"
@@ -19,7 +22,6 @@
 #include "fxjs/cjs_document.h"
 #include "fxjs/cjs_event.h"
 #include "fxjs/cjs_event_context.h"
-#include "fxjs/cjs_eventrecorder.h"
 #include "fxjs/cjs_field.h"
 #include "fxjs/cjs_font.h"
 #include "fxjs/cjs_global.h"
@@ -38,7 +40,9 @@
 #include "fxjs/cjs_zoomtype.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/js_define.h"
-#include "third_party/base/check.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-exception.h"
+#include "v8/include/v8-isolate.h"
 
 CJS_Runtime::CJS_Runtime(CPDFSDK_FormFillEnvironment* pFormFillEnv)
     : m_pFormFillEnv(pFormFillEnv) {
@@ -128,7 +132,7 @@ IJS_EventContext* CJS_Runtime::NewEventContext() {
 }
 
 void CJS_Runtime::ReleaseEventContext(IJS_EventContext* pContext) {
-  DCHECK(pContext == m_EventContextArray.back().get());
+  DCHECK_EQ(pContext, m_EventContextArray.back().get());
   m_EventContextArray.pop_back();
 }
 
@@ -151,7 +155,7 @@ void CJS_Runtime::SetFormFillEnvToDocument() {
   if (pThis.IsEmpty())
     return;
 
-  auto pJSDocument = JSGetObject<CJS_Document>(pThis);
+  auto pJSDocument = JSGetObject<CJS_Document>(GetIsolate(), pThis);
   if (!pJSDocument)
     return;
 
@@ -162,7 +166,7 @@ CPDFSDK_FormFillEnvironment* CJS_Runtime::GetFormFillEnv() const {
   return m_pFormFillEnv.Get();
 }
 
-Optional<IJS_Runtime::JS_Error> CJS_Runtime::ExecuteScript(
+std::optional<IJS_Runtime::JS_Error> CJS_Runtime::ExecuteScript(
     const WideString& script) {
   return Execute(script);
 }
@@ -179,19 +183,16 @@ CJS_Runtime* CJS_Runtime::AsCJSRuntime() {
   return this;
 }
 
-bool CJS_Runtime::GetValueByNameFromGlobalObject(ByteStringView utf8Name,
-                                                 v8::Local<v8::Value>* pValue) {
+v8::Local<v8::Value> CJS_Runtime::GetValueByNameFromGlobalObject(
+    ByteStringView utf8Name) {
   v8::Isolate::Scope isolate_scope(GetIsolate());
   v8::Local<v8::Context> context = GetV8Context();
   v8::Context::Scope context_scope(context);
   v8::Local<v8::String> str = fxv8::NewStringHelper(GetIsolate(), utf8Name);
-  v8::MaybeLocal<v8::Value> maybe_propvalue =
-      context->Global()->Get(context, str);
-  if (maybe_propvalue.IsEmpty())
-    return false;
-
-  *pValue = maybe_propvalue.ToLocalChecked();
-  return true;
+  v8::MaybeLocal<v8::Value> maybe_value = context->Global()->Get(context, str);
+  if (maybe_value.IsEmpty())
+    return v8::Local<v8::Value>();
+  return maybe_value.ToLocalChecked();
 }
 
 bool CJS_Runtime::SetValueByNameInGlobalObject(ByteStringView utf8Name,
@@ -212,22 +213,21 @@ v8::Local<v8::Value> CJS_Runtime::MaybeCoerceToNumber(
     v8::Local<v8::Value> value) {
   bool bAllowNaN = false;
   if (value->IsString()) {
-    ByteString bstr = ToWideString(value).ToDefANSI();
+    ByteString bstr = fxv8::ToByteString(GetIsolate(), value.As<v8::String>());
     if (bstr.IsEmpty())
       return value;
     if (bstr == "NaN")
       bAllowNaN = true;
   }
 
-  v8::Isolate* pIsolate = GetIsolate();
-  v8::TryCatch try_catch(pIsolate);
+  v8::TryCatch try_catch(GetIsolate());
   v8::MaybeLocal<v8::Number> maybeNum =
-      value->ToNumber(pIsolate->GetCurrentContext());
+      value->ToNumber(GetIsolate()->GetCurrentContext());
   if (maybeNum.IsEmpty())
     return value;
 
   v8::Local<v8::Number> num = maybeNum.ToLocalChecked();
-  if (std::isnan(num->Value()) && !bAllowNaN)
+  if (isnan(num->Value()) && !bAllowNaN)
     return value;
 
   return num;

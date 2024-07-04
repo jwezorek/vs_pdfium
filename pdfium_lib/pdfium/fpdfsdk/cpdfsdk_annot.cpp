@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,8 +6,8 @@
 
 #include "fpdfsdk/cpdfsdk_annot.h"
 
+#include "core/fxcrt/check.h"
 #include "fpdfsdk/cpdfsdk_pageview.h"
-#include "third_party/base/check.h"
 
 CPDFSDK_Annot::CPDFSDK_Annot(CPDFSDK_PageView* pPageView)
     : m_pPageView(pPageView) {
@@ -24,6 +24,94 @@ CPDFXFA_Widget* CPDFSDK_Annot::AsXFAWidget() {
   return nullptr;
 }
 
+// static
+void CPDFSDK_Annot::OnMouseEnter(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                 Mask<FWL_EVENTFLAG> nFlags) {
+  pAnnot->GetUnsafeInputHandlers()->OnMouseEnter(nFlags);
+}
+
+// static
+void CPDFSDK_Annot::OnMouseExit(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                Mask<FWL_EVENTFLAG> nFlags) {
+  pAnnot->GetUnsafeInputHandlers()->OnMouseExit(nFlags);
+}
+
+// static
+bool CPDFSDK_Annot::OnLButtonDown(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                  Mask<FWL_EVENTFLAG> nFlags,
+                                  const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnLButtonDown(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnLButtonUp(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                Mask<FWL_EVENTFLAG> nFlags,
+                                const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnLButtonUp(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnLButtonDblClk(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                    Mask<FWL_EVENTFLAG> nFlags,
+                                    const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnLButtonDblClk(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnMouseMove(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                Mask<FWL_EVENTFLAG> nFlags,
+                                const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnMouseMove(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnMouseWheel(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                 Mask<FWL_EVENTFLAG> nFlags,
+                                 const CFX_PointF& point,
+                                 const CFX_Vector& delta) {
+  return pAnnot->GetUnsafeInputHandlers()->OnMouseWheel(nFlags, point, delta);
+}
+
+// static
+bool CPDFSDK_Annot::OnRButtonDown(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                  Mask<FWL_EVENTFLAG> nFlags,
+                                  const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnRButtonDown(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnRButtonUp(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                Mask<FWL_EVENTFLAG> nFlags,
+                                const CFX_PointF& point) {
+  return pAnnot->GetUnsafeInputHandlers()->OnRButtonUp(nFlags, point);
+}
+
+// static
+bool CPDFSDK_Annot::OnChar(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                           uint32_t nChar,
+                           Mask<FWL_EVENTFLAG> nFlags) {
+  return pAnnot->GetUnsafeInputHandlers()->OnChar(nChar, nFlags);
+}
+
+// static
+bool CPDFSDK_Annot::OnKeyDown(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                              FWL_VKEYCODE nKeyCode,
+                              Mask<FWL_EVENTFLAG> nFlags) {
+  return pAnnot->GetUnsafeInputHandlers()->OnKeyDown(nKeyCode, nFlags);
+}
+
+// static
+bool CPDFSDK_Annot::OnSetFocus(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                               Mask<FWL_EVENTFLAG> nFlags) {
+  return pAnnot->GetUnsafeInputHandlers()->OnSetFocus(nFlags);
+}
+
+// static
+bool CPDFSDK_Annot::OnKillFocus(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                                Mask<FWL_EVENTFLAG> nFlags) {
+  return pAnnot->GetUnsafeInputHandlers()->OnKillFocus(nFlags);
+}
+
 IPDF_Page* CPDFSDK_Annot::GetXFAPage() {
 #ifdef PDF_ENABLE_XFA
   return m_pPageView->GetXFAPage();
@@ -38,20 +126,6 @@ int CPDFSDK_Annot::GetLayoutOrder() const {
 
 CPDF_Annot* CPDFSDK_Annot::GetPDFAnnot() const {
   return nullptr;
-}
-
-CPDF_Annot::Subtype CPDFSDK_Annot::GetAnnotSubtype() const {
-  return CPDF_Annot::Subtype::UNKNOWN;
-}
-
-bool CPDFSDK_Annot::IsSignatureWidget() const {
-  return false;
-}
-
-void CPDFSDK_Annot::SetRect(const CFX_FloatRect& rect) {}
-
-CFX_FloatRect CPDFSDK_Annot::GetRect() const {
-  return CFX_FloatRect();
 }
 
 IPDF_Page* CPDFSDK_Annot::GetPage() {

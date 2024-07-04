@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,12 +12,12 @@
 #include <vector>
 
 #include "core/fxcrt/observed_ptr.h"
+#include "core/fxcrt/span.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/js_define.h"
 
 class CPDFSDK_InteractiveForm;
 class CPDF_InteractiveForm;
-class CPDF_TextObject;
 struct CJS_DelayData;
 
 class CJS_Document final : public CJS_Object, public Observable {
@@ -216,95 +216,91 @@ class CJS_Document final : public CJS_Object, public Observable {
   CJS_Result set_URL(CJS_Runtime* pRuntime, v8::Local<v8::Value> vp);
 
   CJS_Result addAnnot(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result addField(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result addLink(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result addIcon(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result calculateNow(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result closeDoc(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result createDataObject(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params);
+                              pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result deletePages(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result exportAsText(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result exportAsFDF(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result exportAsXFDF(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result extractPages(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getAnnot(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getAnnots(CJS_Runtime* pRuntime,
-                       const std::vector<v8::Local<v8::Value>>& params);
+                       pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getAnnot3D(CJS_Runtime* pRuntime,
-                        const std::vector<v8::Local<v8::Value>>& params);
+                        pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getAnnots3D(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getField(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getIcon(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getLinks(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getNthFieldName(CJS_Runtime* pRuntime,
-                             const std::vector<v8::Local<v8::Value>>& params);
+                             pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getOCGs(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getPageBox(CJS_Runtime* pRuntime,
-                        const std::vector<v8::Local<v8::Value>>& params);
+                        pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getPageNthWord(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params);
-  CJS_Result getPageNthWordQuads(
-      CJS_Runtime* pRuntime,
-      const std::vector<v8::Local<v8::Value>>& params);
+                            pdfium::span<v8::Local<v8::Value>> params);
+  CJS_Result getPageNthWordQuads(CJS_Runtime* pRuntime,
+                                 pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getPageNumWords(CJS_Runtime* pRuntime,
-                             const std::vector<v8::Local<v8::Value>>& params);
+                             pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getPrintParams(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params);
+                            pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result getURL(CJS_Runtime* pRuntime,
-                    const std::vector<v8::Local<v8::Value>>& params);
+                    pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result gotoNamedDest(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result importAnFDF(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result importAnXFDF(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result importTextData(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params);
+                            pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result insertPages(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result mailForm(CJS_Runtime* pRuntime,
-                      const std::vector<v8::Local<v8::Value>>& params);
+                      pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result print(CJS_Runtime* pRuntime,
-                   const std::vector<v8::Local<v8::Value>>& params);
+                   pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result removeField(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params);
+                         pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result replacePages(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params);
+                          pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result resetForm(CJS_Runtime* pRuntime,
-                       const std::vector<v8::Local<v8::Value>>& params);
+                       pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result saveAs(CJS_Runtime* pRuntime,
-                    const std::vector<v8::Local<v8::Value>>& params);
+                    pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result submitForm(CJS_Runtime* pRuntime,
-                        const std::vector<v8::Local<v8::Value>>& params);
+                        pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result syncAnnotScan(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
+                           pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result mailDoc(CJS_Runtime* pRuntime,
-                     const std::vector<v8::Local<v8::Value>>& params);
+                     pdfium::span<v8::Local<v8::Value>> params);
   CJS_Result removeIcon(CJS_Runtime* pRuntime,
-                        const std::vector<v8::Local<v8::Value>>& params);
+                        pdfium::span<v8::Local<v8::Value>> params);
 
   CJS_Result getPropertyInternal(CJS_Runtime* pRuntime,
-                                 const ByteString& propName);
-  CJS_Result setPropertyInternal(CJS_Runtime* pRuntime,
-                                 v8::Local<v8::Value> vp,
                                  const ByteString& propName);
 
   CPDF_InteractiveForm* GetCoreInteractiveForm();

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,16 +7,15 @@
 #ifndef FXBARCODE_CBC_CODEBASE_H_
 #define FXBARCODE_CBC_CODEBASE_H_
 
+#include <stdint.h>
+
 #include <memory>
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/widestring.h"
 #include "core/fxge/dib/fx_dib.h"
 #include "fxbarcode/BC_Library.h"
 
-class CBC_Reader;
 class CBC_Writer;
-class CFX_DIBitmap;
 class CFX_Matrix;
 class CFX_RenderDevice;
 
@@ -28,18 +27,18 @@ class CBC_CodeBase {
   virtual BC_TYPE GetType() = 0;
   virtual bool Encode(WideStringView contents) = 0;
   virtual bool RenderDevice(CFX_RenderDevice* device,
-                            const CFX_Matrix* matrix) = 0;
+                            const CFX_Matrix& matrix) = 0;
 
-  bool SetTextLocation(BC_TEXT_LOC location);
+  void SetTextLocation(BC_TEXT_LOC location);
   bool SetWideNarrowRatio(int8_t ratio);
   bool SetStartChar(char start);
   bool SetEndChar(char end);
   bool SetErrorCorrectionLevel(int32_t level);
-  bool SetCharEncoding(int32_t encoding);
+  void SetCharEncoding(BC_CHAR_ENCODING encoding);
   bool SetModuleHeight(int32_t moduleHeight);
   bool SetModuleWidth(int32_t moduleWidth);
-  bool SetHeight(int32_t height);
-  bool SetWidth(int32_t width);
+  void SetHeight(int32_t height);
+  void SetWidth(int32_t width);
 
  protected:
   std::unique_ptr<CBC_Writer> m_pBCWriter;

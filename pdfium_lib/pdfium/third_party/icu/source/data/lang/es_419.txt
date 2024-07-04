@@ -1,35 +1,33 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es_419{
     Keys{
-        colAlternate{"orden ignorando símbolos"}
-        colBackwards{"orden de acentos con inversión"}
-        colCaseFirst{"orden de mayúsculas/minúsculas"}
-        colCaseLevel{"orden con distinción entre mayúsculas y minúsculas"}
-        lb{"salto de línea"}
-        ms{"sm"}
+        colNormalization{"orden normalizado"}
     }
     Languages{
-        ace{"achenés"}
         ady{"adigeo"}
         alt{"altái del sur"}
         arp{"arapajó"}
         ars{"árabe de Néyed"}
         bla{"siksiká"}
         eu{"vasco"}
-        fon{"fon"}
         goh{"alemán de la alta edad antigua"}
         grc{"griego clásico"}
         gu{"gujarati"}
         ht{"haitiano"}
         kbd{"cabardiano"}
         krc{"karachái-bálkaro"}
+        ks{"cachemiro"}
         lo{"laosiano"}
-        luo{"luo"}
+        ml{"malabar"}
+        mni{"manipuri"}
         nr{"ndebele del sur"}
         nso{"sesotho del norte"}
+        pa{"panyabí"}
         prg{"prusiano antiguo"}
         rm{"retorrománico"}
+        sd{"sindhi"}
         shu{"árabe (Chad)"}
         sma{"sami del sur"}
         st{"sesotho del sur"}
@@ -38,31 +36,25 @@ es_419{
         syr{"siríaco"}
         tet{"tetun"}
         tyv{"tuvano"}
-        tzm{"tamazight del Marruecos Central"}
-        vai{"vai"}
         wal{"walamo"}
         wuu{"wu"}
         xal{"calmuco"}
         zun{"zuni"}
-    }
-    Languages%short{
-        en_GB{"inglés (R.U.)"}
     }
     Languages%variant{
         ps{"pashtún"}
         ug{"uighur"}
     }
     Scripts{
-        Hanb{"han con bopomofo"}
+        Gujr{"gujarati"}
         Hrkt{"katakana o hiragana"}
         Laoo{"lao"}
         Latn{"latín"}
-        Mlym{"malayalam"}
+        Mlym{"malabar"}
+        Mtei{"manipuri"}
+        Syrc{"siríaco"}
     }
     Types{
-        calendar{
-            islamic-umalqura{"islamic-umalqura"}
-        }
         colAlternate{
             non-ignorable{"ordenar símbolos"}
             shifted{"ordenar ignorando símbolos"}
@@ -81,18 +73,8 @@ es_419{
             yes{"ordenar distinguiendo entre mayúsculas y minúsculas"}
         }
         collation{
-            compat{"orden anterior, para compatibilidad"}
             eor{"reglas de orden europeas"}
             phonebook{"orden de agenda telefónica"}
-        }
-        lb{
-            loose{"salto de línea flexible"}
-            strict{"salto de línea estricto"}
-        }
-        ms{
-            metric{"Sistema Métrico de Unidades"}
-            uksystem{"sistema inglés"}
-            ussystem{"Sistema Anglosajón de Unidades"}
         }
         numbers{
             tirh{"dígitos en tirh"}
@@ -100,7 +82,6 @@ es_419{
             wara{"dígitos en Warang Citi"}
         }
     }
-    Version{"2.1.43.65"}
     characterLabelPattern{
         enclosed{"{0} — Adjunto"}
         extended{"{0} — Extendido"}

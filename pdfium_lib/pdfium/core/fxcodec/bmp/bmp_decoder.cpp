@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,8 +12,7 @@
 #include "core/fxcodec/cfx_codec_memory.h"
 #include "core/fxcodec/fx_codec.h"
 #include "core/fxcodec/fx_codec_def.h"
-#include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/check.h"
+#include "core/fxcrt/check.h"
 
 namespace fxcodec {
 
@@ -30,8 +29,7 @@ BmpDecoder::Status BmpDecoder::ReadHeader(
     int32_t* height,
     bool* tb_flag,
     int32_t* components,
-    int32_t* pal_num,
-    const std::vector<uint32_t>** palette,
+    pdfium::span<const FX_ARGB>* palette,
     CFX_DIBAttribute* pAttribute) {
   DCHECK(pAttribute);
 
@@ -44,9 +42,8 @@ BmpDecoder::Status BmpDecoder::ReadHeader(
   *height = ctx->m_Bmp.height();
   *tb_flag = ctx->m_Bmp.img_tb_flag();
   *components = ctx->m_Bmp.components();
-  *pal_num = ctx->m_Bmp.pal_num();
   *palette = ctx->m_Bmp.palette();
-  pAttribute->m_wDPIUnit = FXCODEC_RESUNIT_METER;
+  pAttribute->m_wDPIUnit = CFX_DIBAttribute::kResUnitMeter;
   pAttribute->m_nXDPI = ctx->m_Bmp.dpi_x();
   pAttribute->m_nYDPI = ctx->m_Bmp.dpi_y();
   return Status::kSuccess;
@@ -66,8 +63,7 @@ FX_FILESIZE BmpDecoder::GetAvailInput(
 
 // static
 bool BmpDecoder::Input(ProgressiveDecoderIface::Context* pContext,
-                       RetainPtr<CFX_CodecMemory> codec_memory,
-                       CFX_DIBAttribute*) {
+                       RetainPtr<CFX_CodecMemory> codec_memory) {
   auto* ctx = static_cast<CFX_BmpContext*>(pContext);
   ctx->m_Bmp.SetInputBuffer(std::move(codec_memory));
   return true;

@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -11,6 +11,8 @@ source_set("page") {
     "cpdf_allstates.h",
     "cpdf_annotcontext.cpp",
     "cpdf_annotcontext.h",
+    "cpdf_basedcs.cpp",
+    "cpdf_basedcs.h",
     "cpdf_clippath.cpp",
     "cpdf_clippath.h",
     "cpdf_color.cpp",
@@ -47,14 +49,20 @@ source_set("page") {
     "cpdf_iccprofile.h",
     "cpdf_image.cpp",
     "cpdf_image.h",
+    "cpdf_imageloader.cpp",
+    "cpdf_imageloader.h",
     "cpdf_imageobject.cpp",
     "cpdf_imageobject.h",
+    "cpdf_indexedcs.cpp",
+    "cpdf_indexedcs.h",
     "cpdf_meshstream.cpp",
     "cpdf_meshstream.h",
     "cpdf_occontext.cpp",
     "cpdf_occontext.h",
     "cpdf_page.cpp",
     "cpdf_page.h",
+    "cpdf_pageimagecache.cpp",
+    "cpdf_pageimagecache.h",
     "cpdf_pagemodule.cpp",
     "cpdf_pagemodule.h",
     "cpdf_pageobject.cpp",
@@ -99,26 +107,43 @@ source_set("page") {
     "cpdf_transparency.h",
     "ipdf_page.h",
   ]
-  configs += [ "../../../:pdfium_core_config" ]
+  configs += [ "../../../:pdfium_strict_config" ]
+  public_deps = [
+    "../../fxge",
+    "../parser",
+  ]
   deps = [
     "../../../constants",
     "../../fxcodec",
     "../../fxcrt",
-    "../../fxge",
     "../font",
-    "../parser",
   ]
   allow_circular_includes_from = []
-  if (pdf_use_skia || pdf_use_skia_paths) {
+  if (pdf_use_skia) {
     allow_circular_includes_from += [ "../../fxge" ]
   }
   visibility = [ "../../../*" ]
 }
 
+source_set("unit_test_support") {
+  testonly = true
+  sources = [
+    "test_with_page_module.cpp",
+    "test_with_page_module.h",
+  ]
+  configs += [ "../../../:pdfium_strict_config" ]
+  deps = [
+    "../page",
+    "//testing/gtest",
+  ]
+}
+
 pdfium_unittest_source_set("unittests") {
   sources = [
+    "cpdf_colorspace_unittest.cpp",
     "cpdf_devicecs_unittest.cpp",
     "cpdf_function_unittest.cpp",
+    "cpdf_pageimagecache_unittest.cpp",
     "cpdf_pageobjectholder_unittest.cpp",
     "cpdf_psengine_unittest.cpp",
     "cpdf_streamcontentparser_unittest.cpp",
@@ -127,6 +152,7 @@ pdfium_unittest_source_set("unittests") {
   deps = [
     ":page",
     "../parser",
+    "../render",
   ]
   pdfium_root_dir = "../../../"
 }

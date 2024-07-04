@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -39,8 +39,6 @@ void CJS_Object::DefineMethods(CFXJS_Engine* pEngine,
 }
 
 CJS_Object::CJS_Object(v8::Local<v8::Object> pObject, CJS_Runtime* pRuntime)
-    : m_pIsolate(pObject->GetIsolate()),
-      m_pV8Object(GetIsolate(), pObject),
-      m_pRuntime(pRuntime) {}
+    : m_pV8Object(pObject->GetIsolate(), pObject), m_pRuntime(pRuntime) {}
 
 CJS_Object::~CJS_Object() = default;

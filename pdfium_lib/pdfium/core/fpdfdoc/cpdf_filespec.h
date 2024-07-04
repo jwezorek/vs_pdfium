@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,10 @@
 #ifndef CORE_FPDFDOC_CPDF_FILESPEC_H_
 #define CORE_FPDFDOC_CPDF_FILESPEC_H_
 
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxcrt/string_pool_template.h"
 #include "core/fxcrt/weak_ptr.h"
+#include "core/fxcrt/widestring.h"
 
 class CPDF_Dictionary;
 class CPDF_Object;
@@ -18,8 +18,7 @@ class CPDF_Stream;
 
 class CPDF_FileSpec {
  public:
-  explicit CPDF_FileSpec(const CPDF_Object* pObj);
-  explicit CPDF_FileSpec(CPDF_Object* pObj);
+  explicit CPDF_FileSpec(RetainPtr<const CPDF_Object> pObj);
   ~CPDF_FileSpec();
 
   // Convert a platform dependent file name into pdf format.
@@ -28,20 +27,13 @@ class CPDF_FileSpec {
   // Convert a pdf file name into platform dependent format.
   static WideString DecodeFileName(const WideString& filepath);
 
-  const CPDF_Object* GetObj() const { return m_pObj.Get(); }
-  CPDF_Object* GetObj() { return m_pWritableObj.Get(); }
   WideString GetFileName() const;
-  const CPDF_Stream* GetFileStream() const;
-  CPDF_Stream* GetFileStream();
-  const CPDF_Dictionary* GetParamsDict() const;
-  CPDF_Dictionary* GetParamsDict();
-
-  // Set this file spec to refer to a file name (not a url).
-  void SetFileName(const WideString& wsFileName);
+  RetainPtr<const CPDF_Stream> GetFileStream() const;
+  RetainPtr<const CPDF_Dictionary> GetParamsDict() const;
+  RetainPtr<CPDF_Dictionary> GetMutableParamsDict();
 
  private:
   RetainPtr<const CPDF_Object> const m_pObj;
-  RetainPtr<CPDF_Object> const m_pWritableObj;
 };
 
 #endif  // CORE_FPDFDOC_CPDF_FILESPEC_H_

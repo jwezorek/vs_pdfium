@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es{
     Countries{
         001{"Mundo"}
@@ -48,7 +49,7 @@ es{
         AT{"Austria"}
         AU{"Australia"}
         AW{"Aruba"}
-        AX{"Islas Åland"}
+        AX{"Islas Aland"}
         AZ{"Azerbaiyán"}
         BA{"Bosnia y Herzegovina"}
         BB{"Barbados"}
@@ -107,10 +108,10 @@ es{
         ES{"España"}
         ET{"Etiopía"}
         EU{"Unión Europea"}
-        EZ{"zona euro"}
+        EZ{"zona del euro"}
         FI{"Finlandia"}
         FJ{"Fiyi"}
-        FK{"Islas Malvinas (Islas Falkland)"}
+        FK{"Islas Malvinas"}
         FM{"Micronesia"}
         FO{"Islas Feroe"}
         FR{"Francia"}
@@ -119,7 +120,7 @@ es{
         GD{"Granada"}
         GE{"Georgia"}
         GF{"Guayana Francesa"}
-        GG{"Guernsey"}
+        GG{"Guernesey"}
         GH{"Ghana"}
         GI{"Gibraltar"}
         GL{"Groenlandia"}
@@ -133,7 +134,7 @@ es{
         GU{"Guam"}
         GW{"Guinea-Bisáu"}
         GY{"Guyana"}
-        HK{"Hong Kong"}
+        HK{"RAE de Hong Kong (China)"}
         HM{"Islas Heard y McDonald"}
         HN{"Honduras"}
         HR{"Croacia"}
@@ -183,11 +184,11 @@ es{
         MF{"San Martín"}
         MG{"Madagascar"}
         MH{"Islas Marshall"}
-        MK{"Macedonia (ERYM)"}
+        MK{"Macedonia del Norte"}
         ML{"Mali"}
         MM{"Myanmar (Birmania)"}
         MN{"Mongolia"}
-        MO{"Macao"}
+        MO{"RAE de Macao (China)"}
         MP{"Islas Marianas del Norte"}
         MQ{"Martinica"}
         MR{"Mauritania"}
@@ -222,7 +223,7 @@ es{
         PM{"San Pedro y Miquelón"}
         PN{"Islas Pitcairn"}
         PR{"Puerto Rico"}
-        PS{"Palestina"}
+        PS{"Territorios Palestinos"}
         PT{"Portugal"}
         PW{"Palaos"}
         PY{"Paraguay"}
@@ -253,7 +254,7 @@ es{
         SV{"El Salvador"}
         SX{"Sint Maarten"}
         SY{"Siria"}
-        SZ{"Suazilandia"}
+        SZ{"Esuatini"}
         TA{"Tristán de Acuña"}
         TC{"Islas Turcas y Caicos"}
         TD{"Chad"}
@@ -287,6 +288,8 @@ es{
         VU{"Vanuatu"}
         WF{"Wallis y Futuna"}
         WS{"Samoa"}
+        XA{"Pseudoacentos"}
+        XB{"Pseudobidi"}
         XK{"Kosovo"}
         YE{"Yemen"}
         YT{"Mayotte"}
@@ -295,8 +298,14 @@ es{
         ZW{"Zimbabue"}
         ZZ{"Región desconocida"}
     }
+    Countries%chagos{
+        IO{"Archipiélago de Chagos"}
+    }
     Countries%short{
         GB{"RU"}
+        HK{"Hong Kong"}
+        MO{"Macao"}
+        PS{"Palestina"}
         US{"EE. UU."}
     }
     Countries%variant{
@@ -304,7 +313,9 @@ es{
         CG{"Congo (República)"}
         CI{"Costa de Marfil"}
         CZ{"República Checa"}
+        FK{"Islas Malvinas (Islas Falkland)"}
+        NZ{"Aotearoa (Nueva Zelanda)"}
+        SZ{"Suazilandia"}
         TL{"Timor Oriental"}
     }
-    Version{"2.1.44.88"}
 }

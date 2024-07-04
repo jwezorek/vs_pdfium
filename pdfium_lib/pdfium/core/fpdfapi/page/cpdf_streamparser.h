@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,9 +7,16 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_STREAMPARSER_H_
 #define CORE_FPDFAPI_PAGE_CPDF_STREAMPARSER_H_
 
+#include <stdint.h>
+
+#include <array>
+
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/raw_span.h"
+#include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/string_pool_template.h"
 #include "core/fxcrt/weak_ptr.h"
-#include "third_party/base/span.h"
 
 class CPDF_Dictionary;
 class CPDF_Document;
@@ -18,16 +25,16 @@ class CPDF_Stream;
 
 class CPDF_StreamParser {
  public:
-  enum SyntaxType { EndOfData, Number, Keyword, Name, Others };
+  enum ElementType { kEndOfData, kNumber, kKeyword, kName, kOther };
 
   explicit CPDF_StreamParser(pdfium::span<const uint8_t> span);
   CPDF_StreamParser(pdfium::span<const uint8_t> span,
                     const WeakPtr<ByteStringPool>& pPool);
   ~CPDF_StreamParser();
 
-  SyntaxType ParseNextElement();
+  ElementType ParseNextElement();
   ByteStringView GetWord() const {
-    return ByteStringView(m_WordBuffer, m_WordSize);
+    return ByteStringView(m_WordBuffer).First(m_WordSize);
   }
   uint32_t GetPos() const { return m_Pos; }
   void SetPos(uint32_t pos) { m_Pos = pos; }
@@ -45,16 +52,16 @@ class CPDF_StreamParser {
 
   void GetNextWord(bool& bIsNumber);
   ByteString ReadString();
-  ByteString ReadHexString();
+  DataVector<uint8_t> ReadHexString();
   bool PositionIsInBounds() const;
-  bool WordBufferMatches(const char* pWord) const;
 
   uint32_t m_Pos = 0;       // Current byte position within |m_pBuf|.
   uint32_t m_WordSize = 0;  // Current byte position within |m_WordBuffer|.
   WeakPtr<ByteStringPool> m_pPool;
   RetainPtr<CPDF_Object> m_pLastObj;
-  pdfium::span<const uint8_t> m_pBuf;
-  uint8_t m_WordBuffer[kMaxWordLength + 1];  // Include space for NUL.
+  pdfium::raw_span<const uint8_t> m_pBuf;
+  // Include space for NUL.
+  std::array<uint8_t, kMaxWordLength + 1> m_WordBuffer = {};
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_STREAMPARSER_H_

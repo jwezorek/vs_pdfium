@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,10 +8,13 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/fxv8.h"
 #include "fxjs/js_resources.h"
 #include "fxjs/xfa/cfxjse_engine.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-object.h"
+#include "v8/include/v8-primitive.h"
 #include "xfa/fxfa/cxfa_eventparam.h"
 #include "xfa/fxfa/cxfa_ffnotify.h"
 #include "xfa/fxfa/parser/cxfa_arraynodelist.h"
@@ -36,14 +39,12 @@ bool CJX_Form::DynamicTypeIs(TypeTag eType) const {
   return eType == static_type__ || ParentType__::DynamicTypeIs(eType);
 }
 
-CJS_Result CJX_Form::formNodes(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Form::formNodes(CFXJSE_Engine* runtime,
+                               pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
-  CFXJSE_Engine* pEngine = static_cast<CFXJSE_Engine*>(runtime);
-  CXFA_Node* pDataNode = ToNode(pEngine->ToXFAObject(params[0]));
+  CXFA_Node* pDataNode = ToNode(runtime->ToXFAObject(params[0]));
   if (!pDataNode)
     return CJS_Result::Failure(JSMessage::kValueError);
 
@@ -52,22 +53,21 @@ CJS_Result CJX_Form::formNodes(
       pDoc->GetHeap()->GetAllocationHandle(), pDoc);
   pDoc->GetNodeOwner()->PersistList(pFormNodes);
 
-  v8::Local<v8::Value> value = pEngine->GetOrCreateJSBindingFromMap(pFormNodes);
+  v8::Local<v8::Value> value = runtime->GetOrCreateJSBindingFromMap(pFormNodes);
   return CJS_Result::Success(value);
 }
 
-CJS_Result CJX_Form::remerge(CFX_V8* runtime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Form::remerge(CFXJSE_Engine* runtime,
+                             pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
-  GetDocument()->DoDataRemerge(true);
+  GetDocument()->DoDataRemerge();
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Form::execInitialize(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Form::execInitialize(CFXJSE_Engine* runtime,
+                                    pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -78,11 +78,9 @@ CJS_Result CJX_Form::execInitialize(
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Form::recalculate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
-  CXFA_EventParam* pEventParam =
-      GetDocument()->GetScriptContext()->GetEventParam();
+CJS_Result CJX_Form::recalculate(CFXJSE_Engine* runtime,
+                                 pdfium::span<v8::Local<v8::Value>> params) {
+  CXFA_EventParam* pEventParam = runtime->GetEventParam();
   if (pEventParam && (pEventParam->m_eType == XFA_EVENT_Calculate ||
                       pEventParam->m_eType == XFA_EVENT_InitCalculate)) {
     return CJS_Result::Success();
@@ -100,9 +98,8 @@ CJS_Result CJX_Form::recalculate(
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Form::execCalculate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Form::execCalculate(CFXJSE_Engine* runtime,
+                                   pdfium::span<v8::Local<v8::Value>> params) {
   if (!params.empty())
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -113,9 +110,8 @@ CJS_Result CJX_Form::execCalculate(
   return CJS_Result::Success();
 }
 
-CJS_Result CJX_Form::execValidate(
-    CFX_V8* runtime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJX_Form::execValidate(CFXJSE_Engine* runtime,
+                                  pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 0)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -140,7 +136,8 @@ void CJX_Form::checksumS(v8::Isolate* pIsolate,
     return;
   }
 
-  Optional<WideString> checksum = TryAttribute(XFA_Attribute::Checksum, false);
+  std::optional<WideString> checksum =
+      TryAttribute(XFA_Attribute::Checksum, false);
   *pValue = fxv8::NewStringHelper(
       pIsolate,
       checksum.has_value() ? checksum.value().ToUTF8().AsStringView() : "");

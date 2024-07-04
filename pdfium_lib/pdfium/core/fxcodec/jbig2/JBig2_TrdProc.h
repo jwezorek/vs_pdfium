@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,16 @@
 #ifndef CORE_FXCODEC_JBIG2_JBIG2_TRDPROC_H_
 #define CORE_FXCODEC_JBIG2_JBIG2_TRDPROC_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 #include <vector>
 
 #include "core/fxcodec/jbig2/JBig2_Image.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
 class CJBig2_ArithDecoder;
 class CJBig2_ArithIaidDecoder;
@@ -50,12 +54,14 @@ class CJBig2_TRDProc {
   CJBig2_TRDProc();
   ~CJBig2_TRDProc();
 
-  std::unique_ptr<CJBig2_Image> DecodeHuffman(CJBig2_BitStream* pStream,
-                                              JBig2ArithCtx* grContext);
+  std::unique_ptr<CJBig2_Image> DecodeHuffman(
+      CJBig2_BitStream* pStream,
+      pdfium::span<JBig2ArithCtx> grContexts);
 
-  std::unique_ptr<CJBig2_Image> DecodeArith(CJBig2_ArithDecoder* pArithDecoder,
-                                            JBig2ArithCtx* grContext,
-                                            JBig2IntDecoderState* pIDS);
+  std::unique_ptr<CJBig2_Image> DecodeArith(
+      CJBig2_ArithDecoder* pArithDecoder,
+      pdfium::span<JBig2ArithCtx> grContexts,
+      JBig2IntDecoderState* pIDS);
 
   bool SBHUFF;
   bool SBREFINE;
@@ -70,7 +76,7 @@ class CJBig2_TRDProc {
   uint32_t SBSTRIPS;
   uint32_t SBNUMSYMS;
   std::vector<JBig2HuffmanCode> SBSYMCODES;
-  CJBig2_Image** SBSYMS;
+  UNOWNED_PTR_EXCLUSION CJBig2_Image** SBSYMS;
   JBig2ComposeOp SBCOMBOP;
   JBig2Corner REFCORNER;
   UnownedPtr<const CJBig2_HuffmanTable> SBHUFFFS;
@@ -81,7 +87,7 @@ class CJBig2_TRDProc {
   UnownedPtr<const CJBig2_HuffmanTable> SBHUFFRDX;
   UnownedPtr<const CJBig2_HuffmanTable> SBHUFFRDY;
   UnownedPtr<const CJBig2_HuffmanTable> SBHUFFRSIZE;
-  int8_t SBRAT[4];
+  std::array<int8_t, 4> SBRAT;
 
  private:
   struct ComposeData {

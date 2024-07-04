@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,15 +8,14 @@
 #define CORE_FXCRT_XML_CFX_XMLPARSER_H_
 
 #include <memory>
-#include <vector>
+#include <optional>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
-#include "core/fxcrt/fx_string.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/widestring.h"
 
 class CFX_SeekableStreamProxy;
 class CFX_XMLDocument;
-class CFX_XMLElement;
 class CFX_XMLNode;
 class IFX_SeekableReadStream;
 
@@ -54,11 +53,11 @@ class CFX_XMLParser final {
   void ProcessTextChar(wchar_t ch);
   void ProcessTargetData();
 
-  CFX_XMLNode* current_node_ = nullptr;
+  UnownedPtr<CFX_XMLNode> current_node_;
   RetainPtr<CFX_SeekableStreamProxy> stream_;
-  std::vector<wchar_t, FxAllocAllocator<wchar_t>> current_text_;
+  WideString current_text_;
   size_t xml_plane_size_ = 1024;
-  int32_t entity_start_ = -1;
+  std::optional<size_t> entity_start_;
 };
 
 #endif  // CORE_FXCRT_XML_CFX_XMLPARSER_H_

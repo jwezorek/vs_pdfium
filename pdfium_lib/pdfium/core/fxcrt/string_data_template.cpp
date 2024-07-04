@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,18 +6,23 @@
 
 #include "core/fxcrt/string_data_template.h"
 
+#include <string.h>
+
+#include <new>
+
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/check_op.h"
 #include "core/fxcrt/fx_memory.h"
 #include "core/fxcrt/fx_safe_types.h"
-#include "third_party/base/allocator/partition_allocator/partition_alloc.h"
-#include "third_party/base/check.h"
+#include "core/fxcrt/span_util.h"
 
 namespace fxcrt {
 
 // static
 template <typename CharType>
-StringDataTemplate<CharType>* StringDataTemplate<CharType>::Create(
+RetainPtr<StringDataTemplate<CharType>> StringDataTemplate<CharType>::Create(
     size_t nLen) {
-  DCHECK(nLen > 0);
+  DCHECK_GT(nLen, 0u);
 
   // Calculate space needed for the fixed portion of the struct plus the
   // NUL char that is not included in |m_nAllocLength|.
@@ -36,66 +41,55 @@ StringDataTemplate<CharType>* StringDataTemplate<CharType>::Create(
   size_t usableLen = (totalSize - overhead) / sizeof(CharType);
   DCHECK(usableLen >= nLen);
 
-  void* pData = GetStringPartitionAllocator().root()->Alloc(
-      totalSize, "StringDataTemplate");
-  return new (pData) StringDataTemplate(nLen, usableLen);
+  void* pData = FX_StringAlloc(char, totalSize);
+  return pdfium::WrapRetain(new (pData) StringDataTemplate(nLen, usableLen));
 }
 
 // static
 template <typename CharType>
-StringDataTemplate<CharType>* StringDataTemplate<CharType>::Create(
-    const CharType* pStr,
-    size_t nLen) {
-  StringDataTemplate* result = Create(nLen);
-  result->CopyContents(pStr, nLen);
+RetainPtr<StringDataTemplate<CharType>> StringDataTemplate<CharType>::Create(
+    pdfium::span<const CharType> str) {
+  RetainPtr<StringDataTemplate> result = Create(str.size());
+  result->CopyContents(str);
   return result;
 }
 
 template <typename CharType>
 void StringDataTemplate<CharType>::Release() {
   if (--m_nRefs <= 0)
-    GetStringPartitionAllocator().root()->Free(this);
+    FX_StringFree(this);
 }
 
 template <typename CharType>
 void StringDataTemplate<CharType>::CopyContents(
     const StringDataTemplate& other) {
-  DCHECK(other.m_nDataLength <= m_nAllocLength);
-  memcpy(m_String, other.m_String,
-         (other.m_nDataLength + 1) * sizeof(CharType));
+  fxcrt::spancpy(capacity_span(),
+                 other.capacity_span().first(other.m_nDataLength + 1));
 }
 
 template <typename CharType>
-void StringDataTemplate<CharType>::CopyContents(const CharType* pStr,
-                                                size_t nLen) {
-  DCHECK(nLen >= 0);
-  DCHECK(nLen <= m_nAllocLength);
-
-  memcpy(m_String, pStr, nLen * sizeof(CharType));
-  m_String[nLen] = 0;
+void StringDataTemplate<CharType>::CopyContents(
+    pdfium::span<const CharType> str) {
+  fxcrt::spancpy(capacity_span(), str);
+  capacity_span()[str.size()] = 0;
 }
 
 template <typename CharType>
-void StringDataTemplate<CharType>::CopyContentsAt(size_t offset,
-                                                  const CharType* pStr,
-                                                  size_t nLen) {
-  DCHECK(offset >= 0);
-  DCHECK(nLen >= 0);
-  DCHECK(offset + nLen <= m_nAllocLength);
-
-  memcpy(m_String + offset, pStr, nLen * sizeof(CharType));
-  m_String[offset + nLen] = 0;
+void StringDataTemplate<CharType>::CopyContentsAt(
+    size_t offset,
+    pdfium::span<const CharType> str) {
+  fxcrt::spancpy(capacity_span().subspan(offset), str);
+  capacity_span()[offset + str.size()] = 0;
 }
 
 template <typename CharType>
 StringDataTemplate<CharType>::StringDataTemplate(size_t dataLen,
                                                  size_t allocLen)
-    : m_nRefs(0), m_nDataLength(dataLen), m_nAllocLength(allocLen) {
-  DCHECK(dataLen >= 0);
-  DCHECK(dataLen <= allocLen);
-  m_String[dataLen] = 0;
+    : m_nDataLength(dataLen), m_nAllocLength(allocLen) {
+  capacity_span()[dataLen] = 0;
 }
 
+// Instantiate.
 template class StringDataTemplate<char>;
 template class StringDataTemplate<wchar_t>;
 

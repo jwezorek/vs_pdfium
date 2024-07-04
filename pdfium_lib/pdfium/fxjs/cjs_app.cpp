@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,23 +6,34 @@
 
 #include "fxjs/cjs_app.h"
 
+#include <stdint.h>
+
+#include <algorithm>
 #include <utility>
 
+#include "core/fxcrt/fixed_size_data_vector.h"
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/stl_util.h"
+#include "fpdfsdk/cpdfsdk_formfillenvironment.h"
 #include "fpdfsdk/cpdfsdk_interactiveform.h"
 #include "fxjs/cjs_document.h"
 #include "fxjs/cjs_timerobj.h"
 #include "fxjs/global_timer.h"
 #include "fxjs/ijs_event_context.h"
 #include "fxjs/js_resources.h"
-#include "third_party/base/stl_util.h"
+#include "v8/include/v8-container.h"
 
-#define JS_STR_VIEWERTYPE L"pdfium"
-#define JS_STR_VIEWERVARIATION L"Full"
-#define JS_STR_PLATFORM L"WIN"
-#define JS_STR_LANGUAGE L"ENU"
-#define JS_NUM_VIEWERVERSION 8
-#define JS_NUM_VIEWERVERSION_XFA 11
-#define JS_NUM_FORMSVERSION 7
+namespace {
+
+constexpr wchar_t kStrViewerType[] = L"pdfium";
+constexpr wchar_t kStrViewerVariation[] = L"Full";
+constexpr wchar_t kStrPlatform[] = L"WIN";
+constexpr wchar_t kStrLanguage[] = L"ENU";
+constexpr int kNumViewerVersion = 8;
+constexpr int kNumViewerVersionXfa = 11;
+constexpr int kNumFormsVersion = 7;
+
+}  // namespace
 
 const JSPropertySpec CJS_App::PropertySpecs[] = {
     {"activeDocs", get_active_docs_static, set_active_docs_static},
@@ -87,7 +98,7 @@ CJS_App::~CJS_App() = default;
 
 CJS_Result CJS_App::get_active_docs(CJS_Runtime* pRuntime) {
   v8::Local<v8::Object> pObj = pRuntime->GetThisObj();
-  auto pJSDocument = JSGetObject<CJS_Document>(pObj);
+  auto pJSDocument = JSGetObject<CJS_Document>(pRuntime->GetIsolate(), pObj);
   if (!pJSDocument)
     return CJS_Result::Failure(JSMessage::kObjectTypeError);
   v8::Local<v8::Array> aDocs = pRuntime->NewArray();
@@ -116,7 +127,7 @@ CJS_Result CJS_App::set_calculate(CJS_Runtime* pRuntime,
 }
 
 CJS_Result CJS_App::get_forms_version(CJS_Runtime* pRuntime) {
-  return CJS_Result::Success(pRuntime->NewNumber(JS_NUM_FORMSVERSION));
+  return CJS_Result::Success(pRuntime->NewNumber(kNumFormsVersion));
 }
 
 CJS_Result CJS_App::set_forms_version(CJS_Runtime* pRuntime,
@@ -125,7 +136,7 @@ CJS_Result CJS_App::set_forms_version(CJS_Runtime* pRuntime,
 }
 
 CJS_Result CJS_App::get_viewer_type(CJS_Runtime* pRuntime) {
-  return CJS_Result::Success(pRuntime->NewString(JS_STR_VIEWERTYPE));
+  return CJS_Result::Success(pRuntime->NewString(kStrViewerType));
 }
 
 CJS_Result CJS_App::set_viewer_type(CJS_Runtime* pRuntime,
@@ -134,7 +145,7 @@ CJS_Result CJS_App::set_viewer_type(CJS_Runtime* pRuntime,
 }
 
 CJS_Result CJS_App::get_viewer_variation(CJS_Runtime* pRuntime) {
-  return CJS_Result::Success(pRuntime->NewString(JS_STR_VIEWERVARIATION));
+  return CJS_Result::Success(pRuntime->NewString(kStrViewerVariation));
 }
 
 CJS_Result CJS_App::set_viewer_variation(CJS_Runtime* pRuntime,
@@ -146,8 +157,8 @@ CJS_Result CJS_App::get_viewer_version(CJS_Runtime* pRuntime) {
   CPDF_Document::Extension* pContext =
       pRuntime->GetFormFillEnv()->GetDocExtension();
   int version = pContext && pContext->ContainsExtensionForm()
-                    ? JS_NUM_VIEWERVERSION_XFA
-                    : JS_NUM_VIEWERVERSION;
+                    ? kNumViewerVersionXfa
+                    : kNumViewerVersion;
   return CJS_Result::Success(pRuntime->NewNumber(version));
 }
 
@@ -163,7 +174,7 @@ CJS_Result CJS_App::get_platform(CJS_Runtime* pRuntime) {
     if (!platform.IsEmpty())
       return CJS_Result::Success(pRuntime->NewString(platform.AsStringView()));
   }
-  return CJS_Result::Success(pRuntime->NewString(JS_STR_PLATFORM));
+  return CJS_Result::Success(pRuntime->NewString(kStrPlatform));
 }
 
 CJS_Result CJS_App::set_platform(CJS_Runtime* pRuntime,
@@ -178,7 +189,7 @@ CJS_Result CJS_App::get_language(CJS_Runtime* pRuntime) {
     if (!language.IsEmpty())
       return CJS_Result::Success(pRuntime->NewString(language.AsStringView()));
   }
-  return CJS_Result::Success(pRuntime->NewString(JS_STR_LANGUAGE));
+  return CJS_Result::Success(pRuntime->NewString(kStrLanguage));
 }
 
 CJS_Result CJS_App::set_language(CJS_Runtime* pRuntime,
@@ -191,7 +202,7 @@ CJS_Result CJS_App::set_language(CJS_Runtime* pRuntime,
 // note:
 // CFDF_Document * CPDFSDK_FormFillEnvironment::NewFDF();
 CJS_Result CJS_App::newFDF(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params) {
+                           pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
@@ -203,13 +214,13 @@ CJS_Result CJS_App::newFDF(CJS_Runtime* pRuntime,
 // bUserConv);
 
 CJS_Result CJS_App::openFDF(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
+                            pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_App::alert(CJS_Runtime* pRuntime,
-                          const std::vector<v8::Local<v8::Value>>& params) {
-  std::vector<v8::Local<v8::Value>> newParams = ExpandKeywordParams(
+                          pdfium::span<v8::Local<v8::Value>> params) {
+  v8::LocalVector<v8::Value> newParams = ExpandKeywordParams(
       pRuntime, params, 4, "cMsg", "nIcon", "nType", "cTitle");
 
   if (!IsExpandedParamKnown(newParams[0]))
@@ -249,7 +260,7 @@ CJS_Result CJS_App::alert(CJS_Runtime* pRuntime,
     swTitle = JSGetStringFromID(JSMessage::kAlert);
 
   pRuntime->BeginBlock();
-  pFormFillEnv->KillFocusAnnot(0);
+  pFormFillEnv->KillFocusAnnot({});
   v8::Local<v8::Value> ret = pRuntime->NewNumber(
       pFormFillEnv->JS_appAlert(swMsg, swTitle, iType, iIcon));
   pRuntime->EndBlock();
@@ -258,7 +269,7 @@ CJS_Result CJS_App::alert(CJS_Runtime* pRuntime,
 }
 
 CJS_Result CJS_App::beep(CJS_Runtime* pRuntime,
-                         const std::vector<v8::Local<v8::Value>>& params) {
+                         pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -270,15 +281,13 @@ CJS_Result CJS_App::beep(CJS_Runtime* pRuntime,
   return CJS_Result::Success();
 }
 
-CJS_Result CJS_App::findComponent(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::findComponent(CJS_Runtime* pRuntime,
+                                  pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
-CJS_Result CJS_App::popUpMenuEx(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::popUpMenuEx(CJS_Runtime* pRuntime,
+                                pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
@@ -290,9 +299,8 @@ CJS_Result CJS_App::set_fs(CJS_Runtime* pRuntime, v8::Local<v8::Value> vp) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
-CJS_Result CJS_App::setInterval(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::setInterval(CJS_Runtime* pRuntime,
+                                pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() == 0 || params.size() > 2)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -311,16 +319,15 @@ CJS_Result CJS_App::setInterval(
   if (pRetObj.IsEmpty())
     return CJS_Result::Failure(JSMessage::kBadObjectError);
 
-  auto* pJS_TimerObj =
-      static_cast<CJS_TimerObj*>(CFXJS_Engine::GetObjectPrivate(pRetObj));
+  auto* pJS_TimerObj = static_cast<CJS_TimerObj*>(
+      CFXJS_Engine::GetBinding(pRuntime->GetIsolate(), pRetObj));
 
   pJS_TimerObj->SetTimer(pTimerRef);
   return CJS_Result::Success(pRetObj);
 }
 
-CJS_Result CJS_App::setTimeOut(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::setTimeOut(CJS_Runtime* pRuntime,
+                               pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() == 0 || params.size() > 2)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -340,16 +347,15 @@ CJS_Result CJS_App::setTimeOut(
   if (pRetObj.IsEmpty())
     return CJS_Result::Failure(JSMessage::kBadObjectError);
 
-  auto* pJS_TimerObj =
-      static_cast<CJS_TimerObj*>(CFXJS_Engine::GetObjectPrivate(pRetObj));
+  auto* pJS_TimerObj = static_cast<CJS_TimerObj*>(
+      CFXJS_Engine::GetBinding(pRuntime->GetIsolate(), pRetObj));
 
   pJS_TimerObj->SetTimer(pTimerRef);
   return CJS_Result::Success(pRetObj);
 }
 
-CJS_Result CJS_App::clearTimeOut(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::clearTimeOut(CJS_Runtime* pRuntime,
+                                 pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -357,9 +363,8 @@ CJS_Result CJS_App::clearTimeOut(
   return CJS_Result::Success();
 }
 
-CJS_Result CJS_App::clearInterval(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::clearInterval(CJS_Runtime* pRuntime,
+                                  pdfium::span<v8::Local<v8::Value>> params) {
   if (params.size() != 1)
     return CJS_Result::Failure(JSMessage::kParamError);
 
@@ -373,16 +378,15 @@ void CJS_App::ClearTimerCommon(CJS_Runtime* pRuntime,
     return;
 
   v8::Local<v8::Object> pObj = pRuntime->ToObject(param);
-  auto pTimer = JSGetObject<CJS_TimerObj>(pObj);
+  auto pTimer = JSGetObject<CJS_TimerObj>(pRuntime->GetIsolate(), pObj);
   if (!pTimer)
     return;
 
   GlobalTimer::Cancel(pTimer->GetTimerID());
 }
 
-CJS_Result CJS_App::execMenuItem(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::execMenuItem(CJS_Runtime* pRuntime,
+                                 pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
@@ -393,7 +397,7 @@ void CJS_App::TimerProc(GlobalTimer* pTimer) {
 }
 
 void CJS_App::CancelProc(GlobalTimer* pTimer) {
-  m_Timers.erase(pdfium::FakeUniquePtr<GlobalTimer>(pTimer));
+  m_Timers.erase(fxcrt::MakeFakeUniquePtr(pTimer));
 }
 
 void CJS_App::RunJsScript(CJS_Runtime* pRuntime, const WideString& wsScript) {
@@ -406,20 +410,20 @@ void CJS_App::RunJsScript(CJS_Runtime* pRuntime, const WideString& wsScript) {
 }
 
 CJS_Result CJS_App::goBack(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params) {
+                           pdfium::span<v8::Local<v8::Value>> params) {
   // Not supported, but do not return error.
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_App::goForward(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+                              pdfium::span<v8::Local<v8::Value>> params) {
   // Not supported, but do not return error.
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_App::mailMsg(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
-  std::vector<v8::Local<v8::Value>> newParams = ExpandKeywordParams(
+                            pdfium::span<v8::Local<v8::Value>> params) {
+  v8::LocalVector<v8::Value> newParams = ExpandKeywordParams(
       pRuntime, params, 6, "bUI", "cTo", "cCc", "cBcc", "cSubject", "cMsg");
 
   if (!IsExpandedParamKnown(newParams[0]))
@@ -452,14 +456,14 @@ CJS_Result CJS_App::mailMsg(CJS_Runtime* pRuntime,
     cMsg = pRuntime->ToWideString(newParams[5]);
 
   pRuntime->BeginBlock();
-  pRuntime->GetFormFillEnv()->JS_docmailForm(nullptr, 0, bUI, cTo, cSubject,
-                                             cCc, cBcc, cMsg);
+  pRuntime->GetFormFillEnv()->JS_docmailForm(pdfium::span<const uint8_t>(), bUI,
+                                             cTo, cSubject, cCc, cBcc, cMsg);
   pRuntime->EndBlock();
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_App::launchURL(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+                              pdfium::span<v8::Local<v8::Value>> params) {
   // Unsafe, not supported, but do not return error.
   return CJS_Result::Success();
 }
@@ -484,39 +488,39 @@ CJS_Result CJS_App::set_fullscreen(CJS_Runtime* pRuntime,
 }
 
 CJS_Result CJS_App::popUpMenu(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+                              pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
-CJS_Result CJS_App::browseForDoc(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::browseForDoc(CJS_Runtime* pRuntime,
+                                 pdfium::span<v8::Local<v8::Value>> params) {
   // Unsafe, not supported, but do not return an error.
   return CJS_Result::Success();
 }
 
 WideString CJS_App::SysPathToPDFPath(const WideString& sOldPath) {
-  WideString sRet = L"/";
+  auto sRet = WideString::FromASCII("/");
   for (const wchar_t& c : sOldPath) {
-    if (c != L':')
+    if (c != L':') {
       sRet += (c == L'\\') ? L'/' : c;
+    }
   }
   return sRet;
 }
 
 CJS_Result CJS_App::newDoc(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params) {
+                           pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
 CJS_Result CJS_App::openDoc(CJS_Runtime* pRuntime,
-                            const std::vector<v8::Local<v8::Value>>& params) {
+                            pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
 CJS_Result CJS_App::response(CJS_Runtime* pRuntime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
-  std::vector<v8::Local<v8::Value>> newParams =
+                             pdfium::span<v8::Local<v8::Value>> params) {
+  v8::LocalVector<v8::Value> newParams =
       ExpandKeywordParams(pRuntime, params, 5, "cQuestion", "cTitle",
                           "cDefault", "bPassword", "cLabel");
 
@@ -524,7 +528,7 @@ CJS_Result CJS_App::response(CJS_Runtime* pRuntime,
     return CJS_Result::Failure(JSMessage::kParamError);
 
   WideString swQuestion = pRuntime->ToWideString(newParams[0]);
-  WideString swTitle = L"PDF";
+  auto swTitle = WideString::FromASCII("PDF");
   if (IsExpandedParamKnown(newParams[1]))
     swTitle = pRuntime->ToWideString(newParams[1]);
 
@@ -540,19 +544,17 @@ CJS_Result CJS_App::response(CJS_Runtime* pRuntime,
   if (IsExpandedParamKnown(newParams[4]))
     swLabel = pRuntime->ToWideString(newParams[4]);
 
-  const int MAX_INPUT_BYTES = 2048;
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> pBuff(MAX_INPUT_BYTES + 2);
-  int nLengthBytes = pRuntime->GetFormFillEnv()->JS_appResponse(
-      swQuestion, swTitle, swDefault, swLabel, bPassword, pBuff.data(),
-      MAX_INPUT_BYTES);
+  constexpr int kMaxWideChars = 1024;
+  constexpr int kMaxBytes = kMaxWideChars * sizeof(uint16_t);
+  auto buffer = FixedSizeDataVector<uint8_t>::Zeroed(kMaxBytes);
+  int byte_length = pRuntime->GetFormFillEnv()->JS_appResponse(
+      swQuestion, swTitle, swDefault, swLabel, bPassword, buffer.span());
 
-  if (nLengthBytes < 0 || nLengthBytes > MAX_INPUT_BYTES)
+  if (byte_length < 0 || byte_length > kMaxBytes)
     return CJS_Result::Failure(JSMessage::kParamTooLongError);
 
-  return CJS_Result::Success(pRuntime->NewString(
-      WideString::FromUTF16LE(reinterpret_cast<uint16_t*>(pBuff.data()),
-                              nLengthBytes / sizeof(uint16_t))
-          .AsStringView()));
+  auto wstr = WideString::FromUTF16LE(buffer.first(byte_length));
+  return CJS_Result::Success(pRuntime->NewString(wstr.AsStringView()));
 }
 
 CJS_Result CJS_App::get_media(CJS_Runtime* pRuntime) {
@@ -563,8 +565,7 @@ CJS_Result CJS_App::set_media(CJS_Runtime* pRuntime, v8::Local<v8::Value> vp) {
   return CJS_Result::Failure(JSMessage::kNotSupportedError);
 }
 
-CJS_Result CJS_App::execDialog(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_App::execDialog(CJS_Runtime* pRuntime,
+                               pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }

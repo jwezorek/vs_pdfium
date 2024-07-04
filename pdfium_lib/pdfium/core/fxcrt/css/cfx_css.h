@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,6 +8,8 @@
 #define CORE_FXCRT_CSS_CFX_CSS_H_
 
 #include <stdint.h>
+
+#include <type_traits>
 
 enum CFX_CSSVALUETYPE {
   CFX_CSSVALUETYPE_Primitive = 1 << 0,
@@ -19,110 +21,21 @@ enum CFX_CSSVALUETYPE {
   CFX_CSSVALUETYPE_MaybeString = 1 << 7,
   CFX_CSSVALUETYPE_MaybeColor = 1 << 8
 };
+using CFX_CSSValueTypeMask = std::underlying_type<CFX_CSSVALUETYPE>::type;
 
-enum class CFX_CSSPrimitiveType : uint8_t {
-  Unknown = 0,
-  Number,
-  String,
-  RGB,
-  Enum,
-  Function,
-  List,
-};
-
-// Any entries added/removed here, will need to be mirrored in
-// propertyValueTable, in core/fxcrt/css/cfx_cssdata.cpp.
-enum class CFX_CSSPropertyValue : uint8_t {
-  Bolder = 0,
-  None,
-  Dot,
-  Sub,
-  Top,
-  Right,
-  Normal,
-  Auto,
-  Text,
-  XSmall,
-  Thin,
-  Small,
-  Bottom,
-  Underline,
-  Double,
-  Lighter,
-  Oblique,
-  Super,
-  Center,
-  XxLarge,
-  Smaller,
-  Baseline,
-  Thick,
-  Justify,
-  Middle,
-  Medium,
-  ListItem,
-  XxSmall,
-  Bold,
-  SmallCaps,
-  Inline,
-  Overline,
-  TextBottom,
-  Larger,
-  InlineTable,
-  InlineBlock,
-  Blink,
-  Block,
-  Italic,
-  LineThrough,
-  XLarge,
-  Large,
-  Left,
-  TextTop,
-};
-
-// Any entries added/removed here, will need to be mirrored in
-// propertyTable, in core/fxcrt/css/cfx_cssdata.cpp.
+#undef CSS_PROP____
+#define CSS_PROP____(a, b, c, d) a,
 enum class CFX_CSSProperty : uint8_t {
-  BorderLeft = 0,
-  Top,
-  Margin,
-  TextIndent,
-  Right,
-  PaddingLeft,
-  MarginLeft,
-  Border,
-  BorderTop,
-  Bottom,
-  PaddingRight,
-  BorderBottom,
-  FontFamily,
-  FontWeight,
-  Color,
-  LetterSpacing,
-  TextAlign,
-  BorderRightWidth,
-  VerticalAlign,
-  PaddingTop,
-  FontVariant,
-  BorderWidth,
-  BorderBottomWidth,
-  BorderRight,
-  FontSize,
-  BorderSpacing,
-  FontStyle,
-  Font,
-  LineHeight,
-  MarginRight,
-  BorderLeftWidth,
-  Display,
-  PaddingBottom,
-  BorderTopWidth,
-  WordSpacing,
-  Left,
-  TextDecoration,
-  Padding,
-  MarginBottom,
-  MarginTop,
+#include "core/fxcrt/css/properties.inc"
 };
+#undef CSS_PROP____
+
+#undef CSS_PROP_VALUE____
+#define CSS_PROP_VALUE____(a, b, c) a,
+enum class CFX_CSSPropertyValue : uint8_t {
+#include "core/fxcrt/css/property_values.inc"
+};
+#undef CSS_PROP_VALUE____
 
 enum class CFX_CSSLengthUnit : uint8_t {
   Auto,
@@ -171,18 +84,18 @@ enum class CFX_CSSFontVariant : uint8_t {
   SmallCaps,
 };
 
-enum CFX_CSSTEXTDECORATION {
-  CFX_CSSTEXTDECORATION_None = 0,
-  CFX_CSSTEXTDECORATION_Underline = 1 << 0,
-  CFX_CSSTEXTDECORATION_Overline = 1 << 1,
-  CFX_CSSTEXTDECORATION_LineThrough = 1 << 2,
-  CFX_CSSTEXTDECORATION_Blink = 1 << 3,
-  CFX_CSSTEXTDECORATION_Double = 1 << 4,
+enum class CFX_CSSTEXTDECORATION : uint8_t {
+  kNone = 0,
+  kUnderline = 1 << 0,
+  kOverline = 1 << 1,
+  kLineThrough = 1 << 2,
+  kBlink = 1 << 3,
+  kDouble = 1 << 4,
 };
 
 class CFX_CSSLength {
  public:
-  CFX_CSSLength() {}
+  CFX_CSSLength() = default;
 
   CFX_CSSLength(CFX_CSSLengthUnit eUnit, float fValue)
       : m_unit(eUnit), m_fValue(fValue) {}
@@ -210,7 +123,7 @@ class CFX_CSSLength {
 
 class CFX_CSSRect {
  public:
-  CFX_CSSRect() {}
+  CFX_CSSRect() = default;
 
   CFX_CSSRect(CFX_CSSLengthUnit eUnit, float val)
       : left(eUnit, val),

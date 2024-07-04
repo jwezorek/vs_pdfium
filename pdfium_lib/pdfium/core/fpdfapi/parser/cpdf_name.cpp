@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -34,24 +34,19 @@ void CPDF_Name::SetString(const ByteString& str) {
   m_Name = str;
 }
 
-bool CPDF_Name::IsName() const {
-  return true;
-}
-
-CPDF_Name* CPDF_Name::AsName() {
-  return this;
-}
-
-const CPDF_Name* CPDF_Name::AsName() const {
+CPDF_Name* CPDF_Name::AsMutableName() {
   return this;
 }
 
 WideString CPDF_Name::GetUnicodeText() const {
-  return PDF_DecodeText(m_Name.raw_span());
+  return PDF_DecodeText(m_Name.unsigned_span());
 }
 
 bool CPDF_Name::WriteTo(IFX_ArchiveStream* archive,
                         const CPDF_Encryptor* encryptor) const {
-  return archive->WriteString("/") &&
-         archive->WriteString(PDF_NameEncode(GetString()).AsStringView());
+  if (!archive->WriteString("/"))
+    return false;
+
+  const ByteString name = PDF_NameEncode(GetString());
+  return name.IsEmpty() || archive->WriteString(name.AsStringView());
 }

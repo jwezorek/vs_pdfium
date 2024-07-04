@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -115,10 +115,8 @@ source_set("fxbarcode") {
     "qrcode/BC_QRCoder.h",
     "qrcode/BC_QRCoderBitVector.cpp",
     "qrcode/BC_QRCoderBitVector.h",
-    "qrcode/BC_QRCoderECBlocks.cpp",
-    "qrcode/BC_QRCoderECBlocks.h",
-    "qrcode/BC_QRCoderECBlocksData.cpp",
-    "qrcode/BC_QRCoderECBlocksData.h",
+    "qrcode/BC_QRCoderECBlockData.cpp",
+    "qrcode/BC_QRCoderECBlockData.h",
     "qrcode/BC_QRCoderEncoder.cpp",
     "qrcode/BC_QRCoderEncoder.h",
     "qrcode/BC_QRCoderErrorCorrectionLevel.cpp",
@@ -131,14 +129,13 @@ source_set("fxbarcode") {
     "qrcode/BC_QRCoderMode.h",
     "qrcode/BC_QRCoderVersion.cpp",
     "qrcode/BC_QRCoderVersion.h",
-    "utils.h",
   ]
   deps = [
     "../core/fxcrt",
     "../core/fxge",
     "../third_party:bigint",
   ]
-  configs += [ "../:pdfium_core_config" ]
+  configs += [ "../:pdfium_strict_config" ]
   visibility = [ "../*" ]
 }
 

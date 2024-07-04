@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,17 +12,25 @@
 #include "core/fxcodec/cfx_codec_memory.h"
 #include "core/fxcodec/fx_codec.h"
 #include "core/fxcodec/fx_codec_def.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/compiler_specific.h"
+#include "core/fxcrt/fx_memcpy_wrappers.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxcrt/fx_stream.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/notreached.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
 #include "core/fxge/dib/cfx_dibitmap.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/check.h"
-#include "third_party/base/notreached.h"
 
 extern "C" {
-#include "third_party/libtiff/tiffiop.h"
+#if defined(USE_SYSTEM_LIBTIFF)
+#include <tiffio.h>
+#else
+#include "third_party/libtiff/tiffio.h"
+#endif
 }  // extern C
 
 namespace {
@@ -94,19 +102,16 @@ void* _TIFFrealloc(void* ptr, tmsize_t size) {
 }
 
 void _TIFFmemset(void* ptr, int val, tmsize_t size) {
-  memset(ptr, val, static_cast<size_t>(size));
+  UNSAFE_TODO(FXSYS_memset(ptr, val, static_cast<size_t>(size)));
 }
 
 void _TIFFmemcpy(void* des, const void* src, tmsize_t size) {
-  memcpy(des, src, static_cast<size_t>(size));
+  UNSAFE_TODO(FXSYS_memcpy(des, src, static_cast<size_t>(size)));
 }
 
 int _TIFFmemcmp(const void* ptr1, const void* ptr2, tmsize_t size) {
-  return memcmp(ptr1, ptr2, static_cast<size_t>(size));
+  return UNSAFE_TODO(memcmp(ptr1, ptr2, static_cast<size_t>(size)));
 }
-
-TIFFErrorHandler _TIFFwarningHandler = nullptr;
-TIFFErrorHandler _TIFFerrorHandler = nullptr;
 
 namespace {
 
@@ -118,19 +123,23 @@ tsize_t tiff_read(thandle_t context, tdata_t buf, tsize_t length) {
     return 0;
 
   FX_FILESIZE offset = pTiffContext->offset();
-  if (!pTiffContext->io_in()->ReadBlockAtOffset(buf, offset, length))
+  // SAFETY: required from caller.
+  if (!pTiffContext->io_in()->ReadBlockAtOffset(
+          UNSAFE_BUFFERS(pdfium::make_span(static_cast<uint8_t*>(buf),
+                                           static_cast<size_t>(length))),
+          offset)) {
     return 0;
-
+  }
   pTiffContext->set_offset(increment.ValueOrDie());
-  if (offset + length > pTiffContext->io_in()->GetSize())
-    return pTiffContext->io_in()->GetSize() - offset;
-
+  if (offset + length > pTiffContext->io_in()->GetSize()) {
+    return pdfium::checked_cast<tsize_t>(pTiffContext->io_in()->GetSize() -
+                                         offset);
+  }
   return length;
 }
 
 tsize_t tiff_write(thandle_t context, tdata_t buf, tsize_t length) {
-  NOTREACHED();
-  return 0;
+  NOTREACHED_NORETURN();
 }
 
 toff_t tiff_seek(thandle_t context, toff_t offset, int whence) {
@@ -144,7 +153,7 @@ toff_t tiff_seek(thandle_t context, toff_t offset, int whence) {
     case 0: {
       if (file_offset > pTiffContext->io_in()->GetSize())
         return static_cast<toff_t>(-1);
-      pTiffContext->set_offset(file_offset);
+      pTiffContext->set_offset(pdfium::checked_cast<uint32_t>(file_offset));
       return pTiffContext->offset();
     }
     case 1: {
@@ -158,7 +167,8 @@ toff_t tiff_seek(thandle_t context, toff_t offset, int whence) {
     case 2: {
       if (pTiffContext->io_in()->GetSize() < file_offset)
         return static_cast<toff_t>(-1);
-      pTiffContext->set_offset(pTiffContext->io_in()->GetSize() - file_offset);
+      pTiffContext->set_offset(pdfium::checked_cast<uint32_t>(
+          pTiffContext->io_in()->GetSize() - file_offset));
       return pTiffContext->offset();
     }
     default:
@@ -181,49 +191,15 @@ int tiff_map(thandle_t context, tdata_t*, toff_t*) {
 
 void tiff_unmap(thandle_t context, tdata_t, toff_t) {}
 
-TIFF* tiff_open(void* context, const char* mode) {
-  TIFF* tif = TIFFClientOpen("Tiff Image", mode, (thandle_t)context, tiff_read,
-                             tiff_write, tiff_seek, tiff_close, tiff_get_size,
-                             tiff_map, tiff_unmap);
-  if (tif) {
-    tif->tif_fd = (int)(intptr_t)context;
-  }
-  return tif;
-}
-
-template <class T>
-bool Tiff_Exif_GetInfo(TIFF* tif_ctx, ttag_t tag, CFX_DIBAttribute* pAttr) {
-  T val = 0;
-  TIFFGetField(tif_ctx, tag, &val);
-  if (!val)
-    return false;
-  T* ptr = FX_Alloc(T, 1);
-  *ptr = val;
-  pAttr->m_Exif[tag] = ptr;
-  return true;
-}
-
-void Tiff_Exif_GetStringInfo(TIFF* tif_ctx,
-                             ttag_t tag,
-                             CFX_DIBAttribute* pAttr) {
-  char* buf = nullptr;
-  TIFFGetField(tif_ctx, tag, &buf);
-  if (!buf)
-    return;
-  size_t size = strlen(buf);
-  uint8_t* ptr = FX_AllocUninit(uint8_t, size + 1);
-  memcpy(ptr, buf, size);
-  ptr[size] = 0;
-  pAttr->m_Exif[tag] = ptr;
-}
-
 void TiffBGRA2RGBA(uint8_t* pBuf, int32_t pixel, int32_t spp) {
-  for (int32_t n = 0; n < pixel; n++) {
-    uint8_t tmp = pBuf[0];
-    pBuf[0] = pBuf[2];
-    pBuf[2] = tmp;
-    pBuf += spp;
-  }
+  UNSAFE_TODO({
+    for (int32_t n = 0; n < pixel; n++) {
+      uint8_t tmp = pBuf[0];
+      pBuf[0] = pBuf[2];
+      pBuf[2] = tmp;
+      pBuf += spp;
+    }
+  });
 }
 
 }  // namespace
@@ -231,7 +207,9 @@ void TiffBGRA2RGBA(uint8_t* pBuf, int32_t pixel, int32_t spp) {
 bool CTiffContext::InitDecoder(
     const RetainPtr<IFX_SeekableReadStream>& file_ptr) {
   m_io_in = file_ptr;
-  m_tif_ctx.reset(tiff_open(this, "r"));
+  m_tif_ctx.reset(TIFFClientOpen(
+      /*name=*/"Tiff Image", /*mode=*/"r", /*clientdata=*/this, tiff_read,
+      tiff_write, tiff_seek, tiff_close, tiff_get_size, tiff_map, tiff_unmap));
   return !!m_tif_ctx;
 }
 
@@ -241,7 +219,7 @@ bool CTiffContext::LoadFrameInfo(int32_t frame,
                                  int32_t* comps,
                                  int32_t* bpc,
                                  CFX_DIBAttribute* pAttribute) {
-  if (!TIFFSetDirectory(m_tif_ctx.get(), (uint16)frame))
+  if (!TIFFSetDirectory(m_tif_ctx.get(), (uint16_t)frame))
     return false;
 
   uint32_t tif_width = 0;
@@ -255,28 +233,23 @@ bool CTiffContext::LoadFrameInfo(int32_t frame,
   TIFFGetField(m_tif_ctx.get(), TIFFTAG_BITSPERSAMPLE, &tif_bpc);
   TIFFGetField(m_tif_ctx.get(), TIFFTAG_ROWSPERSTRIP, &tif_rps);
 
-  pAttribute->m_wDPIUnit = FXCODEC_RESUNIT_INCH;
-  if (TIFFGetField(m_tif_ctx.get(), TIFFTAG_RESOLUTIONUNIT,
-                   &pAttribute->m_wDPIUnit)) {
-    pAttribute->m_wDPIUnit--;
+  uint16_t tif_resunit = 0;
+  if (TIFFGetField(m_tif_ctx.get(), TIFFTAG_RESOLUTIONUNIT, &tif_resunit)) {
+    pAttribute->m_wDPIUnit =
+        static_cast<CFX_DIBAttribute::ResUnit>(tif_resunit - 1);
+  } else {
+    pAttribute->m_wDPIUnit = CFX_DIBAttribute::kResUnitInch;
   }
-  Tiff_Exif_GetInfo<uint16_t>(m_tif_ctx.get(), TIFFTAG_ORIENTATION, pAttribute);
-  if (Tiff_Exif_GetInfo<float>(m_tif_ctx.get(), TIFFTAG_XRESOLUTION,
-                               pAttribute)) {
-    void* val = pAttribute->m_Exif[TIFFTAG_XRESOLUTION];
-    float fDpi = val ? *reinterpret_cast<float*>(val) : 0;
-    pAttribute->m_nXDPI = static_cast<int32_t>(fDpi + 0.5f);
-  }
-  if (Tiff_Exif_GetInfo<float>(m_tif_ctx.get(), TIFFTAG_YRESOLUTION,
-                               pAttribute)) {
-    void* val = pAttribute->m_Exif[TIFFTAG_YRESOLUTION];
-    float fDpi = val ? *reinterpret_cast<float*>(val) : 0;
-    pAttribute->m_nYDPI = static_cast<int32_t>(fDpi + 0.5f);
-  }
-  Tiff_Exif_GetStringInfo(m_tif_ctx.get(), TIFFTAG_IMAGEDESCRIPTION,
-                          pAttribute);
-  Tiff_Exif_GetStringInfo(m_tif_ctx.get(), TIFFTAG_MAKE, pAttribute);
-  Tiff_Exif_GetStringInfo(m_tif_ctx.get(), TIFFTAG_MODEL, pAttribute);
+
+  float tif_xdpi = 0.0f;
+  TIFFGetField(m_tif_ctx.get(), TIFFTAG_XRESOLUTION, &tif_xdpi);
+  if (tif_xdpi)
+    pAttribute->m_nXDPI = static_cast<int32_t>(tif_xdpi + 0.5f);
+
+  float tif_ydpi = 0.0f;
+  TIFFGetField(m_tif_ctx.get(), TIFFTAG_YRESOLUTION, &tif_ydpi);
+  if (tif_ydpi)
+    pAttribute->m_nYDPI = static_cast<int32_t>(tif_ydpi + 0.5f);
 
   FX_SAFE_INT32 checked_width = tif_width;
   FX_SAFE_INT32 checked_height = tif_height;
@@ -332,22 +305,25 @@ void CTiffContext::SetPalette(const RetainPtr<CFX_DIBitmap>& pDIBitmap,
   uint16_t* blue_orig = nullptr;
   TIFFGetField(m_tif_ctx.get(), TIFFTAG_COLORMAP, &red_orig, &green_orig,
                &blue_orig);
-  for (int32_t i = (1L << bps) - 1; i >= 0; i--) {
 #define CVT(x) ((uint16_t)((x) >> 8))
-    red_orig[i] = CVT(red_orig[i]);
-    green_orig[i] = CVT(green_orig[i]);
-    blue_orig[i] = CVT(blue_orig[i]);
+  UNSAFE_TODO({
+    for (int32_t i = pdfium::checked_cast<int32_t>((1L << bps) - 1); i >= 0;
+         i--) {
+      red_orig[i] = CVT(red_orig[i]);
+      green_orig[i] = CVT(green_orig[i]);
+      blue_orig[i] = CVT(blue_orig[i]);
+    }
+    int32_t len = 1 << bps;
+    for (int32_t index = 0; index < len; index++) {
+      uint32_t r = red_orig[index] & 0xFF;
+      uint32_t g = green_orig[index] & 0xFF;
+      uint32_t b = blue_orig[index] & 0xFF;
+      uint32_t color = (uint32_t)b | ((uint32_t)g << 8) | ((uint32_t)r << 16) |
+                       (((uint32_t)0xffL) << 24);
+      pDIBitmap->SetPaletteArgb(index, color);
+    }
+  });
 #undef CVT
-  }
-  int32_t len = 1 << bps;
-  for (int32_t index = 0; index < len; index++) {
-    uint32_t r = red_orig[index] & 0xFF;
-    uint32_t g = green_orig[index] & 0xFF;
-    uint32_t b = blue_orig[index] & 0xFF;
-    uint32_t color = (uint32_t)b | ((uint32_t)g << 8) | ((uint32_t)r << 16) |
-                     (((uint32)0xffL) << 24);
-    pDIBitmap->SetPaletteArgb(index, color);
-  }
 }
 
 bool CTiffContext::Decode1bppRGB(const RetainPtr<CFX_DIBitmap>& pDIBitmap,
@@ -361,17 +337,16 @@ bool CTiffContext::Decode1bppRGB(const RetainPtr<CFX_DIBitmap>& pDIBitmap,
   }
   SetPalette(pDIBitmap, bps);
   int32_t size = static_cast<int32_t>(TIFFScanlineSize(m_tif_ctx.get()));
-  uint8_t* buf = (uint8_t*)_TIFFmalloc(size);
+  uint8_t* buf = reinterpret_cast<uint8_t*>(_TIFFmalloc(size));
   if (!buf) {
     TIFFError(TIFFFileName(m_tif_ctx.get()), "No space for scanline buffer");
     return false;
   }
-  uint8_t* bitMapbuffer = (uint8_t*)pDIBitmap->GetBuffer();
-  uint32_t pitch = pDIBitmap->GetPitch();
   for (int32_t row = 0; row < height; row++) {
+    uint8_t* bitMapbuffer = pDIBitmap->GetWritableScanline(row).data();
     TIFFReadScanline(m_tif_ctx.get(), buf, row, 0);
     for (int32_t j = 0; j < size; j++) {
-      bitMapbuffer[row * pitch + j] = buf[j];
+      UNSAFE_TODO(bitMapbuffer[j] = buf[j]);
     }
   }
   _TIFFfree(buf);
@@ -389,26 +364,27 @@ bool CTiffContext::Decode8bppRGB(const RetainPtr<CFX_DIBitmap>& pDIBitmap,
   }
   SetPalette(pDIBitmap, bps);
   int32_t size = static_cast<int32_t>(TIFFScanlineSize(m_tif_ctx.get()));
-  uint8_t* buf = (uint8_t*)_TIFFmalloc(size);
+  uint8_t* buf = reinterpret_cast<uint8_t*>(_TIFFmalloc(size));
   if (!buf) {
     TIFFError(TIFFFileName(m_tif_ctx.get()), "No space for scanline buffer");
     return false;
   }
-  uint8_t* bitMapbuffer = (uint8_t*)pDIBitmap->GetBuffer();
-  uint32_t pitch = pDIBitmap->GetPitch();
   for (int32_t row = 0; row < height; row++) {
+    uint8_t* bitMapbuffer = pDIBitmap->GetWritableScanline(row).data();
     TIFFReadScanline(m_tif_ctx.get(), buf, row, 0);
-    for (int32_t j = 0; j < size; j++) {
-      switch (bps) {
-        case 4:
-          bitMapbuffer[row * pitch + 2 * j + 0] = (buf[j] & 0xF0) >> 4;
-          bitMapbuffer[row * pitch + 2 * j + 1] = (buf[j] & 0x0F) >> 0;
-          break;
-        case 8:
-          bitMapbuffer[row * pitch + j] = buf[j];
-          break;
+    UNSAFE_TODO({
+      for (int32_t j = 0; j < size; j++) {
+        switch (bps) {
+          case 4:
+            bitMapbuffer[2 * j + 0] = (buf[j] & 0xF0) >> 4;
+            bitMapbuffer[2 * j + 1] = (buf[j] & 0x0F) >> 0;
+            break;
+          case 8:
+            bitMapbuffer[j] = buf[j];
+            break;
+        }
       }
-    }
+    });
   }
   _TIFFfree(buf);
   return true;
@@ -423,20 +399,21 @@ bool CTiffContext::Decode24bppRGB(const RetainPtr<CFX_DIBitmap>& pDIBitmap,
     return false;
 
   int32_t size = static_cast<int32_t>(TIFFScanlineSize(m_tif_ctx.get()));
-  uint8_t* buf = (uint8_t*)_TIFFmalloc(size);
+  uint8_t* buf = reinterpret_cast<uint8_t*>(_TIFFmalloc(size));
   if (!buf) {
     TIFFError(TIFFFileName(m_tif_ctx.get()), "No space for scanline buffer");
     return false;
   }
-  uint8_t* bitMapbuffer = (uint8_t*)pDIBitmap->GetBuffer();
-  uint32_t pitch = pDIBitmap->GetPitch();
   for (int32_t row = 0; row < height; row++) {
+    uint8_t* bitMapbuffer = pDIBitmap->GetWritableScanline(row).data();
     TIFFReadScanline(m_tif_ctx.get(), buf, row, 0);
-    for (int32_t j = 0; j < size - 2; j += 3) {
-      bitMapbuffer[row * pitch + j + 0] = buf[j + 2];
-      bitMapbuffer[row * pitch + j + 1] = buf[j + 1];
-      bitMapbuffer[row * pitch + j + 2] = buf[j + 0];
-    }
+    UNSAFE_TODO({
+      for (int32_t j = 0; j < size - 2; j += 3) {
+        bitMapbuffer[j + 0] = buf[j + 2];
+        bitMapbuffer[j + 1] = buf[j + 1];
+        bitMapbuffer[j + 2] = buf[j + 0];
+      }
+    });
   }
   _TIFFfree(buf);
   return true;
@@ -455,11 +432,12 @@ bool CTiffContext::Decode(const RetainPtr<CFX_DIBitmap>& pDIBitmap) {
   if (pDIBitmap->GetBPP() == 32) {
     uint16_t rotation = ORIENTATION_TOPLEFT;
     TIFFGetField(m_tif_ctx.get(), TIFFTAG_ORIENTATION, &rotation);
-    if (TIFFReadRGBAImageOriented(m_tif_ctx.get(), img_width, img_height,
-                                  (uint32*)pDIBitmap->GetBuffer(), rotation,
-                                  1)) {
+    uint32_t* data = const_cast<uint32_t*>(
+        reinterpret_cast<const uint32_t*>(pDIBitmap->GetBuffer().data()));
+    if (TIFFReadRGBAImageOriented(m_tif_ctx.get(), img_width, img_height, data,
+                                  rotation, 1)) {
       for (uint32_t row = 0; row < img_height; row++) {
-        uint8_t* row_buf = pDIBitmap->GetWritableScanline(row);
+        uint8_t* row_buf = pDIBitmap->GetWritableScanline(row).data();
         TiffBGRA2RGBA(row_buf, img_width, 4);
       }
       return true;

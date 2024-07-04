@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -13,31 +13,31 @@
 TEST(CPDFFunction, BadFunctionType) {
   auto pDict = pdfium::MakeRetain<CPDF_Dictionary>();
   pDict->SetNewFor<CPDF_Number>("FunctionType", -2);
-  EXPECT_EQ(nullptr, CPDF_Function::Load(pDict.Get()));
+  EXPECT_FALSE(CPDF_Function::Load(pDict));
 
   pDict->SetNewFor<CPDF_Number>("FunctionType", 5);
-  EXPECT_EQ(nullptr, CPDF_Function::Load(pDict.Get()));
+  EXPECT_FALSE(CPDF_Function::Load(pDict));
 }
 
 TEST(CPDFFunction, NoDomain) {
   auto pDict = pdfium::MakeRetain<CPDF_Dictionary>();
   pDict->SetNewFor<CPDF_Number>("FunctionType", 0);
-  EXPECT_EQ(nullptr, CPDF_Function::Load(pDict.Get()));
+  EXPECT_FALSE(CPDF_Function::Load(pDict));
 }
 
 TEST(CPDFFunction, EmptyDomain) {
   auto pDict = pdfium::MakeRetain<CPDF_Dictionary>();
   pDict->SetNewFor<CPDF_Number>("FunctionType", 0);
   pDict->SetNewFor<CPDF_Array>("Domain");
-  EXPECT_EQ(nullptr, CPDF_Function::Load(pDict.Get()));
+  EXPECT_FALSE(CPDF_Function::Load(pDict));
 }
 
 TEST(CPDFFunction, NoRange) {
   auto pDict = pdfium::MakeRetain<CPDF_Dictionary>();
   pDict->SetNewFor<CPDF_Number>("FunctionType", 0);
 
-  CPDF_Array* pArray = pDict->SetNewFor<CPDF_Array>("Domain");
+  auto pArray = pDict->SetNewFor<CPDF_Array>("Domain");
   pArray->AppendNew<CPDF_Number>(0);
   pArray->AppendNew<CPDF_Number>(10);
-  EXPECT_EQ(nullptr, CPDF_Function::Load(pDict.Get()));
+  EXPECT_FALSE(CPDF_Function::Load(pDict));
 }

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,10 @@
 #ifndef CORE_FXCODEC_SCANLINEDECODER_H_
 #define CORE_FXCODEC_SCANLINEDECODER_H_
 
-#include "core/fxcrt/fx_system.h"
+#include <stdint.h>
+
+#include "core/fxcrt/raw_span.h"
+#include "core/fxcrt/span.h"
 
 class PauseIndicatorIface;
 
@@ -25,7 +28,7 @@ class ScanlineDecoder {
                   uint32_t nPitch);
   virtual ~ScanlineDecoder();
 
-  const uint8_t* GetScanline(int line);
+  pdfium::span<const uint8_t> GetScanline(int line);
   bool SkipToScanline(int line, PauseIndicatorIface* pPause);
 
   int GetWidth() const { return m_OutputWidth; }
@@ -36,10 +39,8 @@ class ScanlineDecoder {
   virtual uint32_t GetSrcOffset() = 0;
 
  protected:
-  virtual bool v_Rewind() = 0;
-  virtual uint8_t* v_GetNextLine() = 0;
-
-  uint8_t* ReadNextLine();
+  virtual bool Rewind() = 0;
+  virtual pdfium::span<uint8_t> GetNextLine() = 0;
 
   int m_OrigWidth;
   int m_OrigHeight;
@@ -49,7 +50,7 @@ class ScanlineDecoder {
   int m_bpc;
   uint32_t m_Pitch;
   int m_NextLine = -1;
-  uint8_t* m_pLastScanline = nullptr;
+  pdfium::raw_span<uint8_t> m_pLastScanline;
 };
 
 }  // namespace fxcodec

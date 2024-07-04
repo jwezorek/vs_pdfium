@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,14 +7,15 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_MESHSTREAM_H_
 #define CORE_FPDFAPI_PAGE_CPDF_MESHSTREAM_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
-#include <tuple>
 #include <vector>
 
 #include "core/fpdfapi/page/cpdf_shadingpattern.h"
-#include "core/fxcrt/cfx_bitstream.h"
-#include "core/fxcrt/fx_system.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxge/dib/fx_dib.h"
 
 class CPDF_StreamAcc;
 
@@ -25,11 +26,10 @@ class CPDF_MeshVertex {
   ~CPDF_MeshVertex();
 
   CFX_PointF position;
-  float r = 0.0f;
-  float g = 0.0f;
-  float b = 0.0f;
+  FX_RGB_STRUCT<float> rgb = {};
 };
 
+class CFX_BitStream;
 class CFX_Matrix;
 class CPDF_ColorSpace;
 class CPDF_Function;
@@ -39,19 +39,22 @@ class CPDF_MeshStream {
  public:
   CPDF_MeshStream(ShadingType type,
                   const std::vector<std::unique_ptr<CPDF_Function>>& funcs,
-                  const CPDF_Stream* pShadingStream,
-                  const RetainPtr<CPDF_ColorSpace>& pCS);
+                  RetainPtr<const CPDF_Stream> pShadingStream,
+                  RetainPtr<CPDF_ColorSpace> pCS);
   ~CPDF_MeshStream();
 
   bool Load();
+  void SkipBits(uint32_t nbits);
+  void ByteAlign();
 
+  bool IsEOF() const;
   bool CanReadFlag() const;
   bool CanReadCoords() const;
   bool CanReadColor() const;
 
-  uint32_t ReadFlag();
-  CFX_PointF ReadCoords();
-  std::tuple<float, float, float> ReadColor();
+  uint32_t ReadFlag() const;
+  CFX_PointF ReadCoords() const;
+  FX_RGB_STRUCT<float> ReadColor() const;
 
   bool ReadVertex(const CFX_Matrix& pObject2Bitmap,
                   CPDF_MeshVertex* vertex,
@@ -59,7 +62,6 @@ class CPDF_MeshStream {
   std::vector<CPDF_MeshVertex> ReadVertexRow(const CFX_Matrix& pObject2Bitmap,
                                              int count);
 
-  CFX_BitStream* BitStream() { return m_BitStream.get(); }
   uint32_t ComponentBits() const { return m_nComponentBits; }
   uint32_t Components() const { return m_nComponents; }
 
@@ -82,8 +84,8 @@ class CPDF_MeshStream {
   float m_ymax = 0.0f;
   RetainPtr<CPDF_StreamAcc> m_pStream;
   std::unique_ptr<CFX_BitStream> m_BitStream;
-  float m_ColorMin[kMaxComponents] = {};
-  float m_ColorMax[kMaxComponents] = {};
+  std::array<float, kMaxComponents> m_ColorMin = {};
+  std::array<float, kMaxComponents> m_ColorMax = {};
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_MESHSTREAM_H_

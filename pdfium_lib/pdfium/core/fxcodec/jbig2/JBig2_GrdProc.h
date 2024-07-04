@@ -1,4 +1,4 @@
-// Copyright 2015 PDFium Authors. All rights reserved.
+// Copyright 2015 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,12 +7,16 @@
 #ifndef CORE_FXCODEC_JBIG2_JBIG2_GRDPROC_H_
 #define CORE_FXCODEC_JBIG2_JBIG2_GRDPROC_H_
 
+#include <stdint.h>
+
+#include <array>
 #include <memory>
 
 #include "core/fxcodec/fx_codec_def.h"
 #include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/span.h"
 #include "core/fxcrt/unowned_ptr.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 
 class CJBig2_ArithDecoder;
 class CJBig2_BitStream;
@@ -27,17 +31,18 @@ class CJBig2_GRDProc {
     ProgressiveArithDecodeState();
     ~ProgressiveArithDecodeState();
 
-    std::unique_ptr<CJBig2_Image>* pImage;
+    UnownedPtr<std::unique_ptr<CJBig2_Image>> pImage;
     UnownedPtr<CJBig2_ArithDecoder> pArithDecoder;
-    UnownedPtr<JBig2ArithCtx> gbContext;
+    pdfium::span<JBig2ArithCtx> gbContexts;
     UnownedPtr<PauseIndicatorIface> pPause;
   };
 
   CJBig2_GRDProc();
   ~CJBig2_GRDProc();
 
-  std::unique_ptr<CJBig2_Image> DecodeArith(CJBig2_ArithDecoder* pArithDecoder,
-                                            JBig2ArithCtx* gbContext);
+  std::unique_ptr<CJBig2_Image> DecodeArith(
+      CJBig2_ArithDecoder* pArithDecoder,
+      pdfium::span<JBig2ArithCtx> gbContexts);
 
   FXCODEC_STATUS StartDecodeArith(ProgressiveArithDecodeState* pState);
   FXCODEC_STATUS StartDecodeMMR(std::unique_ptr<CJBig2_Image>* pImage,
@@ -52,7 +57,7 @@ class CJBig2_GRDProc {
   uint32_t GBW;
   uint32_t GBH;
   UnownedPtr<CJBig2_Image> SKIP;
-  int8_t GBAT[8];
+  std::array<int8_t, 8> GBAT;
 
  private:
   bool UseTemplate0Opt3() const;
@@ -79,22 +84,22 @@ class CJBig2_GRDProc {
 
   std::unique_ptr<CJBig2_Image> DecodeArithOpt3(
       CJBig2_ArithDecoder* pArithDecoder,
-      JBig2ArithCtx* gbContext,
+      pdfium::span<JBig2ArithCtx> gbContexts,
       int OPT);
   std::unique_ptr<CJBig2_Image> DecodeArithTemplateUnopt(
       CJBig2_ArithDecoder* pArithDecoder,
-      JBig2ArithCtx* gbContext,
+      pdfium::span<JBig2ArithCtx> gbContexts,
       int UNOPT);
   std::unique_ptr<CJBig2_Image> DecodeArithTemplate3Opt3(
       CJBig2_ArithDecoder* pArithDecoder,
-      JBig2ArithCtx* gbContext);
+      pdfium::span<JBig2ArithCtx> gbContexts);
   std::unique_ptr<CJBig2_Image> DecodeArithTemplate3Unopt(
       CJBig2_ArithDecoder* pArithDecoder,
-      JBig2ArithCtx* gbContext);
+      pdfium::span<JBig2ArithCtx> gbContexts);
 
   uint32_t m_loopIndex = 0;
-  uint8_t* m_pLine = nullptr;
-  FXCODEC_STATUS m_ProssiveStatus;
+  UNOWNED_PTR_EXCLUSION uint8_t* m_pLine = nullptr;
+  FXCODEC_STATUS m_ProgressiveStatus;
   uint16_t m_DecodeType = 0;
   int m_LTP = 0;
   FX_RECT m_ReplaceRect;

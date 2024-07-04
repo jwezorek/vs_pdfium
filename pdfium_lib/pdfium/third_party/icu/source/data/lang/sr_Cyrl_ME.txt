@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sr_Cyrl_ME{
     Languages{
         arn{"мапудунгун"}
@@ -12,10 +13,8 @@ sr_Cyrl_ME{
         moh{"мохок"}
         nqo{"н’ко"}
         shi{"јужни шилха"}
-        tzm{"централноатласки тамашек"}
         xh{"исикоса"}
         zgh{"стандардни марокански тамашек"}
         zu{"исизулу"}
     }
-    Version{"2.1.44.88"}
 }

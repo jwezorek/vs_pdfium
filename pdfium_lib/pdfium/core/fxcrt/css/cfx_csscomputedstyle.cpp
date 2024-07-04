@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,9 +6,9 @@
 
 #include "core/fxcrt/css/cfx_csscomputedstyle.h"
 
+#include "core/fxcrt/containers/adapters.h"
 #include "core/fxcrt/css/cfx_cssstringvalue.h"
 #include "core/fxcrt/css/cfx_cssvaluelist.h"
-#include "third_party/base/containers/adapters.h"
 
 CFX_CSSComputedStyle::CFX_CSSComputedStyle() = default;
 
@@ -16,7 +16,7 @@ CFX_CSSComputedStyle::~CFX_CSSComputedStyle() = default;
 
 bool CFX_CSSComputedStyle::GetCustomStyle(const WideString& wsName,
                                           WideString* pValue) const {
-  for (const auto& prop : pdfium::base::Reversed(m_CustomProperties)) {
+  for (const auto& prop : pdfium::Reversed(m_CustomProperties)) {
     if (wsName == prop.name()) {
       *pValue = prop.value();
       return true;
@@ -25,15 +25,15 @@ bool CFX_CSSComputedStyle::GetCustomStyle(const WideString& wsName,
   return false;
 }
 
-Optional<WideString> CFX_CSSComputedStyle::GetLastFontFamily() const {
+std::optional<WideString> CFX_CSSComputedStyle::GetLastFontFamily() const {
   if (!m_InheritedData.m_pFontFamily ||
       m_InheritedData.m_pFontFamily->values().empty()) {
-    return pdfium::nullopt;
+    return std::nullopt;
   }
 
   return m_InheritedData.m_pFontFamily->values()
       .back()
-      .As<CFX_CSSStringValue>()
+      .AsRaw<CFX_CSSStringValue>()
       ->Value();
 }
 
@@ -126,7 +126,7 @@ float CFX_CSSComputedStyle::GetNumberVerticalAlign() const {
   return m_NonInheritedData.m_fVerticalAlign;
 }
 
-uint32_t CFX_CSSComputedStyle::GetTextDecoration() const {
+Mask<CFX_CSSTEXTDECORATION> CFX_CSSComputedStyle::GetTextDecoration() const {
   return m_NonInheritedData.m_dwTextDecoration;
 }
 
@@ -151,7 +151,8 @@ void CFX_CSSComputedStyle::SetNumberVerticalAlign(float fAlign) {
   m_NonInheritedData.m_fVerticalAlign = fAlign;
 }
 
-void CFX_CSSComputedStyle::SetTextDecoration(uint32_t dwTextDecoration) {
+void CFX_CSSComputedStyle::SetTextDecoration(
+    Mask<CFX_CSSTEXTDECORATION> dwTextDecoration) {
   m_NonInheritedData.m_dwTextDecoration = dwTextDecoration;
 }
 

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 sbp{
     Countries{
         AD{"Andola"}
@@ -92,7 +93,6 @@ sbp{
         IE{"Ayalandi"}
         IL{"Isilaeli"}
         IN{"Indiya"}
-        IO{"Uluvala lwa Uwingelesa ku Bahali ya Hindi"}
         IQ{"Ilaki"}
         IR{"Uwajemi"}
         IS{"Ayisilendi"}
@@ -127,7 +127,6 @@ sbp{
         MD{"Molidova"}
         MG{"Bukini"}
         MH{"Figunguli ifya Malishali"}
-        MK{"Masedoniya"}
         ML{"Mali"}
         MM{"Muyama"}
         MN{"Mongoliya"}
@@ -227,5 +226,4 @@ sbp{
         ZM{"Sambiya"}
         ZW{"Simbabwe"}
     }
-    Version{"2.1.39.11"}
 }

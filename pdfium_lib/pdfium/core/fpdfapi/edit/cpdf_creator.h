@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -29,7 +29,7 @@ class CPDF_Parser;
 class CPDF_Creator {
  public:
   CPDF_Creator(CPDF_Document* pDoc,
-               const RetainPtr<IFX_RetainableWriteStream>& archive);
+               RetainPtr<IFX_RetainableWriteStream> archive);
   ~CPDF_Creator();
 
   void RemoveSecurity();
@@ -73,11 +73,10 @@ class CPDF_Creator {
   CPDF_CryptoHandler* GetCryptoHandler();
 
   UnownedPtr<CPDF_Document> const m_pDocument;
-  UnownedPtr<const CPDF_Parser> const m_pParser;
+  UnownedPtr<CPDF_Parser> const m_pParser;
   RetainPtr<const CPDF_Dictionary> m_pEncryptDict;
   RetainPtr<CPDF_Dictionary> m_pNewEncryptDict;
   RetainPtr<CPDF_SecurityHandler> m_pSecurityHandler;
-  RetainPtr<const CPDF_Object> m_pMetadata;
   uint32_t m_dwLastObjNum;
   std::unique_ptr<IFX_ArchiveStream> m_Archive;
   FX_FILESIZE m_SavedOffset = 0;

@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,8 +8,10 @@
 #include <memory>
 
 #include "v8/include/cppgc/allocation.h"
-#include "v8/include/cppgc/heap.h"
-#include "v8/include/libplatform/libplatform.h"
+
+namespace cppgc {
+class Heap;
+}  // namespace cppgc
 
 namespace v8 {
 class Isolate;

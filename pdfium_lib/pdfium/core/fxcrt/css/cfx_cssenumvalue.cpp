@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,6 +7,6 @@
 #include "core/fxcrt/css/cfx_cssenumvalue.h"
 
 CFX_CSSEnumValue::CFX_CSSEnumValue(CFX_CSSPropertyValue value)
-    : CFX_CSSValue(CFX_CSSPrimitiveType::Enum), value_(value) {}
+    : CFX_CSSValue(PrimitiveType::kEnum), value_(value) {}
 
 CFX_CSSEnumValue::~CFX_CSSEnumValue() = default;

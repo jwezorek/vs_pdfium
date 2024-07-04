@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,9 +9,12 @@
 
 #include <windows.h>
 
+#include <optional>
+
 #include "core/fxcrt/retain_ptr.h"
 #include "core/fxge/renderdevicedriver_iface.h"
-#include "third_party/base/optional.h"
+
+class CFX_DIBBase;
 
 class CGdiDeviceDriver : public RenderDeviceDriverIface {
  protected:
@@ -24,13 +27,13 @@ class CGdiDeviceDriver : public RenderDeviceDriverIface {
   void SaveState() override;
   void RestoreState(bool bKeepSaved) override;
   void SetBaseClip(const FX_RECT& rect) override;
-  bool SetClip_PathFill(const CFX_PathData* pPathData,
+  bool SetClip_PathFill(const CFX_Path& path,
                         const CFX_Matrix* pObject2Device,
                         const CFX_FillRenderOptions& fill_options) override;
-  bool SetClip_PathStroke(const CFX_PathData* pPathData,
+  bool SetClip_PathStroke(const CFX_Path& path,
                           const CFX_Matrix* pObject2Device,
                           const CFX_GraphStateData* pGraphState) override;
-  bool DrawPath(const CFX_PathData* pPathData,
+  bool DrawPath(const CFX_Path& path,
                 const CFX_Matrix* pObject2Device,
                 const CFX_GraphStateData* pGraphState,
                 uint32_t fill_color,
@@ -44,21 +47,23 @@ class CGdiDeviceDriver : public RenderDeviceDriverIface {
                         const CFX_PointF& ptLineTo,
                         uint32_t color,
                         BlendMode blend_type) override;
-  bool GetClipBox(FX_RECT* pRect) override;
+  FX_RECT GetClipBox() const override;
+  bool MultiplyAlpha(float alpha) override;
+  bool MultiplyAlphaMask(RetainPtr<const CFX_DIBitmap> mask) override;
 
   void DrawLine(float x1, float y1, float x2, float y2);
 
-  bool GDI_SetDIBits(const RetainPtr<CFX_DIBitmap>& pBitmap,
+  bool GDI_SetDIBits(RetainPtr<const CFX_DIBBase> source,
                      const FX_RECT& src_rect,
                      int left,
                      int top);
-  bool GDI_StretchDIBits(const RetainPtr<CFX_DIBitmap>& pBitmap,
+  bool GDI_StretchDIBits(RetainPtr<const CFX_DIBBase> source,
                          int dest_left,
                          int dest_top,
                          int dest_width,
                          int dest_height,
                          const FXDIB_ResampleOptions& options);
-  bool GDI_StretchBitMask(const RetainPtr<CFX_DIBitmap>& pBitmap,
+  bool GDI_StretchBitMask(RetainPtr<const CFX_DIBBase> source,
                           int dest_left,
                           int dest_top,
                           int dest_width,
@@ -72,7 +77,7 @@ class CGdiDeviceDriver : public RenderDeviceDriverIface {
   int m_nBitsPerPixel;
   const DeviceType m_DeviceType;
   int m_RenderCaps;
-  pdfium::Optional<FX_RECT> m_BaseClipBox;
+  std::optional<FX_RECT> m_BaseClipBox;
 };
 
 #endif  // CORE_FXGE_WIN32_CGDI_DEVICE_DRIVER_H_

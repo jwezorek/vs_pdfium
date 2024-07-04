@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "core/fxcrt/fx_memory_wrappers.h"
 #include "core/fxcrt/unowned_ptr.h"
 
 class CJBig2_BitStream;
@@ -32,9 +33,10 @@ class JBig2ArithCtx {
   unsigned int I() const { return m_I; }
 
  private:
-  bool m_MPS = 0;
+  bool m_MPS = false;
   unsigned int m_I = 0;
 };
+FX_DATA_PARTITION_EXCEPTION(JBig2ArithCtx);
 
 class CJBig2_ArithDecoder {
  public:

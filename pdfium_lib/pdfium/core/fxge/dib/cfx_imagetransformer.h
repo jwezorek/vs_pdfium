@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,6 +11,7 @@
 
 #include "core/fxcrt/fx_coordinates.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/unowned_ptr_exclusion.h"
 #include "core/fxge/dib/cfx_bitmapstorer.h"
 
 class CFX_DIBBase;
@@ -32,13 +33,13 @@ class CFX_ImageTransformer {
   };
 
   struct CalcData {
-    CFX_DIBitmap* bitmap;
+    UNOWNED_PTR_EXCLUSION CFX_DIBitmap* bitmap;  // POD struct.
     const CFX_Matrix& matrix;
     const uint8_t* buf;
     uint32_t pitch;
   };
 
-  CFX_ImageTransformer(const RetainPtr<CFX_DIBBase>& pSrc,
+  CFX_ImageTransformer(RetainPtr<const CFX_DIBBase> source,
                        const CFX_Matrix& matrix,
                        const FXDIB_ResampleOptions& options,
                        const FX_RECT* pClip);
@@ -50,7 +51,7 @@ class CFX_ImageTransformer {
   RetainPtr<CFX_DIBitmap> DetachBitmap();
 
  private:
-  enum StretchType {
+  enum class StretchType {
     kNone,
     kNormal,
     kRotate,
@@ -60,12 +61,11 @@ class CFX_ImageTransformer {
   void ContinueRotate(PauseIndicatorIface* pPause);
   void ContinueOther(PauseIndicatorIface* pPause);
 
-  void CalcMask(const CalcData& calc_data);
   void CalcAlpha(const CalcData& calc_data);
   void CalcMono(const CalcData& calc_data);
   void CalcColor(const CalcData& calc_data, FXDIB_Format format, int Bpp);
 
-  RetainPtr<CFX_DIBBase> const m_pSrc;
+  RetainPtr<const CFX_DIBBase> const m_pSrc;
   const CFX_Matrix m_matrix;
   FX_RECT m_StretchClip;
   FX_RECT m_result;
@@ -73,7 +73,7 @@ class CFX_ImageTransformer {
   std::unique_ptr<CFX_ImageStretcher> m_Stretcher;
   CFX_BitmapStorer m_Storer;
   const FXDIB_ResampleOptions m_ResampleOptions;
-  StretchType m_type = kNone;
+  StretchType m_type = StretchType::kNone;
 };
 
 #endif  // CORE_FXGE_DIB_CFX_IMAGETRANSFORMER_H_

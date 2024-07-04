@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,10 @@
 #include "fxjs/cjs_scalewhen.h"
 
 const JSConstSpec CJS_ScaleWhen::ConstSpecs[] = {
-    {"always", JSConstSpec::Number, 0, 0},
-    {"never", JSConstSpec::Number, 1, 0},
-    {"tooBig", JSConstSpec::Number, 2, 0},
-    {"tooSmall", JSConstSpec::Number, 3, 0}};
+    {"always", JSConstSpec::Number, 0, nullptr},
+    {"never", JSConstSpec::Number, 1, nullptr},
+    {"tooBig", JSConstSpec::Number, 2, nullptr},
+    {"tooSmall", JSConstSpec::Number, 3, nullptr}};
 
 uint32_t CJS_ScaleWhen::ObjDefnID = 0;
 

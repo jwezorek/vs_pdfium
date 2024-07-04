@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 
-#include "core/fpdfapi/render/cpdf_pagerendercache.h"
+#include "core/fpdfapi/page/cpdf_pageimagecache.h"
 #include "core/fpdfapi/render/cpdf_pagerendercontext.h"
 #include "core/fpdfapi/render/cpdf_progressiverenderer.h"
 #include "core/fpdfapi/render/cpdf_renderoptions.h"
@@ -51,7 +51,7 @@ void RenderPageImpl(CPDF_PageRenderContext* pContext,
   }
 
   const CPDF_OCContext::UsageType usage =
-      (flags & FPDF_PRINTING) ? CPDF_OCContext::Print : CPDF_OCContext::View;
+      (flags & FPDF_PRINTING) ? CPDF_OCContext::kPrint : CPDF_OCContext::kView;
   pContext->m_pOptions->SetOCContext(
       pdfium::MakeRetain<CPDF_OCContext>(pPage->GetDocument(), usage));
 
@@ -59,20 +59,23 @@ void RenderPageImpl(CPDF_PageRenderContext* pContext,
   pContext->m_pDevice->SetBaseClip(clipping_rect);
   pContext->m_pDevice->SetClip_Rect(clipping_rect);
   pContext->m_pContext = std::make_unique<CPDF_RenderContext>(
-      pPage->GetDocument(), pPage->m_pPageResources.Get(),
-      static_cast<CPDF_PageRenderCache*>(pPage->GetRenderCache()));
+      pPage->GetDocument(), pPage->GetMutablePageResources(),
+      pPage->GetPageImageCache());
 
-  pContext->m_pContext->AppendLayer(pPage, &matrix);
+  pContext->m_pContext->AppendLayer(pPage, matrix);
 
   if (flags & FPDF_ANNOT) {
     auto pOwnedList = std::make_unique<CPDF_AnnotList>(pPage);
     CPDF_AnnotList* pList = pOwnedList.get();
     pContext->m_pAnnots = std::move(pOwnedList);
     bool bPrinting =
+        (flags & FPDF_PRINTING) ||
         pContext->m_pDevice->GetDeviceType() != DeviceType::kDisplay;
-    pList->DisplayAnnots(pPage, pContext->m_pDevice.get(),
-                         pContext->m_pContext.get(), bPrinting, &matrix, false,
-                         nullptr);
+
+    // TODO(https://crbug.com/pdfium/993) - maybe pass true here.
+    const bool bShowWidget = false;
+    pList->DisplayAnnots(pContext->m_pContext.get(), bPrinting, matrix,
+                         bShowWidget);
   }
 
   pContext->m_pRenderer = std::make_unique<CPDF_ProgressiveRenderer>(

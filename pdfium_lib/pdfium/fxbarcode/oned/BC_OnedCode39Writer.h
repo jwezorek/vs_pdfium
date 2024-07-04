@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,8 @@
 
 #ifndef FXBARCODE_ONED_BC_ONEDCODE39WRITER_H_
 #define FXBARCODE_ONED_BC_ONEDCODE39WRITER_H_
+
+#include <stddef.h>
 
 #include "fxbarcode/BC_Library.h"
 #include "fxbarcode/oned/BC_OneDimWriter.h"
@@ -16,26 +18,19 @@ class CBC_OnedCode39Writer final : public CBC_OneDimWriter {
   ~CBC_OnedCode39Writer() override;
 
   // CBC_OneDimWriter
-  uint8_t* EncodeWithHint(const ByteString& contents,
-                          BCFORMAT format,
-                          int32_t& outWidth,
-                          int32_t& outHeight,
-                          int32_t hints) override;
-  uint8_t* EncodeImpl(const ByteString& contents, int32_t& outLength) override;
+  DataVector<uint8_t> Encode(const ByteString& contents) override;
   bool RenderResult(WideStringView contents,
-                    uint8_t* code,
-                    int32_t codeLength) override;
+                    pdfium::span<const uint8_t> code) override;
   bool CheckContentValidity(WideStringView contents) override;
   WideString FilterContents(WideStringView contents) override;
-  bool SetTextLocation(BC_TEXT_LOC location) override;
+  void SetTextLocation(BC_TEXT_LOC location) override;
   bool SetWideNarrowRatio(int8_t ratio) override;
 
   WideString RenderTextContents(WideStringView contents);
   bool encodedContents(WideStringView contents, WideString* result);
 
  private:
-  void ToIntArray(int16_t a, int8_t* toReturn);
-  char CalcCheckSum(const ByteString& contents);
+  static constexpr size_t kArraySize = 9;
 
   int8_t m_iWideNarrRatio = 3;
 };

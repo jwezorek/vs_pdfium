@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -21,6 +21,11 @@
  */
 
 #include "fxbarcode/pdf417/BC_PDF417BarcodeMatrix.h"
+
+#include <stdint.h>
+
+#include "core/fxcrt/data_vector.h"
+#include "core/fxcrt/stl_util.h"
 #include "fxbarcode/pdf417/BC_PDF417BarcodeRow.h"
 
 CBC_BarcodeMatrix::CBC_BarcodeMatrix(size_t width, size_t height)
@@ -32,13 +37,11 @@ CBC_BarcodeMatrix::CBC_BarcodeMatrix(size_t width, size_t height)
 
 CBC_BarcodeMatrix::~CBC_BarcodeMatrix() = default;
 
-std::vector<uint8_t, FxAllocAllocator<uint8_t>>
-CBC_BarcodeMatrix::toBitArray() {
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> bitArray(m_width * m_height);
+DataVector<uint8_t> CBC_BarcodeMatrix::toBitArray() {
+  DataVector<uint8_t> bit_array(m_width * m_height);
+  pdfium::span<uint8_t> bit_array_span(bit_array);
   for (size_t i = 0; i < m_height; ++i) {
-    const auto& bytearray = m_matrix[i]->getRow();
-    for (size_t j = 0; j < m_width; ++j)
-      bitArray[i * m_width + j] = bytearray[j];
+    fxcrt::Copy(m_matrix[i]->GetRow(), bit_array_span.subspan(i * m_width));
   }
-  return bitArray;
+  return bit_array;
 }

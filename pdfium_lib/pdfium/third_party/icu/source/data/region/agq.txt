@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 agq{
     Countries{
         AD{"Àndolà"}
@@ -92,7 +93,6 @@ agq{
         IE{"Aelɨ̀lân"}
         IL{"Ezɨ̀lɛ̂"}
         IN{"Endìa"}
-        IO{"Dɨŋò kɨ dzughùnstòʔ kɨ Endìa kɨ Bɨ̀letì kò"}
         IQ{"Èlâkɨ̀"}
         IR{"Èlân"}
         IS{"Aesɨ̀lân"}
@@ -127,7 +127,6 @@ agq{
         MD{"Mòodovà"}
         MG{"Màdàgasɨkà"}
         MH{"Chwɨlà fɨ Mashà"}
-        MK{"Mɨ̀sɨ̀donyìa"}
         ML{"Malè"}
         MM{"Mǐanmà"}
         MN{"Mùŋgolìa"}
@@ -227,5 +226,4 @@ agq{
         ZM{"Zambìa"}
         ZW{"Zìmbagbɛ̀"}
     }
-    Version{"2.1.39.11"}
 }

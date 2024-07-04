@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -10,23 +10,23 @@
 #include <memory>
 
 #include "core/fxcrt/fx_string.h"
+#include "core/fxcrt/span.h"
 
 class FileAccessIface {
  public:
   static std::unique_ptr<FileAccessIface> Create();
   virtual ~FileAccessIface() = default;
 
-  virtual bool Open(ByteStringView fileName, uint32_t dwMode) = 0;
-  virtual bool Open(WideStringView fileName, uint32_t dwMode) = 0;
+  // Opens in read-only mode. `fileName` is UTF-8 on all platforms.
+  virtual bool Open(ByteStringView fileName) = 0;
   virtual void Close() = 0;
   virtual FX_FILESIZE GetSize() const = 0;
   virtual FX_FILESIZE GetPosition() const = 0;
   virtual FX_FILESIZE SetPosition(FX_FILESIZE pos) = 0;
-  virtual size_t Read(void* pBuffer, size_t szBuffer) = 0;
-  virtual size_t Write(const void* pBuffer, size_t szBuffer) = 0;
-  virtual size_t ReadPos(void* pBuffer, size_t szBuffer, FX_FILESIZE pos) = 0;
-  virtual size_t WritePos(const void* pBuffer,
-                          size_t szBuffer,
+  virtual size_t Read(pdfium::span<uint8_t> buffer) = 0;
+  virtual size_t Write(pdfium::span<const uint8_t> buffer) = 0;
+  virtual size_t ReadPos(pdfium::span<uint8_t> buffer, FX_FILESIZE pos) = 0;
+  virtual size_t WritePos(pdfium::span<const uint8_t> buffer,
                           FX_FILESIZE pos) = 0;
   virtual bool Flush() = 0;
   virtual bool Truncate(FX_FILESIZE szFile) = 0;

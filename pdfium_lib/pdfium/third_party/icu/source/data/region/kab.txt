@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 kab{
     Countries{
         AD{"Undura"}
@@ -92,7 +93,6 @@ kab{
         IE{"Lirlund"}
         IL{"Izrayil"}
         IN{"Lhend"}
-        IO{"Akal Aglizi deg Ugaraw Ahendi"}
         IQ{"Lɛiraq"}
         IR{"Iran"}
         IS{"Island"}
@@ -127,7 +127,6 @@ kab{
         MD{"Muldabi"}
         MG{"Madaɣecqer"}
         MH{"Tigzirin n Marcal"}
-        MK{"Masidwan"}
         ML{"Mali"}
         MM{"Myanmar"}
         MN{"Mungulya"}
@@ -227,5 +226,4 @@ kab{
         ZM{"Zambya"}
         ZW{"Zimbabwi"}
     }
-    Version{"2.1.43.94"}
 }

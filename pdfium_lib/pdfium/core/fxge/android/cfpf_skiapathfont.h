@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,13 +7,14 @@
 #ifndef CORE_FXGE_ANDROID_CFPF_SKIAPATHFONT_H_
 #define CORE_FXGE_ANDROID_CFPF_SKIAPATHFONT_H_
 
+#include <stdint.h>
+
 #include "core/fxcrt/bytestring.h"
-#include "core/fxcrt/fx_system.h"
 
 class CFPF_SkiaPathFont {
  public:
   CFPF_SkiaPathFont(const ByteString& path,
-                    const char* pFamily,
+                    const ByteString& family,
                     uint32_t dwStyle,
                     int32_t iFaceIndex,
                     uint32_t dwCharsets,

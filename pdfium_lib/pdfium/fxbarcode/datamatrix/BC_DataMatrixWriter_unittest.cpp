@@ -1,13 +1,16 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "fxbarcode/datamatrix/BC_DataMatrixWriter.h"
 
-#include <vector>
+#include <stdint.h>
 
+#include "core/fxcrt/data_vector.h"
+#include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
-#include "third_party/base/stl_util.h"
+
+using testing::ElementsAreArray;
 
 class CBC_DataMatrixWriterTest : public testing::Test {
  public:
@@ -40,13 +43,11 @@ TEST_F(CBC_DataMatrixWriterTest, Encode) {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     };
     // clang-format on
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(L"", &width, &height);
-    ASSERT_EQ(pdfium::size(kExpectedData), data.size());
+    DataVector<uint8_t> data = writer.Encode(L"", &width, &height);
+    ASSERT_EQ(std::size(kExpectedData), data.size());
     ASSERT_EQ(kExpectedDimension, width);
     ASSERT_EQ(kExpectedDimension, height);
-    for (size_t i = 0; i < pdfium::size(kExpectedData); ++i)
-      EXPECT_EQ(kExpectedData[i], data[i]) << i;
+    EXPECT_THAT(data, ElementsAreArray(kExpectedData));
   }
   {
     static constexpr int kExpectedDimension = 14;
@@ -68,13 +69,11 @@ TEST_F(CBC_DataMatrixWriterTest, Encode) {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     };
     // clang-format on
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(L"helloworld", &width, &height);
-    ASSERT_EQ(pdfium::size(kExpectedData), data.size());
+    DataVector<uint8_t> data = writer.Encode(L"helloworld", &width, &height);
+    ASSERT_EQ(std::size(kExpectedData), data.size());
     ASSERT_EQ(kExpectedDimension, width);
     ASSERT_EQ(kExpectedDimension, height);
-    for (size_t i = 0; i < pdfium::size(kExpectedData); ++i)
-      EXPECT_EQ(kExpectedData[i], data[i]) << i;
+    EXPECT_THAT(data, ElementsAreArray(kExpectedData));
   }
   {
     static constexpr int kExpectedDimension = 10;
@@ -92,13 +91,11 @@ TEST_F(CBC_DataMatrixWriterTest, Encode) {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     };
     // clang-format on
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(L"12345", &width, &height);
-    ASSERT_EQ(pdfium::size(kExpectedData), data.size());
+    DataVector<uint8_t> data = writer.Encode(L"12345", &width, &height);
+    ASSERT_EQ(std::size(kExpectedData), data.size());
     ASSERT_EQ(kExpectedDimension, width);
     ASSERT_EQ(kExpectedDimension, height);
-    for (size_t i = 0; i < pdfium::size(kExpectedData); ++i)
-      EXPECT_EQ(kExpectedData[i], data[i]) << i;
+    EXPECT_THAT(data, ElementsAreArray(kExpectedData));
   }
   {
     static constexpr int kExpectedDimension = 18;
@@ -124,17 +121,15 @@ TEST_F(CBC_DataMatrixWriterTest, Encode) {
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
     };
     // clang-format on
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
+    DataVector<uint8_t> data =
         writer.Encode(L"abcdefghijklmnopqrst", &width, &height);
-    ASSERT_EQ(pdfium::size(kExpectedData), data.size());
+    ASSERT_EQ(std::size(kExpectedData), data.size());
     ASSERT_EQ(kExpectedDimension, width);
     ASSERT_EQ(kExpectedDimension, height);
-    for (size_t i = 0; i < pdfium::size(kExpectedData); ++i)
-      EXPECT_EQ(kExpectedData[i], data[i]) << i;
+    EXPECT_THAT(data, ElementsAreArray(kExpectedData));
   }
   {
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(L"hello world", &width, &height);
+    DataVector<uint8_t> data = writer.Encode(L"hello world", &width, &height);
     ASSERT_TRUE(data.empty());
   }
 }
@@ -151,8 +146,7 @@ TEST_F(CBC_DataMatrixWriterTest, EncodeLimitAlphaNumeric) {
 
   {
     static constexpr int kExpectedDimension = 144;
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(input.c_str(), &width, &height);
+    DataVector<uint8_t> data = writer.Encode(input.c_str(), &width, &height);
     EXPECT_EQ(20736u, data.size());
     EXPECT_EQ(kExpectedDimension, width);
     EXPECT_EQ(kExpectedDimension, height);
@@ -163,8 +157,7 @@ TEST_F(CBC_DataMatrixWriterTest, EncodeLimitAlphaNumeric) {
   {
     width = -1;
     height = -1;
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(input.c_str(), &width, &height);
+    DataVector<uint8_t> data = writer.Encode(input.c_str(), &width, &height);
     EXPECT_EQ(0u, data.size());
     EXPECT_EQ(-1, width);
     EXPECT_EQ(-1, height);
@@ -183,8 +176,7 @@ TEST_F(CBC_DataMatrixWriterTest, EncodeLimitNumbers) {
 
   {
     static constexpr int kExpectedDimension = 144;
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(input.c_str(), &width, &height);
+    DataVector<uint8_t> data = writer.Encode(input.c_str(), &width, &height);
     EXPECT_EQ(20736u, data.size());
     EXPECT_EQ(kExpectedDimension, width);
     EXPECT_EQ(kExpectedDimension, height);
@@ -195,8 +187,7 @@ TEST_F(CBC_DataMatrixWriterTest, EncodeLimitNumbers) {
   {
     width = -1;
     height = -1;
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>> data =
-        writer.Encode(input.c_str(), &width, &height);
+    DataVector<uint8_t> data = writer.Encode(input.c_str(), &width, &height);
     EXPECT_EQ(0u, data.size());
     EXPECT_EQ(-1, width);
     EXPECT_EQ(-1, height);

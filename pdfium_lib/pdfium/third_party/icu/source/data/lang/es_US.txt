@@ -1,16 +1,23 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es_US{
     %%Parent{"es_419"}
     Languages{
         ace{"acehnés"}
         alt{"altái meridional"}
         arp{"arapaho"}
-        bas{"basa"}
+        ars{"árabe najdi"}
         bax{"bamun"}
+        bgc{"hariana"}
         bho{"bhojpuri"}
         bla{"siksika"}
         bua{"buriat"}
+        clc{"chilcotín"}
+        crj{"cree del sureste"}
+        crl{"cree del noreste"}
+        crm{"moose cree"}
+        crr{"algonquian"}
         dum{"neerlandés medieval"}
         enm{"inglés medieval"}
         eu{"euskera"}
@@ -19,60 +26,59 @@ es_US{
         gmh{"alemán de la alta edad media"}
         grc{"griego antiguo"}
         gu{"gurayatí"}
-        hak{"hak"}
+        hax{"haida del sur"}
+        hil{"hiligainón"}
         hsn{"xiang (China)"}
         ht{"criollo haitiano"}
-        kbd{"kabardiano"}
+        ikt{"inuktitut del oeste de Canadá"}
+        inh{"ingusetio"}
+        kab{"cabilio"}
         krc{"karachay-balkar"}
         lo{"lao"}
-        lus{"lushai"}
+        lou{"creole de Luisiana"}
+        lrc{"lorí del norte"}
+        lsm{"saamia"}
         mga{"irlandés medieval"}
-        nan{"nan"}
+        nd{"ndebele del norte"}
         nr{"ndebele meridional"}
-        nso{"sotho septentrional"}
-        pcm{"pcm"}
+        ojb{"ojibwa del noroeste"}
+        ojw{"ojibwa del oeste"}
+        pis{"pijín"}
         rm{"romanche"}
-        rn{"kiroundi"}
+        se{"sami del norte"}
         shu{"árabe chadiano"}
+        slh{"lushootseed del sur"}
         sma{"sami meridional"}
+        smn{"sami de Inari"}
         ss{"siswati"}
-        st{"sesotho meridional"}
+        str{"straits salish"}
         sw_CD{"swahili del Congo"}
         syr{"siriaco"}
+        tce{"tutchone del sur"}
         tet{"tetún"}
-        tn{"setchwana"}
+        ttm{"tutchone del norte"}
         tyv{"tuviniano"}
-        tzm{"tamazight del Atlas Central"}
-        wo{"wolof"}
-        wuu{"wuu"}
-        xal{"kalmyk"}
+        wal{"wolayta"}
     }
-    Languages%short{
-        en_GB{"inglés (RU)"}
+    Languages%variant{
+        ug{"uigur variante"}
     }
     Scripts{
-        Hanb{"hanb"}
-        Mlym{"malayálam"}
+        Adlm{"adlam"}
+        Hrkt{"silabarios del japonés"}
+        Rohg{"hanafí"}
+        Zzzz{"letra desconocida"}
     }
     Types{
-        collation{
-            ducet{"orden de clasificación de Unicode predeterminado"}
-        }
-        lb{
-            normal{"salto de línea normal"}
-        }
-        ms{
-            uksystem{"sistema imperial"}
-        }
         numbers{
+            cakm{"dígitos chakma"}
             gujr{"dígitos en gujarati"}
-            knda{"números en kannada"}
-            laoo{"números en lao"}
+            java{"dígitos javaneses"}
+            mtei{"dígitos meetei mayek"}
+            olck{"dígitos ol chiki"}
         }
     }
-    Version{"2.1.43.65"}
     characterLabelPattern{
-        historic{"{0} — Históricos"}
         miscellaneous{"{0} — Varios"}
     }
 }

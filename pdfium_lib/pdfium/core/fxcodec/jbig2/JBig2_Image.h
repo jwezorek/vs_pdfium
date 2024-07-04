@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,11 +7,15 @@
 #ifndef CORE_FXCODEC_JBIG2_JBIG2_IMAGE_H_
 #define CORE_FXCODEC_JBIG2_JBIG2_IMAGE_H_
 
+#include <stdint.h>
+
 #include <memory>
 
 #include "core/fxcodec/jbig2/JBig2_Define.h"
+#include "core/fxcrt/compiler_specific.h"
 #include "core/fxcrt/fx_memory_wrappers.h"
 #include "core/fxcrt/maybe_owned.h"
+#include "core/fxcrt/span.h"
 
 struct FX_RECT;
 
@@ -26,7 +30,10 @@ enum JBig2ComposeOp {
 class CJBig2_Image {
  public:
   CJBig2_Image(int32_t w, int32_t h);
-  CJBig2_Image(int32_t w, int32_t h, int32_t stride, uint8_t* pBuf);
+  CJBig2_Image(int32_t w,
+               int32_t h,
+               int32_t stride,
+               pdfium::span<uint8_t> pBuf);
   CJBig2_Image(const CJBig2_Image& other);
   ~CJBig2_Image();
 
@@ -41,9 +48,15 @@ class CJBig2_Image {
   int GetPixel(int32_t x, int32_t y) const;
   void SetPixel(int32_t x, int32_t y, int v);
 
-  uint8_t* GetLineUnsafe(int32_t y) const { return data() + y * m_nStride; }
+  // SAFETY: propogated to caller via UNSAFE_BUFFER_USAGE.
+  UNSAFE_BUFFER_USAGE uint8_t* GetLineUnsafe(int32_t y) const {
+    return UNSAFE_BUFFERS(data() + y * m_nStride);
+  }
+
   uint8_t* GetLine(int32_t y) const {
-    return (y >= 0 && y < m_nHeight) ? GetLineUnsafe(y) : nullptr;
+    // SAFETY: m_nHeight valid lines in image.
+    return (y >= 0 && y < m_nHeight) ? UNSAFE_BUFFERS(GetLineUnsafe(y))
+                                     : nullptr;
   }
 
   void CopyLine(int32_t hTo, int32_t hFrom);

@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,15 +8,14 @@
 
 #include <algorithm>
 
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_safe_types.h"
 #include "core/fxge/cfx_fillrenderoptions.h"
 #include "core/fxge/cfx_graphstatedata.h"
-#include "core/fxge/cfx_pathdata.h"
+#include "core/fxge/cfx_path.h"
 #include "core/fxge/cfx_renderdevice.h"
 #include "fxbarcode/BC_Writer.h"
 #include "fxbarcode/common/BC_CommonBitMatrix.h"
-#include "third_party/base/check.h"
-#include "third_party/base/numerics/safe_math.h"
 
 CBC_TwoDimWriter::CBC_TwoDimWriter(bool bFixedSize)
     : m_bFixedSize(bFixedSize) {}
@@ -72,9 +71,7 @@ bool CBC_TwoDimWriter::RenderResult(pdfium::span<const uint8_t> code,
   m_leftPadding = std::max((m_Width - m_outputWidth) / 2, 0);
   m_topPadding = std::max((m_Height - m_outputHeight) / 2, 0);
 
-  m_output = std::make_unique<CBC_CommonBitMatrix>();
-  m_output->Init(m_inputWidth, m_inputHeight);
-
+  m_output = std::make_unique<CBC_CommonBitMatrix>(m_inputWidth, m_inputHeight);
   for (int32_t y = 0; y < m_inputHeight; ++y) {
     for (int32_t x = 0; x < m_inputWidth; ++x) {
       if (code[x + y * m_inputWidth] == 1)
@@ -85,23 +82,23 @@ bool CBC_TwoDimWriter::RenderResult(pdfium::span<const uint8_t> code,
 }
 
 void CBC_TwoDimWriter::RenderDeviceResult(CFX_RenderDevice* device,
-                                          const CFX_Matrix* matrix) {
+                                          const CFX_Matrix& matrix) {
   DCHECK(m_output);
 
   CFX_GraphStateData stateData;
-  CFX_PathData path;
+  CFX_Path path;
   path.AppendRect(0, 0, m_Width, m_Height);
-  device->DrawPath(&path, matrix, &stateData, kBackgroundColor,
+  device->DrawPath(path, &matrix, &stateData, kBackgroundColor,
                    kBackgroundColor, CFX_FillRenderOptions::EvenOddOptions());
   int32_t leftPos = m_leftPadding;
   int32_t topPos = m_topPadding;
 
-  CFX_Matrix matri = *matrix;
+  CFX_Matrix matri = matrix;
   if (m_Width < m_outputWidth && m_Height < m_outputHeight) {
     CFX_Matrix matriScale(static_cast<float>(m_Width) / m_outputWidth, 0.0, 0.0,
                           static_cast<float>(m_Height) / m_outputHeight, 0.0,
                           0.0);
-    matriScale.Concat(*matrix);
+    matriScale.Concat(matrix);
     matri = matriScale;
   }
 
@@ -116,12 +113,12 @@ void CBC_TwoDimWriter::RenderDeviceResult(CFX_RenderDevice* device,
         int start_y_output = y + 1;
         int end_y_output = y + 2;
 
-        CFX_PathData rect;
+        CFX_Path rect;
         rect.AppendRect(leftPos + start_x_output * m_multiX,
                         topPos + start_y_output * m_multiY,
                         leftPos + end_x_output * m_multiX,
                         topPos + end_y_output * m_multiY);
-        device->DrawPath(&rect, &matri, &data, kBarColor, 0,
+        device->DrawPath(rect, &matri, &data, kBarColor, 0,
                          CFX_FillRenderOptions::WindingOptions());
       }
     }

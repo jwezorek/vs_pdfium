@@ -1,4 +1,4 @@
-// Copyright 2019 PDFium Authors. All rights reserved.
+// Copyright 2019 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,7 +8,7 @@
 class CPDFXFA_DocEnvironmentEmbedderTest : public XFAJSEmbedderTest {};
 
 // Should not crash.
-TEST_F(CPDFXFA_DocEnvironmentEmbedderTest, BUG_1223) {
+TEST_F(CPDFXFA_DocEnvironmentEmbedderTest, Bug1223) {
   ASSERT_TRUE(OpenDocument("simple_xfa.pdf"));
 
   EXPECT_FALSE(Execute("URL=y"));

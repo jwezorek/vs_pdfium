@@ -1,4 +1,4 @@
-// Copyright 2020 PDFium Authors. All rights reserved.
+// Copyright 2020 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +6,7 @@
 
 #include "fxjs/xfa/cfxjse_mapmodule.h"
 
-#include "third_party/base/stl_util.h"
+#include "core/fxcrt/containers/contains.h"
 #include "xfa/fxfa/parser/cxfa_measurement.h"
 
 CFXJSE_MapModule::CFXJSE_MapModule() = default;
@@ -32,25 +32,25 @@ void CFXJSE_MapModule::SetMeasurement(uint32_t key,
   m_MeasurementMap[key] = measurement;
 }
 
-Optional<int32_t> CFXJSE_MapModule::GetValue(uint32_t key) const {
+std::optional<int32_t> CFXJSE_MapModule::GetValue(uint32_t key) const {
   auto it = m_ValueMap.find(key);
   if (it == m_ValueMap.end())
-    return pdfium::nullopt;
+    return std::nullopt;
   return it->second;
 }
 
-Optional<WideString> CFXJSE_MapModule::GetString(uint32_t key) const {
+std::optional<WideString> CFXJSE_MapModule::GetString(uint32_t key) const {
   auto it = m_StringMap.find(key);
   if (it == m_StringMap.end())
-    return pdfium::nullopt;
+    return std::nullopt;
   return it->second;
 }
 
-Optional<CXFA_Measurement> CFXJSE_MapModule::GetMeasurement(
+std::optional<CXFA_Measurement> CFXJSE_MapModule::GetMeasurement(
     uint32_t key) const {
   auto it = m_MeasurementMap.find(key);
   if (it == m_MeasurementMap.end())
-    return pdfium::nullopt;
+    return std::nullopt;
   return it->second;
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,8 +7,7 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_CONTENTMARKITEM_H_
 #define CORE_FPDFAPI_PAGE_CPDF_CONTENTMARKITEM_H_
 
-#include "core/fxcrt/fx_string.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/bytestring.h"
 #include "core/fxcrt/retain_ptr.h"
 
 class CPDF_Dictionary;
@@ -17,21 +16,22 @@ class CPDF_ContentMarkItem final : public Retainable {
  public:
   enum ParamType { kNone, kPropertiesDict, kDirectDict };
 
-  explicit CPDF_ContentMarkItem(ByteString name);
-  ~CPDF_ContentMarkItem() override;
+  CONSTRUCT_VIA_MAKE_RETAIN;
 
   const ByteString& GetName() const { return m_MarkName; }
   ParamType GetParamType() const { return m_ParamType; }
-  const CPDF_Dictionary* GetParam() const;
-  CPDF_Dictionary* GetParam();
+  RetainPtr<const CPDF_Dictionary> GetParam() const;
+  RetainPtr<CPDF_Dictionary> GetParam();
   const ByteString& GetPropertyName() const { return m_PropertyName; }
-  bool HasMCID() const;
 
   void SetDirectDict(RetainPtr<CPDF_Dictionary> pDict);
-  void SetPropertiesHolder(CPDF_Dictionary* pHolder,
+  void SetPropertiesHolder(RetainPtr<CPDF_Dictionary> pHolder,
                            const ByteString& property_name);
 
  private:
+  explicit CPDF_ContentMarkItem(ByteString name);
+  ~CPDF_ContentMarkItem() override;
+
   ParamType m_ParamType = kNone;
   ByteString m_MarkName;
   ByteString m_PropertyName;

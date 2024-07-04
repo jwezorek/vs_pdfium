@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -25,10 +25,10 @@
 #include <memory>
 #include <utility>
 
+#include "core/fxcrt/check.h"
 #include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/stl_util.h"
 #include "fxbarcode/common/reedsolomon/BC_ReedSolomonGF256.h"
-#include "third_party/base/check.h"
-#include "third_party/base/stl_util.h"
 
 CBC_ReedSolomonGF256Poly::CBC_ReedSolomonGF256Poly(
     CBC_ReedSolomonGF256* field,
@@ -62,7 +62,7 @@ const std::vector<int32_t>& CBC_ReedSolomonGF256Poly::GetCoefficients() const {
 }
 
 int32_t CBC_ReedSolomonGF256Poly::GetDegree() const {
-  return pdfium::CollectionSize<int32_t>(m_coefficients) - 1;
+  return fxcrt::CollectionSize<int32_t>(m_coefficients) - 1;
 }
 
 bool CBC_ReedSolomonGF256Poly::IsZero() const {
@@ -75,8 +75,7 @@ int32_t CBC_ReedSolomonGF256Poly::GetCoefficients(int32_t degree) const {
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Clone()
     const {
-  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(),
-                                                    m_coefficients);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field, m_coefficients);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly>
@@ -100,7 +99,7 @@ CBC_ReedSolomonGF256Poly::AddOrSubtract(const CBC_ReedSolomonGF256Poly* other) {
     sumDiff[i] = CBC_ReedSolomonGF256::AddOrSubtract(
         smallerCoefficients[i - lengthDiff], largerCoefficients[i]);
   }
-  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), sumDiff);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field, sumDiff);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Multiply(
@@ -120,7 +119,7 @@ std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Multiply(
           product[i + j], m_field->Multiply(aCoeff, bCoefficients[j]));
     }
   }
-  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field, product);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly>
@@ -136,7 +135,7 @@ CBC_ReedSolomonGF256Poly::MultiplyByMonomial(int32_t degree,
   for (size_t i = 0; i < size; i++)
     product[i] = m_field->Multiply(m_coefficients[i], coefficient);
 
-  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field.Get(), product);
+  return std::make_unique<CBC_ReedSolomonGF256Poly>(m_field, product);
 }
 
 std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Divide(
@@ -152,7 +151,7 @@ std::unique_ptr<CBC_ReedSolomonGF256Poly> CBC_ReedSolomonGF256Poly::Divide(
     return nullptr;
 
   int32_t denominatorLeadingTerm = other->GetCoefficients(other->GetDegree());
-  Optional<int32_t> inverseDenominatorLeadingTeam =
+  std::optional<int32_t> inverseDenominatorLeadingTeam =
       m_field->Inverse(denominatorLeadingTerm);
   if (!inverseDenominatorLeadingTeam.has_value())
     return nullptr;

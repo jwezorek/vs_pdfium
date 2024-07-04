@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -19,7 +19,7 @@ using UniqueTestPtr =
 
 class PseudoDeletable {
  public:
-  PseudoDeletable() : delete_count_(0) {}
+  PseudoDeletable() = default;
   void Release() {
     ++delete_count_;
     next_.Reset();
@@ -28,7 +28,7 @@ class PseudoDeletable {
   int delete_count() const { return delete_count_; }
 
  private:
-  int delete_count_;
+  int delete_count_ = 0;
   WeakTestPtr next_;
 };
 
@@ -88,7 +88,7 @@ TEST(WeakPtr, ResetNull) {
     WeakTestPtr ptr2 = ptr1;
     ptr1.Reset();
     EXPECT_FALSE(ptr1);
-    EXPECT_EQ(nullptr, ptr1.Get());
+    EXPECT_FALSE(ptr1.Get());
     EXPECT_TRUE(ptr2);
     EXPECT_EQ(&thing, ptr2.Get());
     EXPECT_FALSE(ptr1 == ptr2);
@@ -128,9 +128,9 @@ TEST(WeakPtr, DeleteObject) {
     WeakTestPtr ptr2 = ptr1;
     ptr1.DeleteObject();
     EXPECT_FALSE(ptr1);
-    EXPECT_EQ(nullptr, ptr1.Get());
+    EXPECT_FALSE(ptr1.Get());
     EXPECT_FALSE(ptr2);
-    EXPECT_EQ(nullptr, ptr2.Get());
+    EXPECT_FALSE(ptr2.Get());
     EXPECT_FALSE(ptr1 == ptr2);
     EXPECT_TRUE(ptr1 != ptr2);
     EXPECT_EQ(1, thing.delete_count());

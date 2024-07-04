@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 es_MX{
     %%Parent{"es_419"}
     Currencies{
@@ -10,14 +11,6 @@ es_MX{
         BTN{
             "BTN",
             "ngultrum butanés",
-        }
-        CNH{
-            "CNH",
-            "CNH",
-        }
-        ERN{
-            "ERN",
-            "nakfa",
         }
         KGS{
             "KGS",
@@ -47,10 +40,6 @@ es_MX{
             "$",
             "peso mexicano",
         }
-        MYR{
-            "MYR",
-            "ringit",
-        }
         STN{
             "STN",
             "dobra santotomense",
@@ -58,18 +47,6 @@ es_MX{
         THB{
             "THB",
             "baht tailandés",
-        }
-        UZS{
-            "UZS",
-            "sum",
-        }
-        VEF{
-            "VEF",
-            "bolívar venezolano (2008–2018)",
-        }
-        VES{
-            "VES",
-            "bolívar venezolano",
         }
         VND{
             "VND",
@@ -97,16 +74,9 @@ es_MX{
             one{"taka bangladesí"}
             other{"takas bangladesíes"}
         }
-        BGN{
-            other{"levas búlgaras"}
-        }
         BTN{
             one{"ngultrum butanés"}
-            other{"gultrums bultaneses"}
-        }
-        CNH{
-            one{"CNH"}
-            other{"CNH"}
+            other{"ngultrums butaneses"}
         }
         KGS{
             one{"som kirguís"}
@@ -128,12 +98,9 @@ es_MX{
             one{"rupia de Maldivas"}
             other{"rupias de Maldivas"}
         }
-        MWK{
-            one{"kwacha malauí"}
-        }
-        MYR{
-            one{"ringit"}
-            other{"ringits"}
+        RON{
+            one{"leu rumano"}
+            other{"lei rumanos"}
         }
         STN{
             one{"dobra santotomense"}
@@ -141,17 +108,7 @@ es_MX{
         }
         THB{
             one{"baht tailandés"}
-        }
-        TMT{
-            other{"manats turcomanos"}
-        }
-        UZS{
-            one{"sum"}
-            other{"sums"}
-        }
-        VEF{
-            one{"bolívar venezolano (2008–2018)"}
-            other{"bolívares venezolanos (2008–2018)"}
+            other{"bahts tailandeses"}
         }
         VES{
             one{"bolívar venezolano"}
@@ -163,11 +120,11 @@ es_MX{
         }
         XXX{
             one{"(moneda desconocida)"}
+            other{"(moneda desconocida)"}
         }
         ZMW{
             one{"kwacha zambiano"}
             other{"kwachas zambianos"}
         }
     }
-    Version{"2.1.44.5"}
 }

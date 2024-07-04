@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -8,8 +8,8 @@
 
 #include <vector>
 
+#include "core/fxcrt/span.h"
 #include "fxjs/cjs_event_context.h"
-#include "fxjs/cjs_eventrecorder.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/js_define.h"
 
@@ -39,22 +39,21 @@ CJS_Console::CJS_Console(v8::Local<v8::Object> pObject, CJS_Runtime* pRuntime)
 CJS_Console::~CJS_Console() = default;
 
 CJS_Result CJS_Console::clear(CJS_Runtime* pRuntime,
-                              const std::vector<v8::Local<v8::Value>>& params) {
+                              pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_Console::hide(CJS_Runtime* pRuntime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+                             pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
-CJS_Result CJS_Console::println(
-    CJS_Runtime* pRuntime,
-    const std::vector<v8::Local<v8::Value>>& params) {
+CJS_Result CJS_Console::println(CJS_Runtime* pRuntime,
+                                pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }
 
 CJS_Result CJS_Console::show(CJS_Runtime* pRuntime,
-                             const std::vector<v8::Local<v8::Value>>& params) {
+                             pdfium::span<v8::Local<v8::Value>> params) {
   return CJS_Result::Success();
 }

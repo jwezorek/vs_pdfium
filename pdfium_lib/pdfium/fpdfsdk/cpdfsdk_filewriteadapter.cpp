@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,7 +6,8 @@
 
 #include "fpdfsdk/cpdfsdk_filewriteadapter.h"
 
-#include "third_party/base/check.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/numerics/safe_conversions.h"
 
 CPDFSDK_FileWriteAdapter::CPDFSDK_FileWriteAdapter(FPDF_FILEWRITE* file_write)
     : file_write_(file_write) {
@@ -15,10 +16,8 @@ CPDFSDK_FileWriteAdapter::CPDFSDK_FileWriteAdapter(FPDF_FILEWRITE* file_write)
 
 CPDFSDK_FileWriteAdapter::~CPDFSDK_FileWriteAdapter() = default;
 
-bool CPDFSDK_FileWriteAdapter::WriteBlock(const void* data, size_t size) {
-  return file_write_->WriteBlock(file_write_.Get(), data, size) != 0;
-}
-
-bool CPDFSDK_FileWriteAdapter::WriteString(ByteStringView str) {
-  return WriteBlock(str.unterminated_c_str(), str.GetLength());
+bool CPDFSDK_FileWriteAdapter::WriteBlock(pdfium::span<const uint8_t> buffer) {
+  return file_write_->WriteBlock(
+             file_write_, buffer.data(),
+             pdfium::checked_cast<unsigned long>(buffer.size())) != 0;
 }

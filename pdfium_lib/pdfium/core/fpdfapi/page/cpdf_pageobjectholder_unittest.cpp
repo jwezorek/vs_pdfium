@@ -1,10 +1,13 @@
-// Copyright 2018 PDFium Authors. All rights reserved.
+// Copyright 2018 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #include "core/fpdfapi/page/cpdf_pageobjectholder.h"
 
+#include <math.h>
+
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <vector>
 
@@ -36,7 +39,7 @@ TEST(CPDFPageObjectHolder, GraphicsDataAsKey) {
   EXPECT_EQ(data[0], fMin);
   EXPECT_EQ(data[1], fMax);
   EXPECT_EQ(data[2], fInf);
-  EXPECT_EQ(std::isnan(data[3]), std::isnan(fNan));
+  EXPECT_EQ(isnan(data[3]), isnan(fNan));
 
   std::map<GraphicsData, int> graphics_map;
 
@@ -53,7 +56,7 @@ TEST(CPDFPageObjectHolder, GraphicsDataAsKey) {
   EXPECT_EQ(72u, graphics_map.size());
 
   // clang-format off
-  const int expected[72] = {
+  std::array<const int, 72> expected = {
       71, 35, 65, 29, 59, 23, 53, 17, 47, 11, 41, 5,
       70, 34, 64, 28, 58, 22, 52, 16, 46, 10, 40, 4,
       69, 33, 63, 27, 57, 21, 51, 15, 45, 9,  39, 3,

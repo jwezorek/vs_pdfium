@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -30,8 +30,8 @@ CBC_CodeBase::CBC_CodeBase(std::unique_ptr<CBC_Writer> pWriter)
 
 CBC_CodeBase::~CBC_CodeBase() = default;
 
-bool CBC_CodeBase::SetTextLocation(BC_TEXT_LOC location) {
-  return m_pBCWriter->SetTextLocation(location);
+void CBC_CodeBase::SetTextLocation(BC_TEXT_LOC location) {
+  m_pBCWriter->SetTextLocation(location);
 }
 
 bool CBC_CodeBase::SetWideNarrowRatio(int8_t ratio) {
@@ -50,8 +50,8 @@ bool CBC_CodeBase::SetErrorCorrectionLevel(int32_t level) {
   return m_pBCWriter->SetErrorCorrectionLevel(level);
 }
 
-bool CBC_CodeBase::SetCharEncoding(int32_t encoding) {
-  return m_pBCWriter->SetCharEncoding(encoding);
+void CBC_CodeBase::SetCharEncoding(BC_CHAR_ENCODING encoding) {
+  m_pBCWriter->SetCharEncoding(encoding);
 }
 
 bool CBC_CodeBase::SetModuleHeight(int32_t moduleHeight) {
@@ -62,10 +62,10 @@ bool CBC_CodeBase::SetModuleWidth(int32_t moduleWidth) {
   return m_pBCWriter->SetModuleWidth(moduleWidth);
 }
 
-bool CBC_CodeBase::SetHeight(int32_t height) {
+void CBC_CodeBase::SetHeight(int32_t height) {
   return m_pBCWriter->SetHeight(height);
 }
 
-bool CBC_CodeBase::SetWidth(int32_t width) {
+void CBC_CodeBase::SetWidth(int32_t width) {
   return m_pBCWriter->SetWidth(width);
 }

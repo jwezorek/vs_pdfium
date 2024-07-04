@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 lag{
     Countries{
         AD{"Andóra"}
@@ -92,7 +93,6 @@ lag{
         IE{"Ayaláandi"}
         IL{"Isiraéeli"}
         IN{"Índia"}
-        IO{"Ɨsɨ yʉ Ʉɨngeréesa irivii ra Híindi"}
         IQ{"Iráaki"}
         IR{"Ʉajéemi"}
         IS{"Aisiláandi"}
@@ -127,7 +127,6 @@ lag{
         MD{"Molidóova"}
         MG{"Bukíini"}
         MH{"Visíiwa vya Marisháali"}
-        MK{"Masedónia"}
         ML{"Máali"}
         MM{"Miáama"}
         MN{"Mongólia"}
@@ -227,5 +226,4 @@ lag{
         ZM{"Sámbia"}
         ZW{"Simbáabwe"}
     }
-    Version{"2.1.39.11"}
 }

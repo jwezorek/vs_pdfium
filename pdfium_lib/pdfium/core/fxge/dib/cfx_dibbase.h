@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,83 +7,91 @@
 #ifndef CORE_FXGE_DIB_CFX_DIBBASE_H_
 #define CORE_FXGE_DIB_CFX_DIBBASE_H_
 
-#include <vector>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "core/fxcrt/fx_coordinates.h"
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "build/build_config.h"
+#include "core/fxcrt/data_vector.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/span_util.h"
 #include "core/fxge/dib/fx_dib.h"
-#include "third_party/base/span.h"
+
+#if defined(PDF_USE_SKIA)
+#include "third_party/skia/include/core/SkRefCnt.h"  // nogncheck
+#endif
 
 class CFX_ClipRgn;
 class CFX_DIBitmap;
+class CFX_Matrix;
 class PauseIndicatorIface;
+struct FX_RECT;
+
+#if defined(PDF_USE_SKIA)
+class SkImage;
+#endif  // defined(PDF_USE_SKIA)
 
 // Base class for all Device-Independent Bitmaps.
 class CFX_DIBBase : public Retainable {
  public:
-#if defined(OS_APPLE)
+#if BUILDFLAG(IS_APPLE)
   // Matches Apple's kCGBitmapByteOrder32Little in fx_quartz_device.cpp.
   static constexpr FXDIB_Format kPlatformRGBFormat = FXDIB_Format::kRgb32;
-#else   // defined(OS_APPLE)
+#else   // BUILDFLAG(IS_APPLE)
   static constexpr FXDIB_Format kPlatformRGBFormat = FXDIB_Format::kRgb;
-#endif  // defined(OS_APPLE)
+#endif  // BUILDFLAG(IS_APPLE)
 
-  ~CFX_DIBBase() override;
+  static constexpr uint32_t kPaletteSize = 256;
 
-  virtual uint8_t* GetBuffer() const;
-  virtual const uint8_t* GetScanline(int line) const = 0;
+  virtual pdfium::span<const uint8_t> GetScanline(int line) const = 0;
   virtual bool SkipToScanline(int line, PauseIndicatorIface* pPause) const;
-  virtual void DownSampleScanline(int line,
-                                  uint8_t* dest_scan,
-                                  int dest_bpp,
-                                  int dest_width,
-                                  bool bFlipX,
-                                  int clip_left,
-                                  int clip_width) const = 0;
+  virtual size_t GetEstimatedImageMemoryBurden() const;
+#if BUILDFLAG(IS_WIN) || defined(PDF_USE_SKIA)
+  // Calls Realize() if needed. Otherwise, return `this`.
+  virtual RetainPtr<const CFX_DIBitmap> RealizeIfNeeded() const;
+#endif
 
-  uint8_t* GetWritableScanline(int line) {
-    return const_cast<uint8_t*>(GetScanline(line));
+  template <typename T>
+  pdfium::span<const T> GetScanlineAs(int line) const {
+    return fxcrt::reinterpret_span<const T>(GetScanline(line));
   }
+
   int GetWidth() const { return m_Width; }
   int GetHeight() const { return m_Height; }
+  uint32_t GetPitch() const { return m_Pitch; }
 
   FXDIB_Format GetFormat() const { return m_Format; }
-  uint32_t GetPitch() const { return m_Pitch; }
+  int GetBPP() const { return GetBppFromFormat(m_Format); }
+  bool IsMaskFormat() const { return GetIsMaskFromFormat(m_Format); }
+  bool IsAlphaFormat() const { return m_Format == FXDIB_Format::kArgb; }
+  bool IsOpaqueImage() const { return !IsMaskFormat() && !IsAlphaFormat(); }
+
   bool HasPalette() const { return !m_palette.empty(); }
   pdfium::span<const uint32_t> GetPaletteSpan() const { return m_palette; }
-  const uint32_t* GetPaletteData() const { return m_palette.data(); }
-  int GetBPP() const { return GetBppFromFormat(m_Format); }
-
-  bool IsMask() const { return GetIsMaskFromFormat(m_Format); }
-  bool HasAlpha() const { return GetIsAlphaFromFormat(m_Format); }
-  bool IsOpaqueImage() const { return !IsMask() && !HasAlpha(); }
-
-  size_t GetPaletteSize() const;
-
+  size_t GetRequiredPaletteSize() const;
   uint32_t GetPaletteArgb(int index) const;
   void SetPaletteArgb(int index, uint32_t color);
 
   // Copies into internally-owned palette.
   void SetPalette(pdfium::span<const uint32_t> src_palette);
 
-  RetainPtr<CFX_DIBitmap> Clone(const FX_RECT* pClip) const;
-  RetainPtr<CFX_DIBitmap> CloneConvert(FXDIB_Format format);
+  // Moves palette into internally-owned palette.
+  void TakePalette(DataVector<uint32_t> src_palette);
+
+  RetainPtr<CFX_DIBitmap> Realize() const;
+  RetainPtr<CFX_DIBitmap> ClipTo(const FX_RECT& rect) const;
+  RetainPtr<CFX_DIBitmap> ConvertTo(FXDIB_Format format) const;
   RetainPtr<CFX_DIBitmap> StretchTo(int dest_width,
                                     int dest_height,
                                     const FXDIB_ResampleOptions& options,
-                                    const FX_RECT* pClip);
+                                    const FX_RECT* pClip) const;
   RetainPtr<CFX_DIBitmap> TransformTo(const CFX_Matrix& mtDest,
                                       int* left,
-                                      int* top);
+                                      int* top) const;
   RetainPtr<CFX_DIBitmap> SwapXY(bool bXFlip, bool bYFlip) const;
   RetainPtr<CFX_DIBitmap> FlipImage(bool bXFlip, bool bYFlip) const;
 
   RetainPtr<CFX_DIBitmap> CloneAlphaMask() const;
-
-  // Copies into internally-owned mask.
-  bool SetAlphaMask(const RetainPtr<CFX_DIBBase>& pAlphaMask,
-                    const FX_RECT* pClip);
 
   bool GetOverlapRect(int& dest_left,
                       int& dest_top,
@@ -95,36 +103,41 @@ class CFX_DIBBase : public Retainable {
                       int& src_top,
                       const CFX_ClipRgn* pClipRgn) const;
 
-#if defined(_SKIA_SUPPORT_) || defined(_SKIA_SUPPORT_PATHS_)
-  void DebugVerifyBitmapIsPreMultiplied(void* buffer) const;
-#endif
+#if defined(PDF_USE_SKIA)
+  // Realizes an `SkImage` from this DIB.
+  //
+  // This may share the underlying pixels, in which case, this DIB should not be
+  // modified during the lifetime of the `SkImage`.
+  virtual sk_sp<SkImage> RealizeSkImage() const;
 
-  RetainPtr<CFX_DIBitmap> m_pAlphaMask;
+  // Whether alpha is premultiplied (if `IsAlphaFormat()`).
+  virtual bool IsPremultiplied() const;
+#endif  // defined(PDF_USE_SKIA)
 
  protected:
   CFX_DIBBase();
+  ~CFX_DIBBase() override;
 
-  static bool ConvertBuffer(
+  // Returns the color palette, or an empty vector if there is no palette.
+  static DataVector<uint32_t> ConvertBuffer(
       FXDIB_Format dest_format,
-      uint8_t* dest_buf,
+      pdfium::span<uint8_t> dest_buf,
       int dest_pitch,
       int width,
       int height,
-      const RetainPtr<CFX_DIBBase>& pSrcBitmap,
+      const RetainPtr<const CFX_DIBBase>& pSrcBitmap,
       int src_left,
-      int src_top,
-      std::vector<uint32_t, FxAllocAllocator<uint32_t>>* pal);
+      int src_top);
 
+  RetainPtr<CFX_DIBitmap> ClipToInternal(const FX_RECT* pClip) const;
   void BuildPalette();
-  bool BuildAlphaMask();
   int FindPalette(uint32_t color) const;
-  void GetPalette(uint32_t* pal, int alpha) const;
 
+  FXDIB_Format m_Format = FXDIB_Format::kInvalid;
   int m_Width = 0;
   int m_Height = 0;
   uint32_t m_Pitch = 0;
-  FXDIB_Format m_Format = FXDIB_Format::kInvalid;
-  std::vector<uint32_t, FxAllocAllocator<uint32_t>> m_palette;
+  DataVector<uint32_t> m_palette;
 };
 
 #endif  // CORE_FXGE_DIB_CFX_DIBBASE_H_

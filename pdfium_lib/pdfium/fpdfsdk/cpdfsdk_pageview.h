@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,24 +7,34 @@
 #ifndef FPDFSDK_CPDFSDK_PAGEVIEW_H_
 #define FPDFSDK_CPDFSDK_PAGEVIEW_H_
 
+#include <stdint.h>
+
 #include <memory>
 #include <vector>
 
 #include "core/fpdfapi/page/cpdf_page.h"
-#include "core/fxcrt/fx_system.h"
+#include "core/fxcrt/mask.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "fpdfsdk/cpdfsdk_annot.h"
-#include "fpdfsdk/cpdfsdk_annothandlermgr.h"
 
 class CFX_RenderDevice;
 class CPDF_AnnotList;
 class CPDF_RenderOptions;
 class CPDFSDK_FormFillEnvironment;
+class CPDFSDK_InteractiveForm;
+
+#ifdef PDF_ENABLE_XFA
+class CPDFXFA_Page;
+class CXFA_FFWidget;
+#endif  // PDF_ENABLE_XFA
 
 class CPDFSDK_PageView final : public CPDF_Page::View {
  public:
   CPDFSDK_PageView(CPDFSDK_FormFillEnvironment* pFormFillEnv, IPDF_Page* page);
   ~CPDFSDK_PageView();
+
+  // CPDF_Page::View:
+  void ClearPage(CPDF_Page* pPage) override;
 
   void PageView_OnDraw(CFX_RenderDevice* pDevice,
                        const CFX_Matrix& mtUser2Device,
@@ -33,29 +43,30 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
 
   void LoadFXAnnots();
   CPDFSDK_Annot* GetFocusAnnot();
+  CPDFSDK_Annot* GetNextAnnot(CPDFSDK_Annot* pAnnot);
+  CPDFSDK_Annot* GetPrevAnnot(CPDFSDK_Annot* pAnnot);
+  CPDFSDK_Annot* GetFirstFocusableAnnot();
+  CPDFSDK_Annot* GetLastFocusableAnnot();
   bool IsValidAnnot(const CPDF_Annot* p) const;
   bool IsValidSDKAnnot(const CPDFSDK_Annot* p) const;
 
-  const std::vector<CPDFSDK_Annot*>& GetAnnotList() const {
-    return m_SDKAnnotArray;
-  }
-  CPDFSDK_Annot* GetAnnotByDict(CPDF_Dictionary* pDict);
+  std::vector<CPDFSDK_Annot*> GetAnnotList() const;
+  CPDFSDK_Annot* GetAnnotByDict(const CPDF_Dictionary* pDict);
 
 #ifdef PDF_ENABLE_XFA
-  bool DeleteAnnot(CPDFSDK_Annot* pAnnot);
-  CPDFSDK_Annot* AddAnnot(CXFA_FFWidget* pPDFAnnot);
-  CPDFSDK_Annot* GetAnnotByXFAWidget(CXFA_FFWidget* pWidget);
+  CPDFSDK_Annot* AddAnnotForFFWidget(CXFA_FFWidget* pWidget);
+  void DeleteAnnotForFFWidget(CXFA_FFWidget* pWidget);
+  CPDFSDK_Annot* GetAnnotForFFWidget(CXFA_FFWidget* pWidget);
   IPDF_Page* GetXFAPage();
 #endif  // PDF_ENABLE_XFA
 
   CPDF_Page* GetPDFPage() const;
   CPDF_Document* GetPDFDocument();
-  CPDFSDK_FormFillEnvironment* GetFormFillEnv() const {
-    return m_pFormFillEnv.Get();
-  }
+  CPDFSDK_FormFillEnvironment* GetFormFillEnv() const { return m_pFormFillEnv; }
 
   WideString GetFocusedFormText();
   WideString GetSelectedText();
+  void ReplaceAndKeepSelection(const WideString& text);
   void ReplaceSelection(const WideString& text);
   bool SelectAllText();
 
@@ -64,17 +75,16 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
   bool Undo();
   bool Redo();
 
-  bool OnFocus(uint32_t nFlag, const CFX_PointF& point);
-  bool OnLButtonDown(uint32_t nFlag, const CFX_PointF& point);
-  bool OnLButtonUp(uint32_t nFlag, const CFX_PointF& point);
-  bool OnLButtonDblClk(uint32_t nFlag, const CFX_PointF& point);
-  bool OnRButtonDown(uint32_t nFlag, const CFX_PointF& point);
-  bool OnRButtonUp(uint32_t nFlag, const CFX_PointF& point);
-  bool OnChar(int nChar, uint32_t nFlag);
-  bool OnKeyDown(int nKeyCode, int nFlag);
-  bool OnKeyUp(int nKeyCode, int nFlag);
-  bool OnMouseMove(int nFlag, const CFX_PointF& point);
-  bool OnMouseWheel(int nFlag,
+  bool OnFocus(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnLButtonDown(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnLButtonUp(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnLButtonDblClk(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnRButtonDown(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnRButtonUp(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnChar(uint32_t nChar, Mask<FWL_EVENTFLAG> nFlags);
+  bool OnKeyDown(FWL_VKEYCODE nKeyCode, Mask<FWL_EVENTFLAG> nFlags);
+  bool OnMouseMove(Mask<FWL_EVENTFLAG> nFlags, const CFX_PointF& point);
+  bool OnMouseWheel(Mask<FWL_EVENTFLAG> nFlags,
                     const CFX_PointF& point,
                     const CFX_Vector& delta);
 
@@ -92,28 +102,30 @@ class CPDFSDK_PageView final : public CPDF_Page::View {
   bool IsLocked() const { return m_bLocked; }
   void SetBeingDestroyed() { m_bBeingDestroyed = true; }
   bool IsBeingDestroyed() const { return m_bBeingDestroyed; }
-  void TakePageOwnership() { m_pOwnsPage.Reset(ToPDFPage(m_page)); }
 
  private:
+#ifdef PDF_ENABLE_XFA
+  CPDFXFA_Page* XFAPageIfNotBackedByPDFPage();
+#endif
+
+  std::unique_ptr<CPDFSDK_Annot> NewAnnot(CPDF_Annot* annot);
+
+  CPDFSDK_InteractiveForm* GetInteractiveForm() const;
   CPDFSDK_Annot* GetFXAnnotAtPoint(const CFX_PointF& point);
   CPDFSDK_Annot* GetFXWidgetAtPoint(const CFX_PointF& point);
 
   int GetPageIndexForStaticPDF() const;
 
-  void EnterWidget(CPDFSDK_AnnotHandlerMgr* pAnnotHandlerMgr,
-                   ObservedPtr<CPDFSDK_Annot>* pAnnot,
-                   uint32_t nFlag);
-  void ExitWidget(CPDFSDK_AnnotHandlerMgr* pAnnotHandlerMgr,
-                  bool callExitCallback,
-                  uint32_t nFlag);
+  void EnterWidget(ObservedPtr<CPDFSDK_Annot>& pAnnot,
+                   Mask<FWL_EVENTFLAG> nFlags);
+  void ExitWidget(bool callExitCallback, Mask<FWL_EVENTFLAG> nFlags);
 
   CFX_Matrix m_curMatrix;
-  IPDF_Page* const m_page;
+  UnownedPtr<IPDF_Page> const m_page;
   std::unique_ptr<CPDF_AnnotList> m_pAnnotList;
-  std::vector<CPDFSDK_Annot*> m_SDKAnnotArray;
+  std::vector<std::unique_ptr<CPDFSDK_Annot>> m_SDKAnnotArray;
   UnownedPtr<CPDFSDK_FormFillEnvironment> const m_pFormFillEnv;
   ObservedPtr<CPDFSDK_Annot> m_pCaptureWidget;
-  RetainPtr<CPDF_Page> m_pOwnsPage;
   bool m_bOnWidget = false;
   bool m_bValid = false;
   bool m_bLocked = false;

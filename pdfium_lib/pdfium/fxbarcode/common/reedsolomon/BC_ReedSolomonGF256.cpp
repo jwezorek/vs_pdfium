@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -73,9 +73,9 @@ int32_t CBC_ReedSolomonGF256::Exp(int32_t a) {
   return m_expTable[a];
 }
 
-Optional<int32_t> CBC_ReedSolomonGF256::Inverse(int32_t a) {
+std::optional<int32_t> CBC_ReedSolomonGF256::Inverse(int32_t a) {
   if (a == 0)
-    return {};
+    return std::nullopt;
   return m_expTable[255 - m_logTable[a]];
 }
 

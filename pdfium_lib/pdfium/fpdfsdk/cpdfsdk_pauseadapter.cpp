@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -12,5 +12,5 @@ CPDFSDK_PauseAdapter::CPDFSDK_PauseAdapter(IFSDK_PAUSE* IPause)
 CPDFSDK_PauseAdapter::~CPDFSDK_PauseAdapter() = default;
 
 bool CPDFSDK_PauseAdapter::NeedToPauseNow() {
-  return m_IPause->NeedToPauseNow && m_IPause->NeedToPauseNow(m_IPause.Get());
+  return m_IPause->NeedToPauseNow && m_IPause->NeedToPauseNow(m_IPause);
 }

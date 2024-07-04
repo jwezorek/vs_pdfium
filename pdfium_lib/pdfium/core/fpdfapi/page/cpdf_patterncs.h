@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,14 +7,16 @@
 #ifndef CORE_FPDFAPI_PAGE_CPDF_PATTERNCS_H_
 #define CORE_FPDFAPI_PAGE_CPDF_PATTERNCS_H_
 
+#include <optional>
 #include <set>
 
-#include "core/fpdfapi/page/cpdf_colorspace.h"
+#include "core/fpdfapi/page/cpdf_basedcs.h"
 #include "core/fxcrt/retain_ptr.h"
+#include "core/fxge/dib/fx_dib.h"
 
 class CPDF_Document;
 
-class CPDF_PatternCS final : public CPDF_ColorSpace {
+class CPDF_PatternCS final : public CPDF_BasedCS {
  public:
   CONSTRUCT_VIA_MAKE_RETAIN;
   ~CPDF_PatternCS() override;
@@ -24,24 +26,18 @@ class CPDF_PatternCS final : public CPDF_ColorSpace {
   void InitializeStockPattern();
 
   // CPDF_ColorSpace:
-  bool GetRGB(pdfium::span<const float> pBuf,
-              float* R,
-              float* G,
-              float* B) const override;
-  bool GetPatternRGB(const PatternValue& value,
-                     float* R,
-                     float* G,
-                     float* B) const override;
-  CPDF_PatternCS* AsPatternCS() override;
+  std::optional<FX_RGB_STRUCT<float>> GetRGB(
+      pdfium::span<const float> pBuf) const override;
   const CPDF_PatternCS* AsPatternCS() const override;
   uint32_t v_Load(CPDF_Document* pDoc,
                   const CPDF_Array* pArray,
                   std::set<const CPDF_Object*>* pVisited) override;
 
- private:
-  explicit CPDF_PatternCS(CPDF_Document* pDoc);
+  std::optional<FX_RGB_STRUCT<float>> GetPatternRGB(
+      const PatternValue& value) const;
 
-  RetainPtr<CPDF_ColorSpace> m_pBaseCS;
+ private:
+  CPDF_PatternCS();
 };
 
 #endif  // CORE_FPDFAPI_PAGE_CPDF_PATTERNCS_H_

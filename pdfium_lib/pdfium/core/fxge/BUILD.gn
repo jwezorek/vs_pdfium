@@ -1,4 +1,4 @@
-# Copyright 2018 The PDFium Authors. All rights reserved.
+# Copyright 2018 The PDFium Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,22 +6,17 @@ import("//build/config/freetype/freetype.gni")
 import("../../pdfium.gni")
 import("../../testing/test.gni")
 
-config("fxge_warnings") {
-  visibility = [ ":*" ]
-  if (is_clang) {
-    cflags = [
-      # http://code.google.com/p/pdfium/issues/detail?id=188
-      "-Wno-switch",
-    ]
-  }
-}
-
 source_set("fxge") {
   sources = [
+    "agg/fx_agg_driver.cpp",
+    "agg/fx_agg_driver.h",
+    "calculate_pitch.cpp",
+    "calculate_pitch.h",
     "cfx_cliprgn.cpp",
     "cfx_cliprgn.h",
     "cfx_color.cpp",
     "cfx_color.h",
+    "cfx_defaultrenderdevice.cpp",
     "cfx_defaultrenderdevice.h",
     "cfx_drawutils.cpp",
     "cfx_drawutils.h",
@@ -48,8 +43,8 @@ source_set("fxge") {
     "cfx_graphstate.h",
     "cfx_graphstatedata.cpp",
     "cfx_graphstatedata.h",
-    "cfx_pathdata.cpp",
-    "cfx_pathdata.h",
+    "cfx_path.cpp",
+    "cfx_path.h",
     "cfx_renderdevice.cpp",
     "cfx_renderdevice.h",
     "cfx_substfont.cpp",
@@ -57,6 +52,8 @@ source_set("fxge") {
     "cfx_textrenderoptions.h",
     "cfx_unicodeencoding.cpp",
     "cfx_unicodeencoding.h",
+    "dib/blend.cpp",
+    "dib/blend.h",
     "dib/cfx_bitmapcomposer.cpp",
     "dib/cfx_bitmapcomposer.h",
     "dib/cfx_bitmapstorer.cpp",
@@ -98,9 +95,10 @@ source_set("fxge") {
     "fontdata/chromefontdata/FoxitSymbol.cpp",
     "fontdata/chromefontdata/chromefontdata.h",
     "freetype/fx_freetype.cpp",
+    "freetype/fx_freetype.h",
     "fx_font.cpp",
     "fx_font.h",
-    "fx_freetype.h",
+    "fx_fontencoding.h",
     "render_defines.h",
     "renderdevicedriver_iface.cpp",
     "renderdevicedriver_iface.h",
@@ -114,11 +112,16 @@ source_set("fxge") {
   ]
 
   configs += [
-    ":fxge_warnings",
-    "../../:pdfium_core_config",
+    "../../:pdfium_strict_config",
+    "../../:pdfium_noshorten_config",
   ]
 
-  deps = [ "../fxcrt" ]
+  deps = [
+    "../../third_party:fx_agg",
+    "../fxcrt",
+  ]
+
+  public_deps = []
 
   if (is_component_build || use_system_freetype) {
     # ft_adobe_glyph_list is not exported from the Freetype shared library so we
@@ -133,15 +136,12 @@ source_set("fxge") {
     ]
   }
 
-  if (pdf_use_skia || pdf_use_skia_paths) {
-    sources += [ "skia/fx_skia_device.cpp" ]
-    deps += [ "//skia" ]
-  } else {
+  if (pdf_use_skia) {
     sources += [
-      "agg/fx_agg_driver.cpp",
-      "agg/fx_agg_driver.h",
+      "skia/cfx_dibbase_skia.cpp",
+      "skia/fx_skia_device.cpp",
     ]
-    deps += [ "../../third_party:fx_agg" ]
+    public_deps += [ "//skia" ]
   }
 
   if (is_android) {
@@ -161,14 +161,14 @@ source_set("fxge") {
   }
 
   if (is_linux || is_chromeos) {
-    sources += [ "fx_ge_linux.cpp" ]
+    sources += [ "linux/fx_linux_impl.cpp" ]
   }
 
   if (is_mac) {
     sources += [
+      "apple/fx_apple_impl.cpp",
       "apple/fx_apple_platform.cpp",
-      "apple/fx_mac_impl.cpp",
-      "apple/fx_mac_impl.h",
+      "apple/fx_apple_platform.h",
       "apple/fx_quartz_device.cpp",
       "apple/fx_quartz_device.h",
     ]
@@ -179,8 +179,8 @@ source_set("fxge") {
     sources += [
       "cfx_windowsrenderdevice.cpp",
       "cfx_windowsrenderdevice.h",
-      "dib/cfx_dibextractor.cpp",
-      "dib/cfx_dibextractor.h",
+      "win32/cfx_psfonttracker.cpp",
+      "win32/cfx_psfonttracker.h",
       "win32/cfx_psrenderer.cpp",
       "win32/cfx_psrenderer.h",
       "win32/cgdi_device_driver.cpp",
@@ -208,8 +208,11 @@ source_set("fxge") {
 
 pdfium_unittest_source_set("unittests") {
   sources = [
+    "cfx_defaultrenderdevice_unittest.cpp",
     "cfx_folderfontinfo_unittest.cpp",
     "cfx_fontmapper_unittest.cpp",
+    "cfx_path_unittest.cpp",
+    "dib/blend_unittest.cpp",
     "dib/cfx_cmyk_to_srgb_unittest.cpp",
     "dib/cfx_dibbase_unittest.cpp",
     "dib/cfx_dibitmap_unittest.cpp",
@@ -222,6 +225,10 @@ pdfium_unittest_source_set("unittests") {
     "../fpdfapi/parser",
   ]
   pdfium_root_dir = "../../"
+
+  if (is_win) {
+    sources += [ "win32/cfx_psrenderer_unittest.cpp" ]
+  }
 }
 
 pdfium_embeddertest_source_set("embeddertests") {
@@ -229,11 +236,13 @@ pdfium_embeddertest_source_set("embeddertests") {
   deps = []
   pdfium_root_dir = "../../"
 
-  if (pdf_use_skia || pdf_use_skia_paths) {
+  if (pdf_use_skia) {
     sources += [ "skia/fx_skia_device_embeddertest.cpp" ]
     deps += [
       ":fxge",
       "../../fpdfsdk",
+      "../fpdfapi/page",
+      "../fpdfapi/render",
       "//skia",
     ]
   }

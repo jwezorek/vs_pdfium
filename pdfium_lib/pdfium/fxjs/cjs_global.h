@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 
+#include "core/fxcrt/span.h"
+#include "core/fxcrt/unowned_ptr.h"
 #include "fxjs/cfx_keyvalue.h"
 #include "fxjs/cjs_object.h"
 #include "fxjs/cjs_result.h"
@@ -33,32 +35,26 @@ class CJS_Global final : public CJS_Object {
   static void DefineJSObjects(CFXJS_Engine* pEngine);
   static void DefineAllProperties(CFXJS_Engine* pEngine);
 
-  static void queryprop_static(
+  static v8::Intercepted queryprop_static(
       v8::Local<v8::Name> property,
       const v8::PropertyCallbackInfo<v8::Integer>& info);
-  static void getprop_static(v8::Local<v8::Name> property,
-                             const v8::PropertyCallbackInfo<v8::Value>& info);
-  static void putprop_static(v8::Local<v8::Name> property,
-                             v8::Local<v8::Value> value,
-                             const v8::PropertyCallbackInfo<v8::Value>& info);
-  static void delprop_static(v8::Local<v8::Name> property,
-                             const v8::PropertyCallbackInfo<v8::Boolean>& info);
+  static v8::Intercepted getprop_static(
+      v8::Local<v8::Name> property,
+      const v8::PropertyCallbackInfo<v8::Value>& info);
+  static v8::Intercepted putprop_static(
+      v8::Local<v8::Name> property,
+      v8::Local<v8::Value> value,
+      const v8::PropertyCallbackInfo<void>& info);
+  static v8::Intercepted delprop_static(
+      v8::Local<v8::Name> property,
+      const v8::PropertyCallbackInfo<v8::Boolean>& info);
+  static void enumprop_static(const v8::PropertyCallbackInfo<v8::Array>& info);
 
   static void setPersistent_static(
       const v8::FunctionCallbackInfo<v8::Value>& info);
 
   CJS_Global(v8::Local<v8::Object> pObject, CJS_Runtime* pRuntime);
   ~CJS_Global() override;
-
-  CJS_Result DelProperty(CJS_Runtime* pRuntime, const wchar_t* propname);
-
-  CJS_Result setPersistent(CJS_Runtime* pRuntime,
-                           const std::vector<v8::Local<v8::Value>>& params);
-  CJS_Result QueryProperty(const wchar_t* propname);
-  CJS_Result GetProperty(CJS_Runtime* pRuntime, const wchar_t* propname);
-  CJS_Result SetProperty(CJS_Runtime* pRuntime,
-                         const wchar_t* propname,
-                         v8::Local<v8::Value> vp);
 
  private:
   struct JSGlobalData : public CFX_Value {
@@ -75,7 +71,8 @@ class CJS_Global final : public CJS_Object {
   static const JSMethodSpec MethodSpecs[];
 
   void UpdateGlobalPersistentVariables();
-  void CommitGlobalPersisitentVariables(CJS_Runtime* pRuntime);
+  // TODO(crbug.com/pdfium/926): This method is never called.
+  void CommitGlobalPersisitentVariables();
   void DestroyGlobalPersisitentVariables();
   CJS_Result SetGlobalVariables(const ByteString& propname,
                                 CFX_Value::DataType nType,
@@ -88,10 +85,19 @@ class CJS_Global final : public CJS_Object {
       CJS_Runtime* pRuntime,
       v8::Local<v8::Object> pObj);
   void PutObjectProperty(v8::Local<v8::Object> obj, CFX_KeyValue* pData);
+  CJS_Result setPersistent(CJS_Runtime* pRuntime,
+                           pdfium::span<v8::Local<v8::Value>> params);
+  bool HasProperty(const ByteString& propname);
+  bool DelProperty(const ByteString& propname);
+  CJS_Result GetProperty(CJS_Runtime* pRuntime, const ByteString& propname);
+  CJS_Result SetProperty(CJS_Runtime* pRuntime,
+                         const ByteString& propname,
+                         v8::Local<v8::Value> vp);
+  void EnumProperties(CJS_Runtime* pRuntime,
+                      const v8::PropertyCallbackInfo<v8::Array>& info);
 
   std::map<ByteString, std::unique_ptr<JSGlobalData>> m_MapGlobal;
-  CFX_GlobalData* m_pGlobalData;
-  ObservedPtr<CPDFSDK_FormFillEnvironment> m_pFormFillEnv;
+  UnownedPtr<CFX_GlobalData> m_pGlobalData;
 };
 
 #endif  // FXJS_CJS_GLOBAL_H_

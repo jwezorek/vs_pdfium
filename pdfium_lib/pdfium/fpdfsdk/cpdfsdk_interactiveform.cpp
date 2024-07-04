@@ -1,10 +1,12 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 // Original code copyright 2014 Foxit Software Inc. http://www.foxitsoftware.com
 
 #include "fpdfsdk/cpdfsdk_interactiveform.h"
+
+#include <stdint.h>
 
 #include <algorithm>
 #include <memory>
@@ -23,19 +25,19 @@
 #include "core/fpdfdoc/cpdf_formcontrol.h"
 #include "core/fpdfdoc/cpdf_interactiveform.h"
 #include "core/fxcrt/autorestorer.h"
+#include "core/fxcrt/check.h"
+#include "core/fxcrt/fx_string_wrappers.h"
+#include "core/fxcrt/stl_util.h"
 #include "core/fxge/cfx_graphstatedata.h"
-#include "core/fxge/cfx_pathdata.h"
-#include "fpdfsdk/cpdfsdk_actionhandler.h"
+#include "core/fxge/cfx_path.h"
 #include "fpdfsdk/cpdfsdk_annot.h"
 #include "fpdfsdk/cpdfsdk_annotiterator.h"
 #include "fpdfsdk/cpdfsdk_formfillenvironment.h"
 #include "fpdfsdk/cpdfsdk_pageview.h"
 #include "fpdfsdk/cpdfsdk_widget.h"
-#include "fpdfsdk/formfiller/cffl_formfiller.h"
-#include "fpdfsdk/ipdfsdk_annothandler.h"
+#include "fpdfsdk/formfiller/cffl_formfield.h"
 #include "fxjs/ijs_event_context.h"
 #include "fxjs/ijs_runtime.h"
-#include "third_party/base/check.h"
 
 namespace {
 
@@ -69,43 +71,37 @@ bool IsFormFieldTypeXFA(FormFieldType fieldType) {
 }
 #endif  // PDF_ENABLE_XFA
 
-bool FDFToURLEncodedData(
-    std::vector<uint8_t, FxAllocAllocator<uint8_t>>* pBuffer) {
-  std::unique_ptr<CFDF_Document> pFDF = CFDF_Document::ParseMemory(*pBuffer);
+ByteString FDFToURLEncodedData(ByteString buffer) {
+  std::unique_ptr<CFDF_Document> pFDF =
+      CFDF_Document::ParseMemory(buffer.unsigned_span());
   if (!pFDF)
-    return true;
+    return buffer;
 
-  CPDF_Dictionary* pMainDict = pFDF->GetRoot()->GetDictFor("FDF");
+  RetainPtr<const CPDF_Dictionary> pMainDict =
+      pFDF->GetRoot()->GetDictFor("FDF");
   if (!pMainDict)
-    return false;
+    return ByteString();
 
-  CPDF_Array* pFields = pMainDict->GetArrayFor("Fields");
+  RetainPtr<const CPDF_Array> pFields = pMainDict->GetArrayFor("Fields");
   if (!pFields)
-    return false;
+    return ByteString();
 
-  std::ostringstream fdfEncodedData;
+  fxcrt::ostringstream encoded_data;
   for (uint32_t i = 0; i < pFields->size(); i++) {
-    CPDF_Dictionary* pField = pFields->GetDictAt(i);
+    RetainPtr<const CPDF_Dictionary> pField = pFields->GetDictAt(i);
     if (!pField)
       continue;
-    WideString name;
-    name = pField->GetUnicodeTextFor("T");
+    WideString name = pField->GetUnicodeTextFor("T");
     ByteString name_b = name.ToDefANSI();
-    ByteString csBValue = pField->GetStringFor("V");
-    WideString csWValue = PDF_DecodeText(csBValue.raw_span());
+    ByteString csBValue = pField->GetByteStringFor("V");
+    WideString csWValue = PDF_DecodeText(csBValue.unsigned_span());
     ByteString csValue_b = csWValue.ToDefANSI();
-    fdfEncodedData << name_b << "=" << csValue_b;
+    encoded_data << name_b << "=" << csValue_b;
     if (i != pFields->size() - 1)
-      fdfEncodedData << "&";
+      encoded_data << "&";
   }
 
-  size_t nBufSize = fdfEncodedData.tellp();
-  if (nBufSize <= 0)
-    return false;
-
-  pBuffer->resize(nBufSize);
-  memcpy(pBuffer->data(), fdfEncodedData.str().c_str(), nBufSize);
-  return true;
+  return ByteString(encoded_data);
 }
 
 }  // namespace
@@ -129,15 +125,15 @@ CPDFSDK_Widget* CPDFSDK_InteractiveForm::GetWidget(
   CPDFSDK_Widget* pWidget = nullptr;
   const auto it = m_Map.find(pControl);
   if (it != m_Map.end())
-    pWidget = it->second.Get();
+    pWidget = it->second;
   if (pWidget)
     return pWidget;
 
-  CPDF_Dictionary* pControlDict = pControl->GetWidget();
   CPDF_Document* pDocument = m_pFormFillEnv->GetPDFDocument();
   CPDFSDK_PageView* pPage = nullptr;
-
-  if (CPDF_Dictionary* pPageDict = pControlDict->GetDictFor("P")) {
+  RetainPtr<const CPDF_Dictionary> pControlDict = pControl->GetWidgetDict();
+  RetainPtr<const CPDF_Dictionary> pPageDict = pControlDict->GetDictFor("P");
+  if (pPageDict) {
     int nPageIndex = pDocument->GetPageIndex(pPageDict->GetObjNum());
     if (nPageIndex >= 0)
       pPage = m_pFormFillEnv->GetPageViewAtIndex(nPageIndex);
@@ -154,8 +150,8 @@ CPDFSDK_Widget* CPDFSDK_InteractiveForm::GetWidget(
 
 void CPDFSDK_InteractiveForm::GetWidgets(
     const WideString& sFieldName,
-    std::vector<ObservedPtr<CPDFSDK_Annot>>* widgets) const {
-  for (int i = 0, sz = m_pInteractiveForm->CountFields(sFieldName); i < sz;
+    std::vector<ObservedPtr<CPDFSDK_Widget>>* widgets) const {
+  for (size_t i = 0, sz = m_pInteractiveForm->CountFields(sFieldName); i < sz;
        ++i) {
     CPDF_FormField* pFormField = m_pInteractiveForm->GetField(i, sFieldName);
     DCHECK(pFormField);
@@ -165,7 +161,7 @@ void CPDFSDK_InteractiveForm::GetWidgets(
 
 void CPDFSDK_InteractiveForm::GetWidgets(
     CPDF_FormField* pField,
-    std::vector<ObservedPtr<CPDFSDK_Annot>>* widgets) const {
+    std::vector<ObservedPtr<CPDFSDK_Widget>>* widgets) const {
   for (int i = 0, sz = pField->CountControls(); i < sz; ++i) {
     CPDF_FormControl* pFormCtrl = pField->GetControl(i);
     DCHECK(pFormCtrl);
@@ -177,31 +173,37 @@ void CPDFSDK_InteractiveForm::GetWidgets(
 
 int CPDFSDK_InteractiveForm::GetPageIndexByAnnotDict(
     CPDF_Document* pDocument,
-    CPDF_Dictionary* pAnnotDict) const {
+    const CPDF_Dictionary* pAnnotDict) const {
   DCHECK(pAnnotDict);
 
   for (int i = 0, sz = pDocument->GetPageCount(); i < sz; i++) {
-    if (CPDF_Dictionary* pPageDict = pDocument->GetPageDictionary(i)) {
-      if (CPDF_Array* pAnnots = pPageDict->GetArrayFor("Annots")) {
-        for (int j = 0, jsz = pAnnots->size(); j < jsz; j++) {
-          CPDF_Object* pDict = pAnnots->GetDirectObjectAt(j);
-          if (pAnnotDict == pDict)
-            return i;
-        }
-      }
+    RetainPtr<const CPDF_Dictionary> pPageDict =
+        pDocument->GetPageDictionary(i);
+    if (!pPageDict)
+      continue;
+
+    RetainPtr<const CPDF_Array> pAnnots = pPageDict->GetArrayFor("Annots");
+    if (!pAnnots)
+      continue;
+
+    for (size_t j = 0, jsz = pAnnots->size(); j < jsz; j++) {
+      RetainPtr<const CPDF_Object> pDict = pAnnots->GetDirectObjectAt(j);
+      if (pAnnotDict == pDict)
+        return i;
     }
   }
-
   return -1;
 }
 
 void CPDFSDK_InteractiveForm::AddMap(CPDF_FormControl* pControl,
                                      CPDFSDK_Widget* pWidget) {
-  m_Map[pControl] = pWidget;
+  m_Map[pdfium::WrapUnowned(pControl)] = pWidget;
 }
 
 void CPDFSDK_InteractiveForm::RemoveMap(CPDF_FormControl* pControl) {
-  m_Map.erase(pControl);
+  auto it = m_Map.find(pControl);
+  if (it != m_Map.end())
+    m_Map.erase(it);
 }
 
 void CPDFSDK_InteractiveForm::EnableCalculate(bool bEnabled) {
@@ -262,11 +264,11 @@ void CPDFSDK_InteractiveForm::OnCalculate(CPDF_FormField* pFormField) {
       continue;
 
     CPDF_AAction aAction = pField->GetAdditionalAction();
-    if (!aAction.GetDict() || !aAction.ActionExist(CPDF_AAction::kCalculate))
+    if (!aAction.ActionExist(CPDF_AAction::kCalculate))
       continue;
 
     CPDF_Action action = aAction.GetAction(CPDF_AAction::kCalculate);
-    if (!action.GetDict())
+    if (!action.HasDict())
       continue;
 
     WideString csJS = action.GetJavaScript();
@@ -279,16 +281,16 @@ void CPDFSDK_InteractiveForm::OnCalculate(CPDF_FormField* pFormField) {
     IJS_Runtime::ScopedEventContext pContext(pRuntime);
     pContext->OnField_Calculate(pFormField, pField, &sValue, &bRC);
 
-    Optional<IJS_Runtime::JS_Error> err = pContext->RunScript(csJS);
-    if (!err && bRC && sValue.Compare(sOldValue) != 0)
+    std::optional<IJS_Runtime::JS_Error> err = pContext->RunScript(csJS);
+    if (!err.has_value() && bRC && sValue != sOldValue)
       pField->SetValue(sValue, NotificationOption::kNotify);
   }
 }
 
-Optional<WideString> CPDFSDK_InteractiveForm::OnFormat(
+std::optional<WideString> CPDFSDK_InteractiveForm::OnFormat(
     CPDF_FormField* pFormField) {
   if (!m_pFormFillEnv->IsJSPlatformPresent())
-    return {};
+    return std::nullopt;
 
   WideString sValue = pFormField->GetValue();
   IJS_Runtime* pRuntime = m_pFormFillEnv->GetIJSRuntime();
@@ -300,30 +302,30 @@ Optional<WideString> CPDFSDK_InteractiveForm::OnFormat(
   }
 
   CPDF_AAction aAction = pFormField->GetAdditionalAction();
-  if (aAction.GetDict() && aAction.ActionExist(CPDF_AAction::kFormat)) {
+  if (aAction.ActionExist(CPDF_AAction::kFormat)) {
     CPDF_Action action = aAction.GetAction(CPDF_AAction::kFormat);
-    if (action.GetDict()) {
+    if (action.HasDict()) {
       WideString script = action.GetJavaScript();
       if (!script.IsEmpty()) {
         IJS_Runtime::ScopedEventContext pContext(pRuntime);
         pContext->OnField_Format(pFormField, &sValue);
-        Optional<IJS_Runtime::JS_Error> err = pContext->RunScript(script);
-        if (!err)
+        std::optional<IJS_Runtime::JS_Error> err = pContext->RunScript(script);
+        if (!err.has_value())
           return sValue;
       }
     }
   }
-  return {};
+  return std::nullopt;
 }
 
 void CPDFSDK_InteractiveForm::ResetFieldAppearance(
     CPDF_FormField* pFormField,
-    Optional<WideString> sValue) {
+    std::optional<WideString> sValue) {
   for (int i = 0, sz = pFormField->CountControls(); i < sz; i++) {
     CPDF_FormControl* pFormCtrl = pFormField->GetControl(i);
     DCHECK(pFormCtrl);
     if (CPDFSDK_Widget* pWidget = GetWidget(pFormCtrl))
-      pWidget->ResetAppearance(sValue, true);
+      pWidget->ResetAppearance(sValue, CPDFSDK_Widget::kValueChanged);
   }
 }
 
@@ -338,8 +340,8 @@ void CPDFSDK_InteractiveForm::UpdateField(CPDF_FormField* pFormField) {
       continue;
 
     IPDF_Page* pPage = pWidget->GetPage();
-    FX_RECT rect = formfiller->GetViewBBox(
-        m_pFormFillEnv->GetPageView(pPage, false), pWidget);
+    FX_RECT rect =
+        formfiller->GetViewBBox(m_pFormFillEnv->GetPageView(pPage), pWidget);
     m_pFormFillEnv->Invalidate(pPage, rect);
   }
 }
@@ -347,38 +349,38 @@ void CPDFSDK_InteractiveForm::UpdateField(CPDF_FormField* pFormField) {
 bool CPDFSDK_InteractiveForm::OnKeyStrokeCommit(CPDF_FormField* pFormField,
                                                 const WideString& csValue) {
   CPDF_AAction aAction = pFormField->GetAdditionalAction();
-  if (!aAction.GetDict() || !aAction.ActionExist(CPDF_AAction::kKeyStroke))
+  if (!aAction.ActionExist(CPDF_AAction::kKeyStroke))
     return true;
 
   CPDF_Action action = aAction.GetAction(CPDF_AAction::kKeyStroke);
-  if (!action.GetDict())
+  if (!action.HasDict())
     return true;
 
-  CPDFSDK_FieldAction fa;
+  CFFL_FieldAction fa;
   fa.bModifier = false;
   fa.bShift = false;
   fa.sValue = csValue;
-  m_pFormFillEnv->GetActionHandler()->DoAction_FieldJavaScript(
-      action, CPDF_AAction::kKeyStroke, m_pFormFillEnv.Get(), pFormField, &fa);
+  m_pFormFillEnv->DoActionFieldJavaScript(action, CPDF_AAction::kKeyStroke,
+                                          pFormField, &fa);
   return fa.bRC;
 }
 
 bool CPDFSDK_InteractiveForm::OnValidate(CPDF_FormField* pFormField,
                                          const WideString& csValue) {
   CPDF_AAction aAction = pFormField->GetAdditionalAction();
-  if (!aAction.GetDict() || !aAction.ActionExist(CPDF_AAction::kValidate))
+  if (!aAction.ActionExist(CPDF_AAction::kValidate))
     return true;
 
   CPDF_Action action = aAction.GetAction(CPDF_AAction::kValidate);
-  if (!action.GetDict())
+  if (!action.HasDict())
     return true;
 
-  CPDFSDK_FieldAction fa;
+  CFFL_FieldAction fa;
   fa.bModifier = false;
   fa.bShift = false;
   fa.sValue = csValue;
-  m_pFormFillEnv->GetActionHandler()->DoAction_FieldJavaScript(
-      action, CPDF_AAction::kValidate, m_pFormFillEnv.Get(), pFormField, &fa);
+  m_pFormFillEnv->DoActionFieldJavaScript(action, CPDF_AAction::kValidate,
+                                          pFormField, &fa);
   return fa.bRC;
 }
 
@@ -417,8 +419,7 @@ bool CPDFSDK_InteractiveForm::DoAction_SubmitForm(const CPDF_Action& action) {
   if (sDestination.IsEmpty())
     return false;
 
-  const CPDF_Dictionary* pActionDict = action.GetDict();
-  if (pActionDict->KeyExist("Fields")) {
+  if (action.HasFields()) {
     uint32_t dwFlags = action.GetFlags();
     std::vector<CPDF_FormField*> fields =
         GetFieldFromObjects(action.GetAllFields());
@@ -433,7 +434,7 @@ bool CPDFSDK_InteractiveForm::DoAction_SubmitForm(const CPDF_Action& action) {
   if (!m_pInteractiveForm->CheckRequiredFields(nullptr, true))
     return false;
 
-  return SubmitForm(sDestination, false);
+  return SubmitForm(sDestination);
 }
 
 bool CPDFSDK_InteractiveForm::SubmitFields(
@@ -441,16 +442,17 @@ bool CPDFSDK_InteractiveForm::SubmitFields(
     const std::vector<CPDF_FormField*>& fields,
     bool bIncludeOrExclude,
     bool bUrlEncoded) {
-  ByteString textBuf = ExportFieldsToFDFTextBuf(fields, bIncludeOrExclude);
-  if (textBuf.IsEmpty())
+  ByteString text_buf = ExportFieldsToFDFTextBuf(fields, bIncludeOrExclude);
+  if (text_buf.IsEmpty())
     return false;
 
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> buffer(textBuf.begin(),
-                                                         textBuf.end());
-  if (bUrlEncoded && !FDFToURLEncodedData(&buffer))
-    return false;
+  if (bUrlEncoded) {
+    text_buf = FDFToURLEncodedData(text_buf);
+    if (text_buf.IsEmpty())
+      return false;
+  }
 
-  m_pFormFillEnv->SubmitForm(buffer, csDestination);
+  m_pFormFillEnv->SubmitForm(text_buf.unsigned_span(), csDestination);
   return true;
 }
 
@@ -458,57 +460,49 @@ ByteString CPDFSDK_InteractiveForm::ExportFieldsToFDFTextBuf(
     const std::vector<CPDF_FormField*>& fields,
     bool bIncludeOrExclude) {
   std::unique_ptr<CFDF_Document> pFDF = m_pInteractiveForm->ExportToFDF(
-      m_pFormFillEnv->GetFilePath(), fields, bIncludeOrExclude, false);
+      m_pFormFillEnv->GetFilePath(), fields, bIncludeOrExclude);
 
   return pFDF ? pFDF->WriteToString() : ByteString();
 }
 
-bool CPDFSDK_InteractiveForm::SubmitForm(const WideString& sDestination,
-                                         bool bUrlEncoded) {
+bool CPDFSDK_InteractiveForm::SubmitForm(const WideString& sDestination) {
   if (sDestination.IsEmpty())
     return false;
 
   std::unique_ptr<CFDF_Document> pFDFDoc =
-      m_pInteractiveForm->ExportToFDF(m_pFormFillEnv->GetFilePath(), false);
+      m_pInteractiveForm->ExportToFDF(m_pFormFillEnv->GetFilePath());
   if (!pFDFDoc)
     return false;
 
-  ByteString fdfBuffer = pFDFDoc->WriteToString();
-  if (fdfBuffer.IsEmpty())
+  ByteString fdf_buffer = pFDFDoc->WriteToString();
+  if (fdf_buffer.IsEmpty())
     return false;
 
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> buffer(fdfBuffer.begin(),
-                                                         fdfBuffer.end());
-  if (bUrlEncoded && !FDFToURLEncodedData(&buffer))
-    return false;
-
-  m_pFormFillEnv->SubmitForm(buffer, sDestination);
+  m_pFormFillEnv->SubmitForm(fdf_buffer.unsigned_span(), sDestination);
   return true;
 }
 
 ByteString CPDFSDK_InteractiveForm::ExportFormToFDFTextBuf() {
   std::unique_ptr<CFDF_Document> pFDF =
-      m_pInteractiveForm->ExportToFDF(m_pFormFillEnv->GetFilePath(), false);
+      m_pInteractiveForm->ExportToFDF(m_pFormFillEnv->GetFilePath());
 
   return pFDF ? pFDF->WriteToString() : ByteString();
 }
 
 void CPDFSDK_InteractiveForm::DoAction_ResetForm(const CPDF_Action& action) {
   DCHECK(action.GetDict());
-  const CPDF_Dictionary* pActionDict = action.GetDict();
-  if (!pActionDict->KeyExist("Fields")) {
-    m_pInteractiveForm->ResetForm(NotificationOption::kNotify);
+  if (!action.HasFields()) {
+    m_pInteractiveForm->ResetForm();
     return;
   }
   uint32_t dwFlags = action.GetFlags();
   std::vector<CPDF_FormField*> fields =
       GetFieldFromObjects(action.GetAllFields());
-  m_pInteractiveForm->ResetForm(fields, !(dwFlags & 0x01),
-                                NotificationOption::kNotify);
+  m_pInteractiveForm->ResetForm(fields, !(dwFlags & 0x01));
 }
 
 std::vector<CPDF_FormField*> CPDFSDK_InteractiveForm::GetFieldFromObjects(
-    const std::vector<const CPDF_Object*>& objects) const {
+    const std::vector<RetainPtr<const CPDF_Object>>& objects) const {
   std::vector<CPDF_FormField*> fields;
   for (const CPDF_Object* pObject : objects) {
     if (!pObject || !pObject->IsString())
@@ -560,7 +554,7 @@ void CPDFSDK_InteractiveForm::AfterSelectionChange(CPDF_FormField* pField) {
     return;
 
   OnCalculate(pField);
-  ResetFieldAppearance(pField, pdfium::nullopt);
+  ResetFieldAppearance(pField, std::nullopt);
   UpdateField(pField);
 }
 
@@ -594,9 +588,9 @@ bool CPDFSDK_InteractiveForm::IsNeedHighLight(FormFieldType fieldType) const {
 }
 
 void CPDFSDK_InteractiveForm::RemoveAllHighLights() {
-  std::fill(m_HighlightColor, m_HighlightColor + kFormFieldTypeCount,
+  std::fill(std::begin(m_HighlightColor), std::end(m_HighlightColor),
             kWhiteBGR);
-  std::fill(m_NeedsHighlight, m_NeedsHighlight + kFormFieldTypeCount, false);
+  std::fill(std::begin(m_NeedsHighlight), std::end(m_NeedsHighlight), false);
 }
 
 void CPDFSDK_InteractiveForm::SetHighlightColor(FX_COLORREF clr,

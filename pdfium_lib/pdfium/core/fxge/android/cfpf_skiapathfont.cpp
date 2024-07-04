@@ -1,4 +1,4 @@
-// Copyright 2017 PDFium Authors. All rights reserved.
+// Copyright 2017 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,7 +7,7 @@
 #include "core/fxge/android/cfpf_skiapathfont.h"
 
 CFPF_SkiaPathFont::CFPF_SkiaPathFont(const ByteString& path,
-                                     const char* pFamily,
+                                     const ByteString& pFamily,
                                      uint32_t dwStyle,
                                      int32_t iFaceIndex,
                                      uint32_t dwCharsets,

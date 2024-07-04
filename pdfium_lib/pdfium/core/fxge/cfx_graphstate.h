@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -6,6 +6,8 @@
 
 #ifndef CORE_FXGE_CFX_GRAPHSTATE_H_
 #define CORE_FXGE_CFX_GRAPHSTATE_H_
+
+#include <stddef.h>
 
 #include <vector>
 
@@ -21,6 +23,10 @@ class CFX_GraphState {
   void Emplace();
 
   void SetLineDash(std::vector<float> dashes, float phase, float scale);
+  void SetLineDashPhase(float phase);
+  std::vector<float> GetLineDashArray() const;
+  size_t GetLineDashSize() const;
+  float GetLineDashPhase() const;
 
   float GetLineWidth() const;
   void SetLineWidth(float width);

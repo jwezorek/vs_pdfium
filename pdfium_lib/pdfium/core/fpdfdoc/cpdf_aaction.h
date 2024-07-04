@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,9 @@
 #ifndef CORE_FPDFDOC_CPDF_AACTION_H_
 #define CORE_FPDFDOC_CPDF_AACTION_H_
 
+#include "core/fpdfapi/parser/cpdf_dictionary.h"
 #include "core/fpdfdoc/cpdf_action.h"
 #include "core/fxcrt/retain_ptr.h"
-
-class CPDF_Dictionary;
 
 class CPDF_AAction {
  public:
@@ -40,13 +39,13 @@ class CPDF_AAction {
     kNumberOfActions  // Must be last.
   };
 
-  explicit CPDF_AAction(const CPDF_Dictionary* pDict);
+  explicit CPDF_AAction(RetainPtr<const CPDF_Dictionary> pDict);
   CPDF_AAction(const CPDF_AAction& that);
   ~CPDF_AAction();
 
   bool ActionExist(AActionType eType) const;
   CPDF_Action GetAction(AActionType eType) const;
-  const CPDF_Dictionary* GetDict() const { return m_pDict.Get(); }
+  bool HasDict() const { return !!m_pDict; }
 
   static bool IsUserInput(AActionType type);
 

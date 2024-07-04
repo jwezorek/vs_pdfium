@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,10 @@
 #ifndef CORE_FXGE_WIN32_CPSOUTPUT_H_
 #define CORE_FXGE_WIN32_CPSOUTPUT_H_
 
+#include <stddef.h>
 #include <windows.h>
 
 #include "core/fxcrt/fx_stream.h"
-#include "core/fxcrt/fx_system.h"
 
 class CPSOutput final : public IFX_RetainableWriteStream {
  public:
@@ -19,9 +19,8 @@ class CPSOutput final : public IFX_RetainableWriteStream {
   CPSOutput(HDC hDC, OutputMode mode);
   ~CPSOutput() override;
 
-  // IFX_Writestream
-  bool WriteBlock(const void* str, size_t len) override;
-  bool WriteString(ByteStringView str) override;
+  // IFX_Writestream:
+  bool WriteBlock(pdfium::span<const uint8_t> input) override;
 
  private:
   const HDC m_hDC;

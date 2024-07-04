@@ -1,4 +1,4 @@
-// Copyright 2014 PDFium Authors. All rights reserved.
+// Copyright 2014 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -7,10 +7,12 @@
 #ifndef FXBARCODE_PDF417_BC_PDF417BARCODEMATRIX_H_
 #define FXBARCODE_PDF417_BC_PDF417BARCODEMATRIX_H_
 
+#include <stdint.h>
+
 #include <memory>
 #include <vector>
 
-#include "core/fxcrt/fx_memory_wrappers.h"
+#include "core/fxcrt/data_vector.h"
 
 class CBC_BarcodeRow;
 
@@ -22,7 +24,7 @@ class CBC_BarcodeMatrix final {
   CBC_BarcodeRow* getRow(size_t row) const { return m_matrix[row].get(); }
   size_t getWidth() const { return m_width; }
   size_t getHeight() const { return m_height; }
-  std::vector<uint8_t, FxAllocAllocator<uint8_t>> toBitArray();
+  DataVector<uint8_t> toBitArray();
 
  private:
   std::vector<std::unique_ptr<CBC_BarcodeRow>> m_matrix;

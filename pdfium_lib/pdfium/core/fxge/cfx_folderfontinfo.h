@@ -1,4 +1,4 @@
-// Copyright 2016 PDFium Authors. All rights reserved.
+// Copyright 2016 The PDFium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 
+#include "core/fxcrt/fx_codepage_forward.h"
 #include "core/fxcrt/unowned_ptr.h"
 #include "core/fxge/cfx_fontmapper.h"
 #include "core/fxge/systemfontinfo_iface.h"
@@ -29,53 +30,61 @@ class CFX_FolderFontInfo : public SystemFontInfoIface {
 
   void AddPath(const ByteString& path);
 
-  // IFX_SytemFontInfo:
+  // SystemFontInfoIface:
   bool EnumFontList(CFX_FontMapper* pMapper) override;
   void* MapFont(int weight,
                 bool bItalic,
-                int charset,
+                FX_Charset charset,
                 int pitch_family,
-                const char* family) override;
-  void* GetFont(const char* face) override;
-  uint32_t GetFontData(void* hFont,
-                       uint32_t table,
-                       pdfium::span<uint8_t> buffer) override;
+                const ByteString& face) override;
+  void* GetFont(const ByteString& face) override;
+  size_t GetFontData(void* hFont,
+                     uint32_t table,
+                     pdfium::span<uint8_t> buffer) override;
   void DeleteFont(void* hFont) override;
   bool GetFaceName(void* hFont, ByteString* name) override;
-  bool GetFontCharset(void* hFont, int* charset) override;
+  bool GetFontCharset(void* hFont, FX_Charset* charset) override;
 
  protected:
   friend class CFX_FolderFontInfoTest;
 
   class FontFaceInfo {
    public:
+    static constexpr int32_t kSimilarityScoreMax = 68;
+
     FontFaceInfo(ByteString filePath,
                  ByteString faceName,
                  ByteString fontTables,
                  uint32_t fontOffset,
                  uint32_t fileSize);
 
+    bool IsEligibleForFindFont(uint32_t flag, FX_Charset charset) const;
+    int32_t SimilarityScore(int weight,
+                            bool italic,
+                            int pitch_family,
+                            bool exact_match_bonus) const;
+
     const ByteString m_FilePath;
     const ByteString m_FaceName;
     const ByteString m_FontTables;
     const uint32_t m_FontOffset;
     const uint32_t m_FileSize;
-    uint32_t m_Styles;
-    uint32_t m_Charsets;
+    uint32_t m_Styles = 0;
+    uint32_t m_Charsets = 0;
   };
 
   void ScanPath(const ByteString& path);
   void ScanFile(const ByteString& path);
   void ReportFace(const ByteString& path,
                   FILE* pFile,
-                  uint32_t filesize,
+                  FX_FILESIZE filesize,
                   uint32_t offset);
   void* GetSubstFont(const ByteString& face);
   void* FindFont(int weight,
                  bool bItalic,
-                 int charset,
+                 FX_Charset charset,
                  int pitch_family,
-                 const char* family,
+                 const ByteString& family,
                  bool bMatchName);
 
   std::map<ByteString, std::unique_ptr<FontFaceInfo>> m_FontList;

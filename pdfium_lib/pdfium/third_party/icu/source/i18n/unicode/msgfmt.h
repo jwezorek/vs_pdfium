@@ -21,6 +21,8 @@
 
 #include "unicode/utypes.h"
 
+#if U_SHOW_CPLUSPLUS_API
+
 /**
  * \file
  * \brief C++ API: Formats messages in a language-neutral way.
@@ -69,9 +71,8 @@ class NumberFormat;
  * if the pattern has named arguments (see {@link #usesNamedArguments()}).
  *
  * <p>An argument might not specify any format type. In this case,
- * a Number value is formatted with a default (for the locale) NumberFormat,
- * a Date value is formatted with a default (for the locale) DateFormat,
- * and for any other value its toString() value is used.
+ * a numeric value is formatted with a default (for the locale) NumberFormat,
+ * and a date/time value is formatted with a default (for the locale) DateFormat.
  *
  * <p>An argument might specify a "simple" type for which the specified
  * Format object is created, cached and used.
@@ -131,7 +132,7 @@ class NumberFormat;
  *   <li>messageText can contain quoted literal strings including syntax characters.
  *       A quoted literal string begins with an ASCII apostrophe and a syntax character
  *       (usually a {curly brace}) and continues until the next single apostrophe.
- *       A double ASCII apostrohpe inside or outside of a quoted string represents
+ *       A double ASCII apostrophe inside or outside of a quoted string represents
  *       one literal apostrophe.
  *   <li>Quotable syntax characters are the {curly braces} in all messageText parts,
  *       plus the '#' sign in a messageText immediately inside a pluralStyle,
@@ -185,7 +186,7 @@ class NumberFormat;
  *       <td><i>argSkeletonText</i>
  *       <td><code>NumberFormatter::forSkeleton(argSkeletonText, status).locale(getLocale()).toFormat(status)</code>
  *    <tr>
- *       <td rowspan=6><code>date</code>
+ *       <td rowspan=7><code>date</code>
  *       <td><i>(none)</i>
  *       <td><code>DateFormat.createDateInstance(kDefault, getLocale(), status)</code>
  *    <tr>
@@ -203,6 +204,9 @@ class NumberFormat;
  *    <tr>
  *       <td><i>argStyleText</i>
  *       <td><code>new SimpleDateFormat(argStyleText, getLocale(), status)</code>
+ *    <tr>
+ *       <td><i>argSkeletonText</i>
+ *       <td><code>DateFormat::createInstanceForSkeleton(argSkeletonText, getLocale(), status)</code>
  *    <tr>
  *       <td rowspan=6><code>time</code>
  *       <td><i>(none)</i>
@@ -240,6 +244,19 @@ class NumberFormat;
  * </table>
  * <p>
  *
+ * <h4>Argument formatting</h4>
+ *
+ * <p>Arguments are formatted according to their type, using the default
+ * ICU formatters for those types, unless otherwise specified.</p>
+ *
+ * <p>There are also several ways to control the formatting.</p>
+ *
+ * <p>We recommend you use default styles, predefined style values, skeletons,
+ * or preformatted values, but not pattern strings or custom format objects.</p>
+ *
+ * <p>For more details, see the
+ * <a href="https://unicode-org.github.io/icu/userguide/format_parse/messages">ICU User Guide</a>.</p>
+ *
  * <h4>Usage Information</h4>
  *
  * <p>Here are some examples of usage:
@@ -257,11 +274,11 @@ class NumberFormat;
  *
  *     UnicodeString result;
  *     MessageFormat::format(
- *          "At {1,time} on {1,date}, there was {2} on planet {0,number}.",
+ *          "At {1,time,::jmm} on {1,date,::dMMMM}, there was {2} on planet {0,number}.",
  *          arguments, 3, result, success );
  *
  *     cout << "result: " << result << endl;
- *     //<output>: At 4:34:20 PM on 23-Mar-98, there was a disturbance
+ *     //<output>: At 4:34 PM on March 23, there was a disturbance
  *     //             in the Force on planet 7.
  * \endcode
  * </pre>
@@ -403,7 +420,7 @@ public:
      * result and should delete it when done.
      * @stable ICU 2.0
      */
-    virtual Format* clone(void) const;
+    virtual MessageFormat* clone() const override;
 
     /**
      * Returns true if the given Format objects are semantically equal.
@@ -412,7 +429,7 @@ public:
      * @return       true if the given Format objects are semantically equal.
      * @stable ICU 2.0
      */
-    virtual UBool operator==(const Format& other) const;
+    virtual bool operator==(const Format& other) const override;
 
     /**
      * Sets the locale to be used for creating argument Format objects.
@@ -427,7 +444,7 @@ public:
      * @return    the locale of the object.
      * @stable ICU 2.0
      */
-    virtual const Locale& getLocale(void) const;
+    virtual const Locale& getLocale() const;
 
     /**
      * Applies the given pattern string to this message format.
@@ -466,7 +483,7 @@ public:
      * @param aposMode   The new apostrophe mode.
      * @param parseError Struct to receive information on the position
      *                   of an error within the pattern.
-     *                   Can be NULL.
+     *                   Can be nullptr.
      * @param status    Input/output error code.  If the
      *                  pattern cannot be parsed, set to failure code.
      * @stable ICU 4.8
@@ -572,7 +589,7 @@ public:
      * arguments. If numbered, the formatName is the
      * corresponding UnicodeStrings (e.g. "0", "1", "2"...).
      * The returned Format object should not be deleted by the caller,
-     * nor should the ponter of other object .  The pointer and its
+     * nor should the pointer of other object .  The pointer and its
      * contents remain valid only until the next call to any method
      * of this class is made with this object.
      * @param formatName the name or number specifying a format
@@ -620,8 +637,8 @@ public:
      * about format numbering.
      *
      * @param count output parameter to receive the size of the array
-     * @return an array of count Format* objects, or NULL if out of
-     * memory.  Any or all of the array elements may be NULL.
+     * @return an array of count Format* objects, or nullptr if out of
+     * memory.  Any or all of the array elements may be nullptr.
      * @stable ICU 2.0
      */
     virtual const Format** getFormats(int32_t& count) const;
@@ -698,7 +715,7 @@ public:
     virtual UnicodeString& format(const Formattable& obj,
                                   UnicodeString& appendTo,
                                   FieldPosition& pos,
-                                  UErrorCode& status) const;
+                                  UErrorCode& status) const override;
 
     /**
      * Formats the given array of arguments into a user-defined argument name
@@ -751,7 +768,7 @@ public:
      * @param status    Input/output error code.  If the
      *                  pattern cannot be parsed, set to failure code.
      * @return an array of parsed arguments.  The caller owns both
-     * the array and its contents. Returns NULL if status is not U_ZERO_ERROR.
+     * the array and its contents. Returns nullptr if status is not U_ZERO_ERROR.
      *
      * @stable ICU 2.0
      */
@@ -773,7 +790,7 @@ public:
      */
     virtual void parseObject(const UnicodeString& source,
                              Formattable& result,
-                             ParsePosition& pos) const;
+                             ParsePosition& pos) const override;
 
     /**
      * Convert an 'apostrophe-friendly' pattern into a standard
@@ -833,7 +850,7 @@ public:
      *                  other classes have different class IDs.
      * @stable ICU 2.0
      */
-    virtual UClassID getDynamicClassID(void) const;
+    virtual UClassID getDynamicClassID() const override;
 
     /**
      * Return the class ID for this class.  This is useful only for
@@ -846,15 +863,15 @@ public:
      * @return          The class ID for all objects of this class.
      * @stable ICU 2.0
      */
-    static UClassID U_EXPORT2 getStaticClassID(void);
+    static UClassID U_EXPORT2 getStaticClassID();
 
 #ifndef U_HIDE_INTERNAL_API
     /**
      * Compares two Format objects. This is used for constructing the hash
      * tables.
      *
-     * @param left pointer to a Format object. Must not be NULL.
-     * @param right pointer to a Format object. Must not be NULL.
+     * @param left pointer to a Format object. Must not be nullptr.
+     * @param right pointer to a Format object. Must not be nullptr.
      *
      * @return whether the two objects are the same
      * @internal
@@ -869,7 +886,7 @@ private:
     Format**            formatAliases; // see getFormats
     int32_t             formatAliasesCapacity;
 
-    MessageFormat(); // default constructor not implemented
+    MessageFormat() = delete; // default constructor not implemented
 
      /**
       * This provider helps defer instantiation of a PluralRules object
@@ -881,7 +898,7 @@ private:
     public:
         PluralSelectorProvider(const MessageFormat &mf, UPluralType type);
         virtual ~PluralSelectorProvider();
-        virtual UnicodeString select(void *ctx, double number, UErrorCode& ec) const;
+        virtual UnicodeString select(void *ctx, double number, UErrorCode& ec) const override;
 
         void reset();
     private:
@@ -903,7 +920,7 @@ private:
     int32_t            argTypeCapacity;
 
     /**
-     * TRUE if there are different argTypes for the same argument.
+     * true if there are different argTypes for the same argument.
      * This only matters when the MessageFormat is used in the plain C (umsg_xxx) API
      * where the pattern argTypes determine how the va_arg list is read.
      */
@@ -929,7 +946,7 @@ private:
     PluralSelectorProvider ordinalProvider;
 
     /**
-     * Method to retrieve default formats (or NULL on failure).
+     * Method to retrieve default formats (or nullptr on failure).
      * These are semantically const, but may modify *this.
      */
     const NumberFormat* getDefaultNumberFormat(UErrorCode&) const;
@@ -961,13 +978,13 @@ private:
      * AppendableWrapper, updates the field position.
      *
      * @param msgStart      Index to msgPattern part to start formatting from.
-     * @param plNumber      NULL except when formatting a plural argument sub-message
+     * @param plNumber      nullptr except when formatting a plural argument sub-message
      *                      where a '#' is replaced by the format string for this number.
-     * @param arguments     The formattable objects array. (Must not be NULL.)
-     * @param argumentNames NULL if numbered values are used. Otherwise the same
+     * @param arguments     The formattable objects array. (Must not be nullptr.)
+     * @param argumentNames nullptr if numbered values are used. Otherwise the same
      *                      length as "arguments", and each entry is the name of the
      *                      corresponding argument in "arguments".
-     * @param cnt           The length of arguments (and of argumentNames if that is not NULL).
+     * @param cnt           The length of arguments (and of argumentNames if that is not nullptr).
      * @param appendTo      Output parameter to receive the result.
      *                      The result string is appended to existing contents.
      * @param pos           Field position status.
@@ -1064,27 +1081,27 @@ private:
     void resetPattern();
 
     /**
-     * A DummyFormatter that we use solely to store a NULL value. UHash does
-     * not support storing NULL values.
+     * A DummyFormatter that we use solely to store a nullptr value. UHash does
+     * not support storing nullptr values.
      */
     class U_I18N_API DummyFormat : public Format {
     public:
-        virtual UBool operator==(const Format&) const;
-        virtual Format* clone() const;
+        virtual bool operator==(const Format&) const override;
+        virtual DummyFormat* clone() const override;
         virtual UnicodeString& format(const Formattable& obj,
                               UnicodeString& appendTo,
                               UErrorCode& status) const;
         virtual UnicodeString& format(const Formattable&,
                                       UnicodeString& appendTo,
                                       FieldPosition&,
-                                      UErrorCode& status) const;
+                                      UErrorCode& status) const override;
         virtual UnicodeString& format(const Formattable& obj,
                                       UnicodeString& appendTo,
                                       FieldPositionIterator* posIter,
-                                      UErrorCode& status) const;
+                                      UErrorCode& status) const override;
         virtual void parseObject(const UnicodeString&,
                                  Formattable&,
-                                 ParsePosition&) const;
+                                 ParsePosition&) const override;
     };
 
     friend class MessageFormatAdapter; // getFormatTypeList() access
@@ -1093,6 +1110,8 @@ private:
 U_NAMESPACE_END
 
 #endif /* #if !UCONFIG_NO_FORMATTING */
+
+#endif /* U_SHOW_CPLUSPLUS_API */
 
 #endif // _MSGFMT
 //eof

@@ -1,5 +1,6 @@
 ﻿// © 2016 and later: Unicode, Inc. and others.
-// License & terms of use: http://www.unicode.org/copyright.html#License
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/build-icu-data.xml
 bas{
     Countries{
         AD{"Àŋdɔ̂r"}
@@ -90,7 +91,6 @@ bas{
         IE{"Ìrlând"}
         IL{"Isràɛ̂l"}
         IN{"Indìà"}
-        IO{"Bìtèk bi Ŋgisì i Tūyɛ Īndìà"}
         IQ{"Ìrâk"}
         IR{"Ìrâŋ"}
         IS{"Ìslandìà"}
@@ -124,7 +124,6 @@ bas{
         MD{"Moldavìà"}
         MG{"Màdàgàskâr"}
         MH{"Bìòn bi Marcàl"}
-        MK{"Màsèdonìà"}
         ML{"Màli"}
         MM{"Myànmâr"}
         MN{"Mòŋgolìà"}
@@ -224,5 +223,4 @@ bas{
         ZM{"Zàmbià"}
         ZW{"Zìmbàbwê"}
     }
-    Version{"2.1.39.11"}
 }
